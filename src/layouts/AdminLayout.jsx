@@ -5,7 +5,7 @@ import AdminNavbar from '../components/adminComponents/AdminNavbar'
 const AdminLayout = () => {
   return (
     <>
-    <AdminNavbar />
+      <AdminNavbar />
       <Outlet />
     </>
   )

@@ -1,4 +1,7 @@
 import React from 'react'
+import { List, X, UserCheck, House, ListChecks,Bank, UsersThree, Calendar, SignOut } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 const AdminNavbar = () => {
    const [open, setOpen] = useState(false);
