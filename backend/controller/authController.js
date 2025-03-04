@@ -30,7 +30,31 @@ const registerUser = async (req, res) => {
 
 }
 
-const loginUser = () => {
+const loginUser = (req, res) => {
+    const { username, password } = req.body; 
+
+    if(!username || !password){
+        return res.status(500).json({ error:  "All fields are required" })
+    }
+
+    const query = "SELECT * FROM users WHERE username = ?";
+    db.query(query, [username], async (err, results) => {
+        if(err) return res.status(500).json({ error: "database error!" })
+
+        if(results.length === 0) {
+            return res.status(500).json({ error: "invalid username or password" })
+        }
+
+        const user = results[0];
+
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if(!isMatch){
+            return res.status(401).json({ error: "Invalid Username or Password" })
+        }
+
+        res.status(200).json({ message: "Login Successful" })
+
+    })
 
 }
 
