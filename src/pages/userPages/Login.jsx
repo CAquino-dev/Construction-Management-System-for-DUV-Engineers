@@ -58,6 +58,7 @@ const Login = () => {
             <button type='submit' className='bg-[#4c735c] text-white py-3 rounded-lg hover:bg-[#4c735c]/90 cursor-pointer' >Login</button>
           </form>
         </div>
+      </div>
     </div>
   )
 }
