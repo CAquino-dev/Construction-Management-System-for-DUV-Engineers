@@ -9,7 +9,7 @@ const UserNavbar = () => {
     <div className='flex fixed top-0 left-0 right-0 bg-[#4c735c] h-16 justify-between px-10 mb-16 z-50'>
       <div className='left-section flex items-center font-bold'>
         <div className='w-16'>
-          <img src={DUV} alt="" className='w-full h-full object-contain' />
+          <Link to="/"><img src={DUV} alt="" className='w-full h-full object-contain' /> </Link>
         </div>
       </div>
       <div className='hidden md:flex items-center gap-10 text-white font-bold'>
