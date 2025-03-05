@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import img1 from '../../assets/img1.png'
+>>>>>>>>> Temporary merge branch 2
 
 const Login = () => {
 
