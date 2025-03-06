@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import img1 from '../../assets/img1.png'
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -49,17 +50,20 @@ const Register = () => {
     }
 
   return (
-    <div className='mt-20'>
-      <h2>Register</h2>
+    <div className='p-8 flex items-center justify-center min-h-screen bg-cover bg-center relative' style = {{backgroundImage: `url(${img1})`}}>
+      <div className='absolute inset-0 bg-[#4c735c]/30 backdrop-blur-sm'></div>
+      <div className='relative w-full max-w-md min-h-[500px] h-auto bg-white/30 backdrop-blur-lg rounded-lg shadow-xl p-10 flex flex-col justify-center'>
+      <h2 className='text-2xl font-bold text-center mb-6 text-[#4c735c]'>Register</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {success && <p style={{ color: "green" }}>{success}</p>}
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
         <input type="text"
         name='username' 
         value={formData.username}
         placeholder='Username'
         onChange={handleChange}
         required
+        className='p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c735c]'
         />
         <input type="password" 
         name='password'
@@ -67,6 +71,7 @@ const Register = () => {
         placeholder='Password'
         onChange={handleChange}
         required
+        className='p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c735c]'
         />
         <input type="password" 
         name='confirmPassword'
@@ -74,10 +79,13 @@ const Register = () => {
         placeholder='Confirm Password'
         onChange={handleChange}
         required
+        className='p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c735c]'
         />
-        <button type='submit'>Register</button>
+        <button type='submit' className='bg-[#4c735c] text-white py-3 rounded-lg hover:bg-[#4c735c]/90 cursor-pointer'>Register</button>
       </form>
-
+      <p className='mt-4 text-center'>Already have an account? <a href="/login" className='text-[#4c735c]'>Login</a></p>
+      </div>
+      
     </div>
   )
 }
