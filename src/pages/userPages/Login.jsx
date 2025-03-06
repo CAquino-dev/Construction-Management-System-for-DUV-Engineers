@@ -70,6 +70,7 @@ const Login = () => {
               {success && <p style={{ color: "green" }}>{success}</p>}
             <button type='submit' className='bg-[#4c735c] text-white py-3 rounded-lg hover:bg-[#4c735c]/90 cursor-pointer' >Login</button>
           </form>
+          <p className='text-center mt-4'>Don't have an account? <a href="/register" className='text-[#4c735c]'>Sign Up</a></p>
         </div>
     </div>
   )
