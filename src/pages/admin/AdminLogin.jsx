@@ -1,6 +1,48 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 const AdminLogin = () => {
+    const [loginForm, setLoginForm] = useState({
+      username: "",
+      password: "",
+    });
+
+    const [error, setError] = useState(""); 
+    const [success, setSuccess] = useState("");
+
+    const handleChange = (e) => {
+      setLoginForm({ ...loginForm, [e.target.name]: e.target.value })
+    }
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/auth/adminLogin`, {
+          method: 'POST',
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: loginForm.username,
+            password: loginForm.password
+          }),
+        });
+        const data = await response.json();
+        console.log(data)
+        if(response.ok){
+          setSuccess("Login Successful")
+          setTimeout(() => setSuccess(""), 3000);
+          setLoginForm({ username: "", password: "" });
+        }else{
+          setError(data.error || "Login failed");
+          setTimeout(() => setError(""), 3000);
+        }
+      } catch (error) {
+        setError("Server error. Please try again.");
+        setTimeout(() => setError(""), 3000);
+      }
+
+    }
+
+
   return (
     <>
       {/* Header Section */}
@@ -14,7 +56,7 @@ const AdminLogin = () => {
         <div className='bg-white shadow-lg rounded-lg p-8 w-[400px]'>
           <h2 className='text-2xl font-bold text-center mb-6 text-[#4c735c]'>Admin Login</h2>
 
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className='mb-4'>
               <label className='block text-sm font-semibold text-gray-700 mb-2'>
                 Username
@@ -22,6 +64,9 @@ const AdminLogin = () => {
               <input
                 type='text'
                 placeholder='Enter Username'
+                onChange={handleChange}
+                value={loginForm.username}
+                name='username'
                 className='w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c735c]'
               />
             </div>
@@ -33,10 +78,14 @@ const AdminLogin = () => {
               <input
                 type='password'
                 placeholder='Enter Password'
+                onChange={handleChange}
+                value={loginForm.password}
+                name='password'
                 className='w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c735c]'
               />
             </div>
-
+            {error && <p style={{ color: "red" }}>{error}</p>}
+            {success && <p style={{ color: "green" }}>{success}</p>}
             <button
               type='submit'
               className='w-full bg-[#4c735c] text-white p-3 rounded-lg font-semibold hover:bg-[#3a5b4a] transition duration-300'
