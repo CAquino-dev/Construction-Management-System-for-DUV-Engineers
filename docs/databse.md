@@ -8,7 +8,23 @@ role_name VARCHAR(50) UNIQUE NOT NULL
 CREATE TABLE users (
 id INT PRIMARY KEY AUTO_INCREMENT,
 username VARCHAR(50) UNIQUE NOT NULL,
+email VARCHAR(100) UNIQUE NOT NULL, -- Added email for login/notifications
 password_hash VARCHAR(255) NOT NULL,
 role_id INT, -- References roles table
-FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL
+department_id INT, -- Optional: References department table if needed
+status ENUM('Active', 'Inactive') DEFAULT 'Active', -- Track user status
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Record creation date
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Auto-update timestamp
+
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL,
+    FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
+
+);
+
+CREATE TABLE departments (
+id INT PRIMARY KEY AUTO_INCREMENT,
+name VARCHAR(100) UNIQUE NOT NULL,
+description TEXT DEFAULT NULL, -- Optional: Description of the department
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
