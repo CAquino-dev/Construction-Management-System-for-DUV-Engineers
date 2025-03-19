@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/authRoute")
-
+const userManagementRoute = require("./routes/userManagementRoute");
+ 
 require("./config/db"); // Ensure database connects
 
 const app = express();
@@ -9,6 +10,8 @@ app.use(express.json()); // Parse JSON
 app.use(cors()); // Handle CORS
 
 app.use("/api/auth", authRoutes); // Use the auth routes
+app.use("/api/users", userManagementRoute); 
+
 
 app.get("/", (req, res) => {
     res.send("Chat API is running!");
