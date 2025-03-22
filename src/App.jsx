@@ -8,6 +8,7 @@ import UserLayout from './layouts/UserLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import AdminLogin from './pages/admin/AdminLogin';
 import { UserManagement } from './pages/admin/UserManagement';
+import {OurTeam} from './pages/userPages/OurTeam';
 
 const App = () => {
   return (
@@ -18,6 +19,7 @@ const App = () => {
           <Route index element={<Homepage/>} />
           <Route path='login' element={<Login/>} />
           <Route path='register' element={<Register/>} />
+          <Route path='our-team' element={<OurTeam/>} />
         </Route>
 
         {/* Admin Routes */}
