@@ -9,6 +9,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import AdminLogin from './pages/admin/AdminLogin';
 import { UserManagement } from './pages/admin/UserManagement';
 import {OurTeam} from './pages/userPages/OurTeam';
+import {AboutUs} from './pages/userPages/AboutUs';
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
           <Route path='login' element={<Login/>} />
           <Route path='register' element={<Register/>} />
           <Route path='our-team' element={<OurTeam/>} />
+          <Route path='aboutus' element={<AboutUs/>} />
         </Route>
 
         {/* Admin Routes */}
