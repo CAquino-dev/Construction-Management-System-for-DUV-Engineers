@@ -10,6 +10,8 @@ import AdminLogin from './pages/admin/AdminLogin';
 import { UserManagement } from './pages/admin/UserManagement';
 import {OurTeam} from './pages/userPages/OurTeam';
 import {AboutUs} from './pages/userPages/AboutUs';
+import {HR} from './pages/admin/HR'
+import {Projects} from './pages/admin/Projects'
 
 const App = () => {
   return (
@@ -30,6 +32,8 @@ const App = () => {
         <Route path='/admin-dashboard' element={<AdminLayout/>}>
           <Route index element={<AdminDashboard/>} /> 
           <Route path='user-management' element={<UserManagement/>} />
+          <Route path='hr' element={<HR/>} />
+          <Route path='projects' element={<Projects/>} />
         </Route>
       </Routes>
     </Router>
