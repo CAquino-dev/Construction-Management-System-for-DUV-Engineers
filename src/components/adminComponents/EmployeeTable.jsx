@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Eye } from '@phosphor-icons/react';
 import EmployeeModal from './EmployeeModal';
 import Pagination from './Pagination';
@@ -8,7 +8,13 @@ export const EmployeeTable = ({ employees = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filteredEmployees, setFilteredEmployees] = useState(employees);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+
+  useEffect(() => {
+    setFilteredEmployees(employees);
+  }, [employees])
+
+  console.log(employees);
 
   // Handle search
   const handleSearch = (query, department) => {
@@ -35,7 +41,7 @@ export const EmployeeTable = ({ employees = [] }) => {
             <tr className="bg-gray-700 text-white">
               <th className="p-2 text-left pl-4">Full Name</th>
               <th className="p-2">Department</th>
-              <th className="p-2">Gmail</th>
+              <th className="p-2">Email</th>
               <th className="p-2">Status</th>
               <th className="p-2">Actions</th>
             </tr>
@@ -45,10 +51,10 @@ export const EmployeeTable = ({ employees = [] }) => {
               <tr key={user.id} className="border-t text-center">
                 <td className="p-2 flex items-center gap-2">
                   <img src={`#`} alt="Profile" className="w-10 h-10 rounded-full" />
-                  {user.fullname}
+                  {user.full_name}
                 </td>
-                <td className="p-2">{user.department}</td>
-                <td className="p-2">{user.gmail}</td>
+                <td className="p-2">{user.department_name}</td>
+                <td className="p-2">{user.email}</td>
                 <td className={`p-2 ${user.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
                   {user.status}
                 </td>
