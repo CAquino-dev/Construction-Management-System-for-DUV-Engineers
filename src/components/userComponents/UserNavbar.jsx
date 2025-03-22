@@ -15,7 +15,7 @@ const UserNavbar = () => {
       <div className='hidden md:flex items-center gap-10 text-white font-bold'>
         <Link to="projects" className='hover:text-gray-400 transition' >Projects</Link>
         <Link to="our-team" className='hover:text-gray-400 transition'>Our Team</Link>
-        <Link to="about-us" className='hover:text-gray-400 transition'>About us</Link>
+        <Link to="/aboutus" className='hover:text-gray-400 transition'>About us</Link>
         <Link to="/Login" className='hover:text-gray-400 transition'>Login</Link>
       </div>
       <div className='md:hidden flex  items-center '>
