@@ -15,7 +15,7 @@ const registerUser = async (req, res) => {
 
         console.log("hashed password:", hashPassword);
 
-        const query = "INSERT INTO users (username, email, full_name. password_hash, role_id) values (?, ?, ?, ?, ?)";
+        const query = "INSERT INTO users (username, email, full_name, password_hash, role_id) values (?, ?, ?, ?, ?)";
         db.query(query, [username, email, fullname, hashPassword, 3], (err, results) => {
             if (err) {
                 return res.status(500).json({ error: err.message })
