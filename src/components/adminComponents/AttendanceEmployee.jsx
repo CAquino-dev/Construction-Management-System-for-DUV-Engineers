@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import '../../index.css'; // Custom CSS file
 
 const localizer = momentLocalizer(moment);
 
@@ -13,13 +14,17 @@ const attendanceRecords = [
 
 export const AttendanceEmployee = () => {
   return (
-    <div style={{ height: '500px', padding: '20px' }}>
+    <div className="responsive-container">
       <Calendar
         localizer={localizer}
         events={attendanceRecords}
         startAccessor="start"
         endAccessor="end"
-        style={{ height: 400 }}
+        className="responsive-calendar"
+        style={{
+          height: '500px',
+          width: '100%',
+        }}
       />
     </div>
   );
