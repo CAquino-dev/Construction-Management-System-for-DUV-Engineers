@@ -1,1 +1,42 @@
 @import "tailwindcss";
+
+/* General calendar styling */
+.responsive-calendar {
+    max-width: 100%;
+    font-size: 1rem; /* Adjust font size globally */
+  }
+  
+  /* Adjust navigation controls at 1024px */
+  @media (max-width: 1024px) {
+    .rbc-toolbar { /* Toolbar containing navigation controls */
+      flex-direction: column; /* Stack vertically */
+      gap: 10px; /* Add spacing */
+      padding: 10px 0;
+    }
+  
+    .rbc-toolbar .rbc-btn-group { /* Button group for "Today," etc. */
+      justify-content: center; /* Center buttons */
+    }
+  
+    .rbc-toolbar .rbc-toolbar-label { /* Label for the current view */
+      font-size: 1.2rem; /* Slightly larger font for better readability */
+      text-align: center; /* Center the text */
+    }
+  }
+  
+  /* Fine adjustments for smaller screens */
+  @media (max-width: 768px) {
+    .responsive-calendar {
+      height: 400px; /* Reduce height slightly */
+    }
+  
+    .rbc-toolbar {
+      font-size: 0.9rem; /* Slightly smaller font size for controls */
+      padding: 5px; /* Reduce padding */
+    }
+  
+    .rbc-toolbar .rbc-btn-group {
+      flex-wrap: wrap; /* Wrap buttons for better fit */
+      justify-content: space-around; /* Spread buttons evenly */
+    }
+  }
