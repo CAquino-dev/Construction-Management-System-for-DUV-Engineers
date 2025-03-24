@@ -1,4 +1,3 @@
-const { query } = require("express");
 const db = require("../config/db");
 
 const getUsers = (req, res) => {
@@ -20,4 +19,20 @@ const getUsers = (req, res) => {
     });
 };
 
-module.exports = { getUsers };
+const getUsersByDepartment = (req, res) => {
+    const { department_id } = req.params;
+
+    if (!department_id) {
+        return res.status(400).json({ error: "Department ID is required" });
+    }
+
+    const query = `SELECT * FROM users WHERE department_id = ?;`;
+
+    db.query(query, [department_id], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+
+        res.json(results);
+    });
+}
+
+module.exports = { getUsers, getUsersByDepartment };
