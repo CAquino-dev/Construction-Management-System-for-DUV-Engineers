@@ -12,6 +12,7 @@ import {OurTeam} from './pages/userPages/OurTeam';
 import {AboutUs} from './pages/userPages/AboutUs';
 import {HR} from './pages/admin/HR'
 import {Projects} from './pages/admin/Projects'
+import { EmployeeManagement } from './pages/admin/EmployeeManagement';
 
 const App = () => {
   return (
@@ -34,6 +35,7 @@ const App = () => {
           <Route path='user-management' element={<UserManagement/>} />
           <Route path='hr' element={<HR/>} />
           <Route path='projects' element={<Projects/>} />
+          <Route path='employees' element={<EmployeeManagement/>} />
         </Route>
       </Routes>
     </Router>
