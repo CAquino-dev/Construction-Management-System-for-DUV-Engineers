@@ -18,6 +18,7 @@ const AdminNavbar = ({ children }) => {
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
         { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management" },
+        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees" },
         { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects" },
         { name: "Finance", icon: <Bank size={20} />, href: "#" },
         { name: "Human Resource", icon: <UsersThree size={20} />, href: "/admin-dashboard/hr" },
