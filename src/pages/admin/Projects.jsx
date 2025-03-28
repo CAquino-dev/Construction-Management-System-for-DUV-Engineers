@@ -6,7 +6,7 @@ export const Projects = () => {
   const dummyProjects = [
     {
       id: 1,
-      name: 'Website Redesign',
+      name: 'Apartment Renovation',
       client: 'Acme Corp',
       startDate: '2023-01-15',
       endDate: '2023-02-15',
@@ -29,7 +29,6 @@ export const Projects = () => {
         </button>
       </div>
 
-      {/* Projects Table */}
       <div>
         <ProjectsTable projects={dummyProjects} />
       </div>
