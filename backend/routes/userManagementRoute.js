@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const { getUsers, getUsersByDepartment } = require('../controller/userManagementController')
+const { getEmployees, getEmployeesByDepartment } = require('../controller/userManagementController')
 
-router.get('/getUsers', getUsers);
-router.get('/department/:department_id', getUsersByDepartment);
+router.get('/getEmployees', getEmployees);
+router.get('/department/:department_id', getEmployeesByDepartment);
 
 module.exports = router;
