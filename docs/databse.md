@@ -1,35 +1,32 @@
 DATABASE NAME: duv
 TABLES:
 
-CREATE TABLE roles (
-id INT PRIMARY KEY AUTO_INCREMENT,
-role_name VARCHAR(50) UNIQUE NOT NULL
+CREATE TABLE permissions (
+id INT AUTO_INCREMENT PRIMARY KEY,
+permission_name VARCHAR(100) NOT NULL UNIQUE
 );
 
-CREATE TABLE users (
-id INT PRIMARY KEY AUTO_INCREMENT,
-username VARCHAR(50) UNIQUE NOT NULL,
-email VARCHAR(100) UNIQUE NOT NULL, -- Added email for login/notifications
-password_hash VARCHAR(255) NOT NULL,
-role_id INT, -- References roles table
-department_id INT, -- Optional: References department table if needed
-status ENUM('Active', 'Inactive') DEFAULT 'Active', -- Track user status
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Record creation date
-updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Auto-update timestamp
-
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE SET NULL,
-    FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
-
+CREATE TABLE role_permissions (
+role_id INT,
+permission_id INT,
+PRIMARY KEY (role_id, permission_id),
+FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 );
 
-ALTER TABLE users
-ADD COLUMN full_name VARCHAR(100) NOT NULL,
-ADD COLUMN profile_picture VARCHAR(255) DEFAULT NULL;
+{
+"name": "testClient",
+"email": "client@email",
+"phone": "0851612358",
+"address": "dasma",
+"password": "client12345"
+}
 
-CREATE TABLE departments (
-id INT PRIMARY KEY AUTO_INCREMENT,
-name VARCHAR(100) UNIQUE NOT NULL,
-description TEXT DEFAULT NULL, -- Optional: Description of the department
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+{
+"username": "HRJohnDoe",
+"email": "HR@email.com",
+"fullname": "HR Employee",
+"password": "12345",
+"role_id": "2",
+"department_id": "2"
+}
