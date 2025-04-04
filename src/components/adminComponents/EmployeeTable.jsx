@@ -36,9 +36,9 @@ export const EmployeeTable = ({ employees = [] }) => {
       <SearchEmployee onSearch={handleSearch} />
 
       <div className="overflow-x-auto">
-        <table className="w-full border rounded-md text-sm">
+        <table className="w-full border-[#3F5C4A] rounded-md text-sm">
           <thead>
-            <tr className="bg-gray-700 text-white">
+            <tr className="bg-[#4c735c] text-white">
               <th className="p-2 text-left pl-4">Full Name</th>
               <th className="p-2">Department</th>
               <th className="p-2">Email</th>
@@ -47,8 +47,8 @@ export const EmployeeTable = ({ employees = [] }) => {
             </tr>
           </thead>
           <tbody>
-            {currentEmployees.map((user) => (
-              <tr key={user.id} className="border-t text-center">
+            {currentEmployees.map((user, index) => (
+              <tr key={user.id} className={index % 2 === 0 ? "bg-[#f4f6f5] text-center" : "bg-white text-center"}>
                 <td className="p-2 flex items-center gap-2">
                   <img src={`#`} alt="Profile" className="w-10 h-10 rounded-full" />
                   {user.full_name}

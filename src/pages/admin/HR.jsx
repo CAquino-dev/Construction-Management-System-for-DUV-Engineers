@@ -8,7 +8,7 @@ export const HR = () => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const response = await fetch("http://localhost:5000/api/users/getUsers");
+                const response = await fetch("http://localhost:5000/api/users/getEmployees");
                 const data = await response.json();
                 setEmployees(data);
             } catch (error) {
@@ -19,7 +19,7 @@ export const HR = () => {
         fetchUsers();
     }, []);
     return (
-        <div className='p-6 mt-10'>
+        <div className='p-6 mt-15 bg-white rounded-lg shadow-sm'>
             <EmployeeTable employees={employees} />
         </div>
     );

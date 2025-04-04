@@ -19,7 +19,7 @@ export const UserManagement = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-          const response = await fetch("http://localhost:5000/api/users/getUsers");
+          const response = await fetch("http://localhost:5000/api/users/getEmployees");
           const data = await response.json();
           setEmployees(data);
       } catch (error) {
@@ -31,14 +31,14 @@ export const UserManagement = () => {
   }, [])
 
   return (
-    <div className='p-6 mt-4'>
+    <div className='p-6 mt-15 bg-white rounded-lg shadow-sm'>
       <div className='flex justify-end mb-4'>
-        <div className='flex items-center gap-4 bg-gray-200 p-2 rounded-full'>
+        <div className='flex items-center gap-4 bg-[#4c735c] p-2 rounded-full'>
           <button 
-            className={`px-4 py-2 rounded-full hover:bg-gray-500 hover:text-white cursor-pointer ${selectedTab === 'employees' ? 'bg-gray-700 text-white' : 'bg-gray-300 text-black'}`}
+            className={`px-4 py-2 rounded-full hover:text-[] cursor-pointer ${selectedTab === 'employees' ? 'bg-[#2e4b3a] text-white' : 'text-white'}`}
             onClick={() => setSelectedTab('employees')}>Employees</button>
           <button 
-            className={`px-4 py-2 rounded-full hover:bg-gray-500 hover:text-white cursor-pointer ${selectedTab === 'clients' ? 'bg-gray-700 text-white' : 'bg-gray-300 text-black'}`}
+            className={`px-4 py-2 rounded-full hover:text-white cursor-pointer ${selectedTab === 'clients' ? 'bg-[#2e4b3a] text-white' : 'text-white'}`}
             onClick={() => setSelectedTab('clients')}>Clients</button>
         </div>
       </div>

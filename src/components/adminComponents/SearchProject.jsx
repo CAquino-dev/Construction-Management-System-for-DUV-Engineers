@@ -8,9 +8,9 @@ export const SearchProject = () => {
             <input
              type="text"
              placeholder='Search Project...'
-             className='p-2 pl-10 border rounded w-64'
+             className='p-2 pl-10 border-1 border-[#4C7259] rounded w-64'
             />
-            <MagnifyingGlass size={18} className="absolute left-3 top-2.5 text-gray-500" />
+            <MagnifyingGlass size={18} className="absolute left-3 top-3 text-[#3b5d47] " />
         </div>
     </div>
   )

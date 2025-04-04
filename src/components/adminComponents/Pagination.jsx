@@ -45,7 +45,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
       <button 
         onClick={handleFirst} 
         disabled={currentPage === 1} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 cursor-pointer ${currentPage === 1 ? 'bg-gray-300 text-gray-500' : 'bg-gray-500 text-white'}`}
+        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === 1 ? 'bg-[#4c735c] text-white' : 'bg-gray-500 text-white'}`}
       >
         &laquo; {/* << First Page */}
       </button>
@@ -53,7 +53,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
       <button 
         onClick={handlePrev} 
         disabled={currentPage === 1} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 cursor-pointer ${currentPage === 1 ? 'bg-gray-300 text-gray-500' : 'bg-gray-500 text-white'}`}
+        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === 1 ? 'bg-[#4c735c] text-white' : 'bg-gray-500 text-white'}`}
       >
         &lt; {/* < Previous */}
       </button>
@@ -62,7 +62,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
         <button 
           key={index}
           onClick={() => typeof page === 'number' && setCurrentPage(page)}
-          className={`w-10 h-10 flex items-center justify-center rounded-full cursor-pointer ${currentPage === page ? 'bg-gray-600 text-white' : 'bg-gray300 text-gray-700'}`}
+          className={`w-10 h-10 flex items-center justify-center rounded-full cursor-pointer ${currentPage === page ? 'bg-[#4c735c] text-white' : 'bg-gray300 text-gray-700'}`}
         >
           {page}
         </button>
@@ -71,7 +71,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
       <button 
         onClick={handleNext} 
         disabled={currentPage === totalPages} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 cursor-pointer ${currentPage === totalPages ? 'bg-gray-300 text-gray-500' : 'bg-gray-500 text-white'}`}
+        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === totalPages ? 'bg-[#4c735c] text-white' : 'bg-[#4c735c] text-white'}`}
       >
         &gt; {/* > Next */}
       </button>
@@ -79,7 +79,7 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
       <button 
         onClick={handleLast} 
         disabled={currentPage === totalPages} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-200 cursor-pointer ${currentPage === totalPages ? 'bg-gray-300 text-gray-500' : 'bg-gray-500 text-white'}`}
+        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === totalPages ? 'bg-[#4c735c] text-white' : 'bg-[#4c735c] text-white'}`}
       >
         &raquo; {/* >> Last Page */}
       </button>

@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Eye } from '@phosphor-icons/react';
+import Pagination from './Pagination';
 
 export const ProjectsTable = ({ projects = [] }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(projects.length / 10);
+  const currentProjects = projects.slice((currentPage - 1) * 10, currentPage * 10);
+
   return (
     <div className="p-4">
       <div className="overflow-x-auto">
-        <table className="w-full border rounded-md text-sm">
+        <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-700 text-white text-center">
+            <tr className="bg-[#3b5d47] text-white text-center">
               <th className="p-2 text-center">Project Name</th>
               <th className="p-2 text-center">Client</th>
               <th className="p-2 text-center">Start Date</th>
@@ -19,9 +25,9 @@ export const ProjectsTable = ({ projects = [] }) => {
             </tr>
           </thead>
           <tbody>
-            {projects.length > 0 ? (
-              projects.map((project) => (
-                <tr key={project.id} className="border-t">
+            {currentProjects.length > 0 ? (
+              projects.map((project, index) => (
+                <tr key={project.id} className={index % 2 === 0 ? "bg-[#f4f6f5] text-center" : "bg-white text-center"}>
                   <td className="p-2 text-center">{project.name}</td>
                   <td className="p-2 text-center">{project.client}</td>
                   <td className="p-2 text-center">{project.startDate}</td>
@@ -61,6 +67,7 @@ export const ProjectsTable = ({ projects = [] }) => {
           </tbody>
         </table>
       </div>
+      <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
     </div>
   );
 };
