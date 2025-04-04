@@ -21,9 +21,9 @@ export const SearchEmployee = ({ onSearch }) => {
             setSearchQuery(e.target.value);
             handleSearch(e.target.value, selectedDepartment);
           }}
-          className="p-2 pl-10 border rounded w-64"
+          className="p-2 pl-10 border-1 border-[#4C7259] rounded w-64 focus:outline-none focus:border-[#3F5C4A]"
         />
-        <MagnifyingGlass size={18} className="absolute left-3 top-2.5 text-gray-500" />
+        <MagnifyingGlass size={18} className="absolute left-3 top-3 text-[#4C7259]" />
       </div>
 
       {/* Department Dropdown */}
@@ -33,7 +33,7 @@ export const SearchEmployee = ({ onSearch }) => {
           setSelectedDepartment(e.target.value);
           handleSearch(searchQuery, e.target.value);
         }}
-        className="p-2 border rounded"
+        className="p-2 border rounded text-[#4C7259] font-semibold border-[#4C7259] focus:outline-none focus:border-[#3F5C4A]"
       >
         <option value="">All Departments</option>
         <option value="IT">IT</option>

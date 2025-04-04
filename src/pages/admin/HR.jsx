@@ -19,7 +19,7 @@ export const HR = () => {
         fetchUsers();
     }, []);
     return (
-        <div className='p-6 mt-10'>
+        <div className='p-6 mt-15 bg-white rounded-lg shadow-sm'>
             <EmployeeTable employees={employees} />
         </div>
     );

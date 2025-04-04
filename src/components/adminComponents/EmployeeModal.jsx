@@ -41,7 +41,7 @@ const EmployeeModal = ({ selectedUser, closeModal }) => {
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-150">
       <div className="bg-gray-200 flex rounded-lg shadow-lg w-[60rem] h-[40rem] animate-fadeIn">
         {/* Sidebar */}
-        <div className="bg-gray-700 p-6 flex flex-col items-center w-1/3">
+        <div className="bg-[#3b5d47] p-6 flex flex-col items-center w-1/3">
           {/* Profile Picture */}
           <div className="w-28 h-28 bg-black rounded-full"></div> {/* Placeholder for profile picture */}
           <h3 className="mt-4 text-white text-lg font-bold">{selectedUser.fullname || "Employee Name"}</h3>
@@ -51,7 +51,7 @@ const EmployeeModal = ({ selectedUser, closeModal }) => {
           <button
             onClick={() => setActiveTab('Information')}
             className={`mt-6 w-full py-2 rounded cursor-pointer ${
-              activeTab === 'Information' ? 'bg-orange-700 text-white' : 'bg-orange-600 hover:bg-orange-700'
+              activeTab === 'Information' ? 'bg-[#8bab9b] text-white' : 'bg-[#D5E3D8]'
             }`}
           >
             Information
@@ -59,7 +59,7 @@ const EmployeeModal = ({ selectedUser, closeModal }) => {
           <button
             onClick={() => setActiveTab('Attendance')}
             className={`mt-2 w-full py-2 rounded cursor-pointer ${
-              activeTab === 'Attendance' ? 'bg-orange-700 text-white' : 'bg-orange-600 hover:bg-orange-700'
+              activeTab === 'Attendance' ? 'text-white bg-[#8bab9b]' : 'bg-[#D5E3D8]'
             }`}
           >
             Attendance
@@ -144,8 +144,8 @@ const EmployeeModal = ({ selectedUser, closeModal }) => {
           {activeTab === 'Attendance' && (
             <div className="mt-6 text-gray-800">
               <div className='flex justify-end space-x-4 mb-4'>
-                <button className='bg-green-600 hover:bg-green-700 cursor-pointer text-white py-2 px-4 rounded'>Add Attendance</button>
-                <button className='bg-gray-600 hover:bg-gray-700 cursor-pointer text-white py-2 px-4 rounded'>Generate attendace</button>
+                <button className='bg-[#3b5d47] cursor-pointer text-white py-2 px-4 rounded'>Add Attendance</button>
+                <button className='border-1 border-[#3b5d47] cursor-pointer text-[#3b5d47] py-2 px-4 rounded'>Generate attendace</button>
               </div>
               <div className="mb-4">
                 {/* Flex container for date pickers */}
@@ -203,6 +203,7 @@ const EmployeeModal = ({ selectedUser, closeModal }) => {
                 endAccessor="end"
                 toolbar={false} // Hide default toolbar
                 style={{ height: '300px' }}
+                className="border-1 border-[#3b5d47] rounded-lg shadow-md"
               />
             </div>
           )}

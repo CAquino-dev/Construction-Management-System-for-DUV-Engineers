@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+body{
+  background-color: #f0f0f0;
+}
+
 /* General calendar styling */
 .responsive-calendar {
     max-width: 100%;
