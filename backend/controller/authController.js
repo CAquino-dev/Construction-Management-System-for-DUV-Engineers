@@ -62,7 +62,6 @@ const employeeLogin = (req, res) => {
         })
 
     })
-
 }
 
     // const adminLogin = (req, res) => {
@@ -100,4 +99,35 @@ const employeeLogin = (req, res) => {
     //     });
     // };
 
-module.exports = { registerUser, employeeLogin };
+    const clientLogin = (req, res) => {
+        const {email, password} = req.body;
+
+        const query = 'SELECT * FROM clients WHERE email = ?'
+
+        db.query(query, [email], async (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Database error" });
+            }
+    
+            if (results.length === 0) {
+                return res.status(401).json({ error: "Invalid Username or Password" });
+            }
+
+            const user = results[0];
+
+            const isMatch = await bcrypt.compare(password, user.password_hash)
+            if (!isMatch) {
+                return res.status(401).json({ error: "Invalid Username or Password" });
+            }
+
+            res.json({
+                message: "User logged in successfully"
+            })
+
+        });
+
+        
+    }
+
+module.exports = { registerUser, employeeLogin, clientLogin };

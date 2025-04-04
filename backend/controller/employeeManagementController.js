@@ -29,7 +29,7 @@ const addEmployee = async (req, res) => {
         }
 
     const setStatusInactive = (req, res) => {
-        const query = ``;
+        const query = '';
     }
     
 

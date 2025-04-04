@@ -21,3 +21,12 @@ FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 "address": "dasma",
 "password": "client12345"
 }
+
+{
+"username": "HRJohnDoe",
+"email": "HR@email.com",
+"fullname": "HR Employee",
+"password": "12345",
+"role_id": "2",
+"department_id": "2"
+}
