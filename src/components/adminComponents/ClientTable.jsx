@@ -29,9 +29,9 @@ export const ClientTable = ({ clients = [] }) => {
       <SearchClient onSearch={handleSearch} />
 
       <div className="overflow-x-auto">
-        <table className="w-full border rounded-md text-sm">
+        <table className="w-full rounded-md text-sm">
           <thead>
-            <tr className="bg-gray-700 text-white">
+            <tr className="bg-[#4c735c] text-white">
               <th className="p-2 text-left pl-4">Full Name</th>
               <th className="p-2 text-left">Email</th>
               <th className="p-2 text-left">Phone</th>
@@ -40,8 +40,8 @@ export const ClientTable = ({ clients = [] }) => {
             </tr>
           </thead>
           <tbody>
-            {currentClients.map((client) => (
-              <tr key={client.id} className="border-b hover:bg-gray-100">
+            {currentClients.map((client, index) => (
+              <tr key={client.id} className={index % 2 === 0 ? "bg-[#f4f6f5] text-center" : "bg-white text-center"}>
                 <td className="p-2 pl-4">{client.fullname}</td>
                 <td className="p-2">{client.gmail}</td>
                 <td className="p-2">{client.contact}</td>

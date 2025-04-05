@@ -29,6 +29,7 @@ const AdminLogin = () => {
           }),
         });
         const data = await response.json();
+        setPermissions(data.results.map((perm) => perm.permission_name));
         console.log(data)
         if(response.ok){
           setSuccess("Login Successful")
