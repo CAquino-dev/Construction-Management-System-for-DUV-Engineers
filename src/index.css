@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+body{
+  background-color: #f0f0f0;
+}
+
 /* General calendar styling */
 .responsive-calendar {
     max-width: 100%;
@@ -40,3 +44,9 @@
       justify-content: space-around; /* Spread buttons evenly */
     }
   }
+
+/* Ensure the datepicker dropdown is isolated above all elements */
+.datepicker-popper {
+  z-index: 9999 !important; /* Ensure it's always on top */
+  position: absolute !important; /* Remove any conflicting relative positioning */
+}

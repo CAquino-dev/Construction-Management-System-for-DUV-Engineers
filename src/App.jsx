@@ -13,32 +13,35 @@ import {AboutUs} from './pages/userPages/AboutUs';
 import {HR} from './pages/admin/HR'
 import {Projects} from './pages/admin/Projects'
 import { EmployeeManagement } from './pages/admin/EmployeeManagement';
+import { PermissionsProvider } from './context/PermissionsContext';
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        {/* User Routes */} 
-        <Route path='/' element={<UserLayout/>}>
-          <Route index element={<Homepage/>} />
-          <Route path='login' element={<Login/>} />
-          <Route path='register' element={<Register/>} />
-          <Route path='our-team' element={<OurTeam/>} />
-          <Route path='aboutus' element={<AboutUs/>} />
-        </Route>
+    <PermissionsProvider>
+      <Router>
+        <Routes>
+          {/* User Routes */} 
+          <Route path='/' element={<UserLayout/>}>
+            <Route index element={<Homepage/>} />
+            <Route path='login' element={<Login/>} />
+            <Route path='register' element={<Register/>} />
+            <Route path='our-team' element={<OurTeam/>} />
+            <Route path='aboutus' element={<AboutUs/>} />
+          </Route>
 
-        {/* Admin Routes */}
-        <Route path='/admin' element={<AdminLogin/>} />
+          {/* Admin Routes */}
+          <Route path='/admin' element={<AdminLogin/>} />
 
-        <Route path='/admin-dashboard' element={<AdminLayout/>}>
-          <Route index element={<AdminDashboard/>} /> 
-          <Route path='user-management' element={<UserManagement/>} />
-          <Route path='hr' element={<HR/>} />
-          <Route path='projects' element={<Projects/>} />
-          <Route path='employees' element={<EmployeeManagement/>} />
+          <Route path='/admin-dashboard' element={<AdminLayout/>}>
+            <Route index element={<AdminDashboard/>} /> 
+            <Route path='user-management' element={<UserManagement/>} />
+            <Route path='hr' element={<HR/>} />
+            <Route path='projects' element={<Projects/>} />
+            <Route path='employees' element={<EmployeeManagement/>} />
         </Route>
-      </Routes>
-    </Router>
+        </Routes>
+      </Router>
+    </PermissionsProvider>
   );
 };
 
