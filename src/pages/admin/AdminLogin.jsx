@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { usePermissions } from '../../context/PermissionsContext';
+import { useNavigate } from 'react-router';
 
 const AdminLogin = () => {
-    const { setPermissions } = usePermissions();
+    const navigate = useNavigate(); 
 
     const [loginForm, setLoginForm] = useState({
       username: "",
@@ -29,18 +29,19 @@ const AdminLogin = () => {
           }),
         });
         const data = await response.json();
-        setPermissions(data.results.map((perm) => perm.permission_name));
         console.log(data)
         if(response.ok){
           setSuccess("Login Successful")
           setTimeout(() => setSuccess(""), 3000);
           setLoginForm({ username: "", password: "" });
-          setPermissions(data.results);
+          localStorage.setItem("permissions", JSON.stringify(data.results));
+          navigate('/admin-dashboard');
         }else{
           setError(data.error || "Login failed");
           setTimeout(() => setError(""), 3000);
         }
       } catch (error) {
+        console.log(error);
         setError("Server error. Please try again.");
         setTimeout(() => setError(""), 3000);
       }

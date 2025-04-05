@@ -29,11 +29,12 @@ const Login = () => {
             }),
           });
           const data = await response.json();
-
+          const permissions = data.results;
           if(response.ok){
             setSuccess("Login Successful")
             setTimeout(() => setSuccess(""), 3000);
             setLoginForm({ username: "", password: "" });
+            localStorage.setItem("permission", JSON.stringify(permissions));
           }else{
             setError(data.error || "Login failed");
             setTimeout(() => setError(""), 3000);

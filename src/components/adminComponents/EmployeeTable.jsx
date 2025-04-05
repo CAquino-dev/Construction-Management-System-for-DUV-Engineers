@@ -14,8 +14,6 @@ export const EmployeeTable = ({ employees = [] }) => {
     setFilteredEmployees(employees);
   }, [employees])
 
-  console.log(employees);
-
   // Handle search
   const handleSearch = (query, department) => {
     let filtered = employees.filter((emp) =>

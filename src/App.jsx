@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Homepage from './pages/userPages/Homepage';
 import Login from './pages/userPages/Login';
@@ -17,7 +17,6 @@ import { PermissionsProvider } from './context/PermissionsContext';
 
 const App = () => {
   return (
-    <PermissionsProvider>
       <Router>
         <Routes>
           {/* User Routes */} 
@@ -41,8 +40,13 @@ const App = () => {
         </Route>
         </Routes>
       </Router>
-    </PermissionsProvider>
   );
 };
 
-export default App;
+const AppWrapper = () => (
+  <PermissionsProvider>
+    <App />
+  </PermissionsProvider>
+);
+
+export default AppWrapper;

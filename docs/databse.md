@@ -30,3 +30,8 @@ FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 "role_id": "2",
 "department_id": "2"
 }
+
+{
+"username": "ADMIN1",
+"password": "12345"
+}
