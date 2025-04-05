@@ -1,20 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Eye } from '@phosphor-icons/react';
-import EmployeeModal from './EmployeeModal';
-import Pagination from './Pagination';
-import { SearchEmployee } from './SearchEmployee';
+import React, { useEffect, useState } from "react";
+import { Eye } from "@phosphor-icons/react";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import PaginationComponent from "./Pagination";
+import SearchEmployee from "./SearchEmployee";
 
-export const EmployeeTable = ({ employees = [] }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+export const EmployeeTable = ({ employees = [], setSelectedUser }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
 
   useEffect(() => {
     setFilteredEmployees(employees);
-  }, [employees])
-
-  console.log(employees);
+  }, [employees]);
 
   // Handle search
   const handleSearch = (query, department) => {
@@ -36,44 +32,43 @@ export const EmployeeTable = ({ employees = [] }) => {
       <SearchEmployee onSearch={handleSearch} />
 
       <div className="overflow-x-auto">
-        <table className="w-full border-[#3F5C4A] rounded-md text-sm">
-          <thead>
-            <tr className="bg-[#4c735c] text-white">
-              <th className="p-2 text-left pl-4">Full Name</th>
-              <th className="p-2">Department</th>
-              <th className="p-2">Email</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[#4c735c] hover:bg-[#4c735c]">
+              <TableHead className="p-2 text-left pl-4 text-white">Full Name</TableHead>
+              <TableHead className="p-2 text-center text-white">Department</TableHead>
+              <TableHead className="p-2 text-center text-white">Email</TableHead>
+              <TableHead className="p-2 text-center text-white">Status</TableHead>
+              <TableHead className="p-2 text-center text-white">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {currentEmployees.map((user, index) => (
-              <tr key={user.id} className={index % 2 === 0 ? "bg-[#f4f6f5] text-center" : "bg-white text-center"}>
-                <td className="p-2 flex items-center gap-2">
+              <TableRow key={user.id} className={index % 2 === 0 ? "bg-[#f4f6f5] text-center" : "bg-white text-center"}>
+                <TableCell className="p-2 flex items-center gap-2">
                   <img src={`#`} alt="Profile" className="w-10 h-10 rounded-full" />
                   {user.full_name}
-                </td>
-                <td className="p-2">{user.department_name}</td>
-                <td className="p-2">{user.email}</td>
-                <td className={`p-2 ${user.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
+                </TableCell>
+                <TableCell className="p-2">{user.department_name}</TableCell>
+                <TableCell className="p-2 ">{user.email}</TableCell>
+                <TableCell className={`p-2 ${user.status === "Active" ? "text-green-600" : "text-red-600"}`}>
                   {user.status}
-                </td>
-                <td className="p-2 flex justify-center gap-2">
-                  <button onClick={() => { setSelectedUser(user); setIsModalOpen(true); }} className="text-black hover:text-gray-600 cursor-pointer">
+                </TableCell>
+                <TableCell className="">
+                  <button
+                    onClick={() => setSelectedUser(user)} // Switch 
+                    className="text-black hover:text-gray-600 cursor-pointer"
+                  >
                     <Eye size={18} />
                   </button>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
-
-      {isModalOpen && selectedUser && (
-        <EmployeeModal selectedUser={selectedUser} closeModal={() => setIsModalOpen(false)} />
-      )}
+      <PaginationComponent currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
     </div>
   );
 };

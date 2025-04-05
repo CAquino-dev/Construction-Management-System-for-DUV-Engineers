@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { X } from '@phosphor-icons/react';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { X } from "@phosphor-icons/react";
 
 export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    fullname: '',
-    department: '',
-    email: '',
+    fullname: "",
+    gender: "",
+    contactNo: "",
+    age: "",
+    birthday: "",
+    address: "",
+    employeeId: "",
+    department: "",
+    employmentStatus: "",
+    jobTitle: "",
+    dateHired: "",
+    workingHours: "",
+    emergencyName: "",
+    emergencyRelationship: "",
+    emergencyContact: "",
+    email: "",
   });
 
-  const departments = ['Engineer', 'Architect', 'Finance',];
+  const departments = ["Engineer", "Architect", "Finance"];
+  const employmentStatuses = ["Active", "On Leave", "Resigned"];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,57 +42,75 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-6 rounded-lg shadow-lg w-96"
+        className="bg-white p-6 rounded-lg shadow-lg w-[38rem] overflow-y-auto max-h-[90vh]"
       >
+        {/* Modal Header */}
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-bold text-gray-800">Add Employee</h2>
-          <button onClick={onClose} className="text-gray-600 hover:text-red-500 cursor-pointer">
+          <button
+            onClick={onClose}
+            className="text-gray-600 hover:text-red-500 cursor-pointer"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="mt-4 space-y-6">
+          {/* Personal Details */}
           <div>
-            <label className="block text-sm font-medium">Full Name</label>
-            <input
-              type="text"
-              name="fullname"
-              value={formData.fullname}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border rounded-md"
-            />
+            <h3 className="text-md font-semibold text-gray-700">Personal Details</h3>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <input type="text" name="fullname" placeholder="Full Name" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <input type="number" name="age" placeholder="Age" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <select name="gender" onChange={handleChange} className="w-full px-3 py-2 border rounded-md">
+                <option value="" disabled>Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+              <input type="date" name="birthday" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <input type="text" name="contactNo" placeholder="Contact No" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <input type="text" name="address" placeholder="Address" onChange={handleChange} className="col-span-2 w-full px-3 py-2 border rounded-md" required />
+            </div>
           </div>
 
+          {/* Employment Information */}
           <div>
-            <label className="block text-sm font-medium">Department</label>
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border rounded-md"
-            >
-              <option value="" disabled>Select Department</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
+            <h3 className="text-md font-semibold text-gray-700">Employment Information</h3>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <input type="text" name="employeeId" placeholder="Employee ID" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <select name="department" onChange={handleChange} className="w-full px-3 py-2 border rounded-md">
+                <option value="" disabled>Select Department</option>
+                {departments.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+              </select>
+              <select name="employmentStatus" onChange={handleChange} className="w-full px-3 py-2 border rounded-md">
+                <option value="" disabled>Employment Status</option>
+                {employmentStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+              </select>
+              <input type="text" name="jobTitle" placeholder="Job Title" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <input type="date" name="dateHired" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+            </div>
           </div>
 
+          {/* Work Schedule & Attendance */}
           <div>
-            <label className="block text-sm font-medium">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border rounded-md"
-            />
+            <h3 className="text-md font-semibold text-gray-700">Work Schedule & Attendance</h3>
+            <input type="text" name="workingHours" placeholder="Working Hours (e.g., 9 AM - 5 PM)" onChange={handleChange} className="w-full px-3 py-2 border rounded-md mt-2" required />
           </div>
 
-          <div className="flex justify-end gap-2">
+          {/* Emergency Contact */}
+          <div>
+            <h3 className="text-md font-semibold text-gray-700">Emergency Contact</h3>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <input type="text" name="emergencyName" placeholder="Contact Name" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <input type="text" name="emergencyRelationship" placeholder="Relationship (e.g., Parent, Spouse)" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
+              <input type="text" name="emergencyContact" placeholder="Contact No" onChange={handleChange} className="col-span-2 w-full px-3 py-2 border rounded-md" required />
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end gap-2 mt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 cursor-pointer">
               Cancel
             </button>

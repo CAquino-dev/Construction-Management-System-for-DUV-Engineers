@@ -27,7 +27,7 @@ const AdminNavbar = ({ children }) => {
     return (
         <div className="flex min-h-screen">
             {/* Sidebar - Fixed & Scrollable on Desktop */}
-            <div className="bg-[#3b5d47] h-screen w-64 text-white fixed top-0 left-0 shadow-lg p-5 flex flex-col justify-between z-50 overflow-y-auto hidden lg:block">
+            <div className="bg-[#3b5d47] h-screen lg:w-64 w-0 text-white fixed top-0 left-0 shadow-lg p-5 flex flex-col justify-between z-50 overflow-y-auto hidden lg:block">
                 <div>
                     <div className="flex justify-center items-center mb-6">
                         <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
@@ -105,8 +105,8 @@ const AdminNavbar = ({ children }) => {
             </div>
 
             {/* Page Content Wrapper */}
-            <div className="flex-1 min-h-screen bg-gray-100 pt-16 lg:ml-64">
-                <div className="p-6">{children}</div>
+            <div className="flex-1 min-h-screen bg-gray-100 pt-16 ml-0 lg:ml-64 w-full sm:ml-64">
+                <div className="">{children}</div>
             </div>
         </div>
     );
