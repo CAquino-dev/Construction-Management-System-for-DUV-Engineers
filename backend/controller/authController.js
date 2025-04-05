@@ -57,47 +57,17 @@ const employeeLogin = (req, res) => {
 
         db.query(permissionQuery, [user.id], (err, results) => {
             if (err) return res.status(500).json({ error: "Failed to fetch permissions" });
+            const permissionData = results[0];
 
-            res.json({message: "Login Successful", results});
+            delete permissionData.id;
+            delete permissionData.role_name;
+
+            res.json({message: "Login Successful", results: permissionData});
         })
 
     })
 }
 
-    // const adminLogin = (req, res) => {
-    //     const { username, password } = req.body;
-    
-    //     if (!username || !password) {
-    //         return res.status(400).json({ error: "All fields are required" });
-    //     }
-    
-    //     const query = "SELECT * FROM users WHERE username = ? AND (role_id = 1 OR role_id = 2)";
-    
-    //     db.query(query, [username], async (err, results) => {
-    //         if (err) {
-    //             console.error(err);
-    //             return res.status(500).json({ error: "Database error" });
-    //         }
-    
-    //         if (results.length === 0) {
-    //             return res.status(401).json({ error: "Invalid Username or Password" });
-    //         }
-    
-    //         const user = results[0];
-    
-    //         // Check password
-    //         const isMatch = await bcrypt.compare(password, user.password_hash);
-    //         if (!isMatch) {
-    //             return res.status(401).json({ error: "Invalid Username or Password" });
-    //         }
-    
-    //         // Return login success and user role
-    //         res.json({ 
-    //             message: "Admin login successful", 
-    //             user: { id: user.id, username: user.username, role_id: user.role_id } 
-    //         });
-    //     });
-    // };
 
     const clientLogin = (req, res) => {
         const {email, password} = req.body;

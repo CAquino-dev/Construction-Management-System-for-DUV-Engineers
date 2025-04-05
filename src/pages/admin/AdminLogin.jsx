@@ -20,7 +20,7 @@ const AdminLogin = () => {
       e.preventDefault();
 
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/adminLogin`, {
+        const response = await fetch(`http://localhost:5000/api/auth/employeeLogin`, {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -29,12 +29,12 @@ const AdminLogin = () => {
           }),
         });
         const data = await response.json();
-        setPermissions(data.results.map((perm) => perm.permission_name));
         console.log(data)
         if(response.ok){
           setSuccess("Login Successful")
           setTimeout(() => setSuccess(""), 3000);
           setLoginForm({ username: "", password: "" });
+          setPermissions(data.results);
         }else{
           setError(data.error || "Login failed");
           setTimeout(() => setError(""), 3000);

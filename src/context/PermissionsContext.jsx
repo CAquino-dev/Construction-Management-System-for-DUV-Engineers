@@ -5,13 +5,10 @@ const PermissionsContext = createContext();
 export const PermissionsProvider = ({ children }) => {
   const [permissions, setPermissions] = useState([]);
 
-  // permissions.map((perm) => {
-  //   if(perm === "Y"){
-  //     console.log(perm);
-  //   }
-  // })
+  useEffect(() => {
+    console.log("Updated Permissions in Context:", permissions);
+}, [permissions]);
 
-  // console.log(permissions.can_access_employees)
 
   return (
     <PermissionsContext.Provider value={{ permissions, setPermissions }}>
