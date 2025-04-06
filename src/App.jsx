@@ -14,6 +14,7 @@ import {HR} from './pages/admin/HR'
 import {Projects} from './pages/admin/Projects'
 import { EmployeeManagement } from './pages/admin/EmployeeManagement';
 import { PermissionsProvider } from './context/PermissionsContext';
+import { EmployeeAttendance } from './pages/admin/EmployeeAttendance';
 
 const App = () => {
   return (
@@ -35,7 +36,8 @@ const App = () => {
           <Route path='/admin-dashboard' element={<AdminLayout/>}>
             <Route index element={<AdminDashboard/>} /> 
             <Route path='user-management' element={<UserManagement/>} />
-            <Route path='hr' element={<HR/>} />
+            <Route path='hr/employees' element={<HR/>} />
+            <Route path='hr/attendance' element={<EmployeeAttendance/>} />
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
         </Route>
