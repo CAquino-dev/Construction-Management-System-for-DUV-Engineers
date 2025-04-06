@@ -27,12 +27,10 @@ const addEmployee = async (req, res) => {
         } catch (error) {
             return res.status(500).json({ error: "error hashing password" })
         }
+}
 
-    const setStatusInactive = (req, res) => {
-        const query = '';
-    }
-    
-
+const setStatusInactive = (req, res) => {
+    const query = '';
 }
 
 
