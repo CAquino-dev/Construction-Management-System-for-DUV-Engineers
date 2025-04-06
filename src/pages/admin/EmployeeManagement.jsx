@@ -29,7 +29,7 @@ export const EmployeeManagement = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 mt-10">
+    <div className="container mx-auto mt-15">
       <div className="bg-white shadow-md rounded-lg">
         {selectedUser ? (
           <EmployeeDetails selectedUser={selectedUser} onBack={() => setSelectedUser(null)} />

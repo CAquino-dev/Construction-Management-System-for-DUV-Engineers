@@ -38,7 +38,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -106,6 +106,47 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
               <input type="text" name="emergencyName" placeholder="Contact Name" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
               <input type="text" name="emergencyRelationship" placeholder="Relationship (e.g., Parent, Spouse)" onChange={handleChange} className="w-full px-3 py-2 border rounded-md" required />
               <input type="text" name="emergencyContact" placeholder="Contact No" onChange={handleChange} className="col-span-2 w-full px-3 py-2 border rounded-md" required />
+            </div>
+          </div>
+
+          {/*System Access*/}
+          <div>
+            <h3 className="text-md font-semibold text-gray-700">System Access</h3>
+            <div className="bg-[#3b5d47]/40 p-4 rounded-md mt-2 font-semidbold">
+              <p>User Permisions</p>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="can-view" className="w-5 h-5 cursor-pointer" />
+                  <label htmlFor="can-view" className="text-sm text-gray-800">Can view</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="can-view" className="w-5 h-5 cursor-pointer" />
+                  <label htmlFor="can-view" className="text-sm text-gray-800">Can view</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="can-view" className="w-5 h-5 cursor-pointer" />
+                  <label htmlFor="can-view" className="text-sm text-gray-800">Can view</label>
+                </div>
+              </div>
+            </div>
+            <div>
+            <div className="bg-[#3b5d47]/40 p-4 rounded-md mt-2 font-semidbold">
+              <p>HR Permisions</p>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="can-view" className="w-5 h-5 cursor-pointer" />
+                  <label htmlFor="can-view" className="text-sm text-gray-800">Can view</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="can-view" className="w-5 h-5 cursor-pointer" />
+                  <label htmlFor="can-view" className="text-sm text-gray-800">Can view</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="can-view" className="w-5 h-5 cursor-pointer" />
+                  <label htmlFor="can-view" className="text-sm text-gray-800">Can view</label>
+                </div>
+              </div>
+            </div>
             </div>
           </div>
 
