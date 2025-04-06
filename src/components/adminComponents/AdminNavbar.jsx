@@ -2,21 +2,24 @@ import React, { useState } from "react";
 import { List, X, UserCheck, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
 import { Link, useLocation } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
+import { usePermissions } from "../../context/PermissionsContext";
 
 const AdminNavbar = ({ children }) => {
+    const { permissions } = usePermissions();
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const location = useLocation();
+    console.log(permissions)
 
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen);
     const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
-        { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management" },
-        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees" },
-        { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects" },
-        { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance" },
+        { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
+        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
+        { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects", permission: "can_access_projects" },
+        { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
         { name: "Human Resource", icon: <UsersThree size={20} />, href: "/admin-dashboard/hr" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
     ];
@@ -33,7 +36,9 @@ const AdminNavbar = ({ children }) => {
                         <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
                     </div>
                     <ul className="space-y-4">
-                        {menuItems.map((item, index) => (
+
+                        {menuItems.filter(item => !item.permission || permissions?.[item.permission] === "Y")
+                        .map((item, index) => (
                             <li key={index}>
                                 <Link to={item.href} className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg">
                                     {item.icon}
