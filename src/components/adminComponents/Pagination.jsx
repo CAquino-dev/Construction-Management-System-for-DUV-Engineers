@@ -1,15 +1,8 @@
-import React from 'react';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "../ui/pagination";
+import React from "react";
 
-const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
-  const handleFirst = () => setCurrentPage(1);
-  const handlePrev = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-  const handleNext = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
-  const handleLast = () => setCurrentPage(totalPages);
-
+const PaginationComponent = ({ currentPage, totalPages, setCurrentPage }) => {
+  
   const generatePageNumbers = () => {
     let pages = [];
     const maxVisiblePages = 5;
@@ -41,50 +34,66 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
   };
 
   return (
-    <div className='flex justify-end items-center gap-2 mt-4'>
-      <button 
-        onClick={handleFirst} 
-        disabled={currentPage === 1} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === 1 ? 'bg-[#4c735c] text-white' : 'bg-gray-500 text-white'}`}
-      >
-        &laquo; {/* << First Page */}
-      </button>
+    <Pagination>
+      
+      <PaginationContent className="flex items-center justify-center gap-2 mt-4">
+        
+        <PaginationItem>
+          <PaginationLink 
+            onClick={() => setCurrentPage(1)} 
+            disabled={currentPage === 1} 
+            className="cursor-pointer px-3 py-2"
+          >
+            &laquo; First
+          </PaginationLink>
+        </PaginationItem>
 
-      <button 
-        onClick={handlePrev} 
-        disabled={currentPage === 1} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === 1 ? 'bg-[#4c735c] text-white' : 'bg-gray-500 text-white'}`}
-      >
-        &lt; {/* < Previous */}
-      </button>
+        <PaginationItem>
+          <PaginationLink 
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)} 
+            disabled={currentPage === 1} 
+            className="cursor-pointer px-3 py-2"
+          >
+            &lt; Prev
+          </PaginationLink>
+        </PaginationItem>
 
-      {generatePageNumbers().map((page, index) => (
-        <button 
-          key={index}
-          onClick={() => typeof page === 'number' && setCurrentPage(page)}
-          className={`w-10 h-10 flex items-center justify-center rounded-full cursor-pointer ${currentPage === page ? 'bg-[#4c735c] text-white' : 'bg-gray300 text-gray-700'}`}
-        >
-          {page}
-        </button>
-      ))}
+        {generatePageNumbers().map((page, index) => (
+          <PaginationItem key={index}>
+            <PaginationLink 
+              onClick={() => typeof page === "number" && setCurrentPage(page)} 
+              active={currentPage === page}
+              className="cursor-pointer px-3 py-2"
+            >
+              {page}
+            </PaginationLink>
+          </PaginationItem>
+        ))}
 
-      <button 
-        onClick={handleNext} 
-        disabled={currentPage === totalPages} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === totalPages ? 'bg-[#4c735c] text-white' : 'bg-[#4c735c] text-white'}`}
-      >
-        &gt; {/* > Next */}
-      </button>
+        <PaginationItem>
+          <PaginationLink 
+            onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)} 
+            disabled={currentPage === totalPages} 
+            className="cursor-pointer px-3 py-2"
+          >
+            Next &gt;
+          </PaginationLink>
+        </PaginationItem>
 
-      <button 
-        onClick={handleLast} 
-        disabled={currentPage === totalPages} 
-        className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#3b5d47] cursor-pointer ${currentPage === totalPages ? 'bg-[#4c735c] text-white' : 'bg-[#4c735c] text-white'}`}
-      >
-        &raquo; {/* >> Last Page */}
-      </button>
-    </div>
+        <PaginationItem>
+          <PaginationLink 
+            onClick={() => setCurrentPage(totalPages)} 
+            disabled={currentPage === totalPages} 
+            className="cursor-pointer px-3 py-2"
+          >
+            Last &raquo;
+          </PaginationLink>
+        </PaginationItem>
+
+      </PaginationContent>
+    
+    </Pagination>
   );
 };
 
-export default Pagination;
+export default PaginationComponent;

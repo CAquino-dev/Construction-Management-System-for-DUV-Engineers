@@ -8,11 +8,13 @@ const AdminNavbar = ({ children }) => {
     const { permissions } = usePermissions();
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
     const location = useLocation();
     console.log(permissions)
 
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen);
     const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);
+    const toggleHrDropdown = () => setIsHrOpen(!isHrOpen);
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
@@ -24,13 +26,32 @@ const AdminNavbar = ({ children }) => {
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
     ];
 
-    // Find the current page name based on the pathname
     const currentPage = menuItems.find((item) => location.pathname.includes(item.href))?.name || "Dashboard";
 
     return (
         <div className="flex min-h-screen">
-            {/* Sidebar - Fixed & Scrollable on Desktop */}
-            <div className="bg-[#3b5d47] h-screen w-64 text-white fixed top-0 left-0 shadow-lg p-5 flex flex-col justify-between z-50 overflow-y-auto hidden lg:block">
+
+            {/* Top Navigation Bar */}
+            <div className="fixed top-0 left-0 w-full bg-white p-4 flex justify-between items-center shadow-md z-40">
+                <h1 className="text-lg font-bold text-gray-800 lg:ml-64 ml-10">{currentPage}</h1>
+
+                {/* Profile Section */}
+                <div className="relative hover:text-gray-400 cursor-pointer">
+                <button className="flex items-center gap-2 cursor-pointer" onClick={toggleProfileDropdown}>
+                    <div className="w-8 h-8 bg-black rounded-full"></div> {/* Profile Picture */}
+                    <p className="text-sm font-semibold text-gray-800">Christian Aquino</p>
+                    <CaretDown size={18} className="text-gray-800" />
+                </button>
+
+                {profileDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
+                    <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full">Logout</button>
+                    </div>
+                )}
+                </div>
+            </div>
+            {/* Sidebar */}
+            <div className="bg-[#3b5d47] h-screen lg:w-64 w-0 text-white fixed top-0 left-0 shadow-lg p-5 flex flex-col justify-between z-50 overflow-y-auto hidden lg:block">
                 <div>
                     <div className="flex justify-center items-center mb-6">
                         <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
@@ -40,12 +61,31 @@ const AdminNavbar = ({ children }) => {
                         {menuItems.filter(item => !item.permission || permissions?.[item.permission] === "Y")
                         .map((item, index) => (
                             <li key={index}>
-                                <Link to={item.href} className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg">
+                                <Link to={item.href} className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg font-semibold">
                                     {item.icon}
                                     {item.name}
                                 </Link>
                             </li>
                         ))}
+                        {/* Collapsible HR Section */}
+                        <li>
+                            <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3 font-semibold">
+                                    <UsersThree size={20} /> Human Resources
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isHrOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isHrOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link to="/admin-dashboard/hr/attendance" className="block p-2 hover:bg-[#5A8366] rounded-lg">Attendance</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin-dashboard/hr/employees" className="block p-2 hover:bg-[#5A8366] rounded-lg">Employee</Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
                     </ul>
                 </div>
                 <div>
@@ -55,7 +95,7 @@ const AdminNavbar = ({ children }) => {
                 </div>
             </div>
 
-            {/* Mobile Sidebar - Fullscreen & Scrollable */}
+            {/* Mobile Sidebar */}
             {mobileSidebarOpen && (
                 <div className="fixed inset-0 bg-[#3b5d47] text-white p-5 z-50 flex flex-col overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
@@ -73,12 +113,26 @@ const AdminNavbar = ({ children }) => {
                                 </Link>
                             </li>
                         ))}
+                        {/* HR Section in Mobile Sidebar */}
+                        <li>
+                            <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3">
+                                    <UsersThree size={20} /> Human Resources
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isHrOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isHrOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link to="/admin-dashboard/hr/attendance" className="block p-2 hover:bg-[#5A8366] rounded-lg">Attendance</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin-dashboard/hr/employees" className="block p-2 hover:bg-[#5A8366] rounded-lg">Employee</Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
                     </ul>
-                    <div>
-                        <button className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg w-full">
-                            <SignOut size={32} /> Logout
-                        </button>
-                    </div>
                 </div>
             )}
 
@@ -89,29 +143,9 @@ const AdminNavbar = ({ children }) => {
                 </button>
             )}
 
-            {/* Top Navbar - Page Indicator (Properly Positioned on Desktop & Mobile) */}
-            <div className="fixed top-0 left-0 w-full bg-white p-4 flex justify-between items-center gap-3 z-40">
-                <h1 className="text-lg font-semibold text-gray-800 lg:ml-64 ml-10">{currentPage}</h1>
-
-                {/* Profile Section */}
-                <div className="relative hover:text-gray-400 cursor-pointer">
-                    <button className="flex items-center gap-2 cursor-pointer" onClick={toggleProfileDropdown}>
-                        <div className="w-8 bg-black h-8 rounded-full"></div> {/* Profile picture */}
-                        <p className="text-sm font-semibold text-gray-800">Christian Aquino</p>
-                        <CaretDown size={18} className="text-gray-800" />
-                    </button>
-
-                    {profileDropdownOpen && (
-                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
-                            <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full">Logout</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Page Content Wrapper */}
-            <div className="flex-1 min-h-screen bg-gray-100 pt-16 lg:ml-64">
-                <div className="p-6">{children}</div>
+            {/* Page Content Wrapper - Adjusts for Sidebar */}
+            <div className={`flex-1 min-h-screen bg-gray-100 pt-16 w-full transition-all duration-300 ${mobileSidebarOpen ? "ml-0" : "lg:ml-64"}`}>
+                {children}
             </div>
         </div>
     );
