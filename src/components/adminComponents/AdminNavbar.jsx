@@ -75,6 +75,9 @@ const AdminNavbar = ({ children }) => {
                                         <Link to="/admin-dashboard/hr/attendance" className="block p-2 hover:bg-[#5A8366] rounded-lg">Attendance</Link>
                                     </li>
                                     <li>
+                                        <Link to="/admin-dashboard/hr/payroll" className="block p-2 hover:bg-[#5A8366] rounded-lg">Payroll</Link>
+                                    </li>
+                                    <li>
                                         <Link to="/admin-dashboard/hr/employees" className="block p-2 hover:bg-[#5A8366] rounded-lg">Employee</Link>
                                     </li>
                                 </ul>
@@ -119,6 +122,9 @@ const AdminNavbar = ({ children }) => {
                                 <ul className="pl-6 mt-2 space-y-2">
                                     <li>
                                         <Link to="/admin-dashboard/hr/attendance" className="block p-2 hover:bg-[#5A8366] rounded-lg">Attendance</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin-dashboard/hr/payroll" className="block p-2 hover:bg-[#5A8366] rounded-lg">Payroll</Link>
                                     </li>
                                     <li>
                                         <Link to="/admin-dashboard/hr/employees" className="block p-2 hover:bg-[#5A8366] rounded-lg">Employee</Link>
