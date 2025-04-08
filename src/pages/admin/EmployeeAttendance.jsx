@@ -1,5 +1,5 @@
 import React from "react";
-import { AttendanceTable } from "../../components/adminComponents/AttendanceTable"; // Ensure correct path
+import { AttendanceTable } from "../../components/adminComponents/AttendanceTable";
 
 export const EmployeeAttendance = () => {
   return (

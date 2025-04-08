@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table"; // Adjust path if needed
+import { ImportAttendanceModal } from "../../components/adminComponents/ImportAttendanceModal";
 
 const attendanceRecords = [
   { id: "M02489", name: "Ajay Lumari", clockIn: "09:00 AM", clockOut: "05:00 PM", timeCount: "09:00:00", status: "On Time", date: "2025-09-03" },
@@ -12,6 +13,7 @@ export const AttendanceTable = () => {
 
   const [selectedDate, setSelectedDate] = useState("");
   const [filteredRecords, setFilteredRecords] = useState(attendanceRecords);
+  const [isImportOpen, setIsImportOpen] = useState(false); // Modal state
 
   useEffect(() => {
     
@@ -110,18 +112,21 @@ export const AttendanceTable = () => {
 
         {/* Export & Import Buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-        <button className="bg-[#4c735c] text-white px-6 py-2 rounded-md w-full md:w-48 lg:w-50 sm:w-auto">
+          <button className="bg-[#4c735c] text-white px-6 py-2 rounded-md w-full md:w-48 lg:w-56 sm:w-auto">
             Export Attendance
-        </button>
-        <button className="border border-[#4c735c] text-[#4c735c] px-6 py-2 rounded-md w-full md:w-48 lg:w-50 sm:w-auto">
+          </button>
+          <button
+            className="border border-[#4c735c] text-[#4c735c] px-6 py-2 rounded-md w-full md:w-48 lg:w-56 sm:w-auto"
+            onClick={() => setIsImportOpen(true)}
+          >
             Import Attendance
-        </button>
+          </button>
         </div>
       </div>
 
       {/* Display Selected Date in Readable Format */}
       <div>
-        <p className="font-semibold text-xl text-gray-600 border-b border-t py-5 mb-2"> {formattedDate}</p>
+        <p className="font-semibold text-xl text-gray-600 border-b border-t py-5 mb-2">{formattedDate}</p>
       </div>
 
       {/* Attendance Table - Responsive */}
@@ -153,6 +158,9 @@ export const AttendanceTable = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Import Modal */}
+      {isImportOpen && <ImportAttendanceModal onClose={() => setIsImportOpen(false)} />}
     </div>
   );
 };
