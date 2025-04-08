@@ -22,7 +22,6 @@ const AdminNavbar = ({ children }) => {
         { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
         { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects", permission: "can_access_projects" },
         { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
-        { name: "Human Resource", icon: <UsersThree size={20} />, href: "/admin-dashboard/hr" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
     ];
 
@@ -69,12 +68,12 @@ const AdminNavbar = ({ children }) => {
                         ))}
                         {/* Collapsible HR Section */}
                         <li>
-                            <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            { permissions.can_access_hr && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
                                 <span className="flex items-center gap-3 font-semibold">
                                     <UsersThree size={20} /> Human Resources
                                 </span>
                                 <CaretDown size={20} className={`transform transition-all ${isHrOpen ? "rotate-180" : ""}`} />
-                            </button>
+                            </button>}
                             {isHrOpen && (
                                 <ul className="pl-6 mt-2 space-y-2">
                                     <li>
