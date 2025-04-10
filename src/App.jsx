@@ -16,6 +16,7 @@ import { EmployeeManagement } from './pages/admin/EmployeeManagement';
 import { PermissionsProvider } from './context/PermissionsContext';
 import { EmployeeAttendance } from './pages/admin/EmployeeAttendance';
 import { EmployeePayroll } from './pages/admin/EmployeePayroll';
+import { Finance } from './pages/admin/Finance';
 
 const App = () => {
   return (
@@ -40,6 +41,7 @@ const App = () => {
             <Route path='hr/employees' element={<HR/>} />
             <Route path='hr/attendance' element={<EmployeeAttendance/>} />
             <Route path='hr/payroll' element={<EmployeePayroll/>} />
+            <Route path='finance' element={<Finance/>} />
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
         </Route>
