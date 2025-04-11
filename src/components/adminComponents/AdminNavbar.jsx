@@ -46,7 +46,7 @@ const AdminNavbar = ({ children }) => {
                 <div className="relative hover:text-gray-400 cursor-pointer">
                 <button className="flex items-center gap-2 cursor-pointer" onClick={toggleProfileDropdown}>
                     <div className="w-8 h-8 bg-black rounded-full"></div> {/* Profile Picture */}
-                    <p className="text-sm font-semibold text-gray-800">Christian Aquino</p>
+                    <p className="text-sm font-semibold text-gray-800 hidden md:block">Christian Aquino</p>
                     <CaretDown size={18} className="text-gray-800" />
                 </button>
 
