@@ -73,9 +73,46 @@ const getEmployeeSalary = (req, res) => {
             });
         });
     };
+
+    const getPayrollRecords = (req, res) => {
+        const { period_start, period_end } = req.query;
     
+        if (!period_start || !period_end) {
+            return res.status(400).json({ error: "Missing required date range parameters." });
+        }
     
+        const query = `
+            SELECT 
+                p.id,
+                p.employee_id,
+                e.full_name,
+                p.period_start,
+                p.period_end,
+                p.total_hours_worked,
+                p.calculated_salary,
+                p.status,
+                p.generated_by,
+                p.generated_at,
+                es.fixed_salary,
+                d.name
+            FROM payroll p
+            JOIN employees e ON p.employee_id = e.id
+            JOIN employee_salary es ON p.employee_id = es.employee_id
+            JOIN departments d on e.department_id = d.id
+            WHERE p.period_start >= ? AND p.period_end <= ?
+            ORDER BY p.period_end DESC
+;
+        `;
     
+        db.query(query, [period_start, period_end], (err, results) => {
+            if (err) {
+                console.error("Error fetching payroll records:", err);
+                return res.status(500).json({ error: "Failed to retrieve payroll records." });
+            }
+    
+            res.json(results);
+        });
+    };  
 
 const getPresentEmployee = (req, res) => {
     const { date } = req.body;
@@ -135,44 +172,32 @@ const getEmployeeAttendance = (req, res) => {
        });
 }
 
-const approvePayroll = (req, res) => {
-    const { selectedPayrollIds, hrUserId, remarks } = req.body;
-
-    if(!selectedPayrollIds || selectedPayrollIds.length === 0){
-        return res.status(400).json({ error: "No payroll records selected for approval." });
-    }
-
-    const query = `UPDATE payroll 
-                   SET status = 'Approved by HR', approved_by = ?, approved_by_hr_at = NOW(), remarks = ?
-                   WHERE id IN (?)
-    `;
-    
-    db.query(query, [hrUserId, remarks, selectedPayrollIds], (err, result) => {
-        if (err) return res.status(500).json({ error: "Database error during approval." });
-
-        res.json({ message: "Selected payroll records approved successfully." });
-    });
-}
-
-const rejectPayroll = (req, res) => {
-    const { selectedPayrollIds, hrUserId, remarks } = req.body;
+const updatePayrollStatus = (req, res) => {
+    const { selectedPayrollIds, hrUserId, remarks, newStatus } = req.body;
 
     if (!selectedPayrollIds || selectedPayrollIds.length === 0) {
-        return res.status(400).json({ error: "No payroll records selected for rejection." });
+        return res.status(400).json({ error: "No payroll records selected for update." });
     }
 
-    const query = `UPDATE payroll 
-                   SET status = 'Rejected by HR', approved_by = ?, approved_by_hr_at = NOW(), remarks = ?
-                   WHERE id IN (?)`;
+    if (!["Approved by HR", "Rejected by HR", "Pending"].includes(newStatus)) {
+        return res.status(400).json({ error: "Invalid status provided." });
+    }
 
-    db.query(query, [hrUserId, remarks, selectedPayrollIds], (err, result) => {
-        if (err) return res.status(500).json({ error: "Database error during rejection." });
+    const query = `
+        UPDATE payroll 
+        SET status = ?, approved_by = ?, approved_by_hr_at = NOW(), remarks = ?
+        WHERE id IN (?)
+    `;
 
-        res.json({ message: "Selected payroll records rejected successfully." });
+    db.query(query, [newStatus, hrUserId, remarks, selectedPayrollIds], (err, result) => {
+        if (err) {
+            console.error("Database error during payroll status update:", err);
+            return res.status(500).json({ error: "Failed to update payroll status." });
+        }
+
+        res.json({ message: `Payroll records updated successfully to ${newStatus}.` });
     });
 };
 
 
-
-
-module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, approvePayroll, rejectPayroll};
+module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, getPayrollRecords, updatePayrollStatus};

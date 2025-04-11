@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { List, X, UserCheck, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
 
 const AdminNavbar = ({ children }) => {
     const { permissions } = usePermissions();
+    const { setPermissions } = usePermissions();
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
     const location = useLocation();
+    const navigate = useNavigate();
     console.log(permissions)
 
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen);
@@ -26,6 +28,18 @@ const AdminNavbar = ({ children }) => {
     ];
 
     const currentPage = menuItems.find((item) => location.pathname.includes(item.href))?.name || "Dashboard";
+
+    const handleLogout = () => {
+        // Clear permissions in the context
+        setPermissions({});  // Reset permissions state
+      
+        // Clear permissions from localStorage
+        localStorage.removeItem('permissions');
+      
+        // Redirect to login page or home page
+        navigate('/admin');  // Example redirection
+      };
+      
 
     return (
         <div className="flex min-h-screen">
@@ -44,7 +58,7 @@ const AdminNavbar = ({ children }) => {
 
                 {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
-                    <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full">Logout</button>
+                    <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full" >Logout</button>
                     </div>
                 )}
                 </div>
@@ -68,7 +82,7 @@ const AdminNavbar = ({ children }) => {
                         ))}
                         {/* Collapsible HR Section */}
                         <li>
-                            { permissions.can_access_hr && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            { permissions.can_access_hr === 'Y' && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
                                 <span className="flex items-center gap-3 font-semibold">
                                     <UsersThree size={20} /> Human Resources
                                 </span>
@@ -91,7 +105,7 @@ const AdminNavbar = ({ children }) => {
                     </ul>
                 </div>
                 <div>
-                    <button className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg w-full">
+                    <button className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg w-full" onClick={handleLogout}>
                         <SignOut size={22} /> Logout
                     </button>
                 </div>

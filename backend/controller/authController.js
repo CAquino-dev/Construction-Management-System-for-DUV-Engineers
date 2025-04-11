@@ -62,7 +62,7 @@ const employeeLogin = (req, res) => {
             delete permissionData.id;
             delete permissionData.role_name;
 
-            res.json({message: "Login Successful", results: permissionData});
+            res.json({message: "Login Successful", results: permissionData, userId: user.id});
         })
 
     })

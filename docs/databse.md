@@ -40,6 +40,15 @@ FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
 "password": "12345"
 }
 
+{
+"username": "FinanceEmployee",
+"email": "finance@email.com",
+"fullname": "Finance Name",
+"password": "12345",
+"role_id": "4",
+"department_id": "1"
+}
+
 -- 🔹 Employees Table
 CREATE TABLE employees (
 id INT PRIMARY KEY AUTO_INCREMENT,

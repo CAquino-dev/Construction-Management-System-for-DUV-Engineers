@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router';
+import { usePermissions } from '../../context/PermissionsContext';
 
 const AdminLogin = () => {
     const navigate = useNavigate(); 
+    const { setPermissions } = usePermissions();
 
     const [loginForm, setLoginForm] = useState({
       username: "",
@@ -34,7 +36,10 @@ const AdminLogin = () => {
           setSuccess("Login Successful")
           setTimeout(() => setSuccess(""), 3000);
           setLoginForm({ username: "", password: "" });
+          setPermissions(data.results);
           localStorage.setItem("permissions", JSON.stringify(data.results));
+          localStorage.setItem("userId", JSON.stringify(data.userId));
+          console.log('userID:', data.userId)
           navigate('/admin-dashboard');
         }else{
           setError(data.error || "Login failed");
