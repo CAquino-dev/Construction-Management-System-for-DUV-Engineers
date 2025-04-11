@@ -15,7 +15,7 @@ export const FinanceModal = ({ closeModal, record }) => {
         </div>
 
         {/* Finance Details */}
-        <div className="grid grid-cols-2 gap-4 text-gray-800">
+        <div className="grid grid-cols-2 gap-4 text-gray-800 overflow-y-auto max-h-[400px]">
           <p><strong>Employee ID:</strong></p>
           <p className="text-right">{record?.employee_id || "N/A"}</p>
 
@@ -35,8 +35,13 @@ export const FinanceModal = ({ closeModal, record }) => {
           <p className="text-right">₱{record?.salary || "0.00"}</p>
 
           <p><strong>Status:</strong></p>
-          <p className={`text-right font-semibold ${record?.status === "Pending" ? "text-yellow-500" : "text-green-500"}`}>
+          <p className={`text-right font-semibold ${record?.status === "Pending" ? "text-yellow-500" : "Paid" ? "text-green-500" : "text-gray-500"}`}>
             {record?.status || "N/A"}
+          </p>
+
+          <p><strong>HR Status:</strong></p>
+          <p className={`text-right font-semibold ${record?.status === "Pending" ? "text-yellow-500" : "Approved By Hr" ? "text-green-500" : "text-gray-500"}`}>
+            {record?.hr_status || "N/A"}
           </p>
 
           <p><strong>Approved By (HR):</strong></p>

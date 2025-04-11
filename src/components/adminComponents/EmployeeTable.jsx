@@ -37,7 +37,6 @@ export const EmployeeTable = ({ employees = [], setSelectedUser, handleEdit, han
               <TableHead className="p-2 text-left pl-4 text-white">Full Name</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Email</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Mobile No.</TableHead>
-              <TableHead className="p-2 text-center text-white hidden md:table-cell">Date of Birth</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Department</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Joining Date</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Status</TableHead>
@@ -53,7 +52,6 @@ export const EmployeeTable = ({ employees = [], setSelectedUser, handleEdit, han
                 </TableCell>
                 <TableCell className="p-2 text-center hidden md:table-cell">{user.email}</TableCell>
                 <TableCell className="p-2 text-center hidden md:table-cell">{user.mobile_no}</TableCell>
-                <TableCell className="p-2 text-center hidden md:table-cell">{user.date_of_birth}</TableCell>
                 <TableCell className="p-2 text-center hidden md:table-cell">{user.department}</TableCell>
                 <TableCell className="p-2 text-center hidden md:table-cell">{user.joining_date}</TableCell>
                 <TableCell className={`p-2 text-center hidden md:table-cell font-semibold ${user.status === "Active" ? "text-green-600" : "text-red-600"}`}>
