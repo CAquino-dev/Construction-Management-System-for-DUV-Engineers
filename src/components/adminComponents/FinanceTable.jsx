@@ -3,14 +3,15 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import { Eye, DotsThree } from "@phosphor-icons/react";
 import { FinanceModal } from "./FinanceModal";
 
-const financeRecords = [
-  { id: 1, employee_id: "M02489", fullname: "Ajay Lumari", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending" },
-  { id: 2, employee_id: "M02490", fullname: "Robert Young", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending" },
-  { id: 3, employee_id: "M02509", fullname: "Elia Romero", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Approved" },
-  { id: 4, employee_id: "M02510", fullname: "Liam Smith", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Approved" },
+const initialFinanceRecords = [
+  { id: 1, employee_id: "M02489", fullname: "Ajay Lumari", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Paid", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
+  { id: 2, employee_id: "M02490", fullname: "Robert Young", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Rejected", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime"  },
+  { id: 3, employee_id: "M02509", fullname: "Elia Romero", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
+  { id: 4, employee_id: "M02510", fullname: "Liam Smith", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
 ];
 
 export const FinanceTable = () => {
+  const [financeRecords, setFinanceRecords] = useState(initialFinanceRecords);
   const [selectedRecords, setSelectedRecords] = useState([]); 
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(null);
@@ -24,7 +25,6 @@ export const FinanceTable = () => {
     );
   };
 
-  // Toggle "Select All"
   const handleSelectAll = () => {
     if (selectedRecords.length === financeRecords.length) {
       setSelectedRecords([]); // Unselect all
@@ -32,6 +32,22 @@ export const FinanceTable = () => {
       setSelectedRecords(financeRecords.map((record) => record.id)); // Select all
     }
   };
+
+  const updateStatus = (id, newStatus) => {
+    const updated = financeRecords.map((record) =>
+      record.id === id ? { ...record, status: newStatus } : record
+    );
+    setFinanceRecords(updated);
+  };
+
+  const getDropdownOptions = (status) => {
+    const allOptions = ["View", "Paid", "Rejected"];
+    return allOptions.filter((option) => {
+      if (option === "Paid" && status === "Paid") return false;
+      if (option === "Rejected" && status === "Rejected") return false;
+      return true;
+    });
+  }
 
   return (
     <div className="p-4">
@@ -75,7 +91,17 @@ export const FinanceTable = () => {
                 <TableCell className="text-center p-2">{record.period_end}</TableCell>
                 <TableCell className="text-center p-2">{record.hours_worked}</TableCell>
                 <TableCell className="text-center p-2">₱{record.salary}</TableCell>
-                <TableCell className="text-center p-2">{record.status}</TableCell>
+                <TableCell className="text-center p-2">
+                  <p className={`text-center text-xs p-2 font-semibold rounded-md ${
+                    record.status === "Paid"
+                      ? "bg-green-100 text-green-800"
+                      : record.status === "Pending"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-red-100 text-red-800"
+                  }`}>
+                    {record.status}
+                  </p>
+                </TableCell>
                 <TableCell className="text-center p-2 relative">
                   <button
                     className="text-black hover:text-gray-600 cursor-pointer "
@@ -87,14 +113,15 @@ export const FinanceTable = () => {
                   {/* Dropdown Menu */}
                   {dropdownOpen === record.id && (
                     <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-md z-10 flex flex-col">
-                      <button className="block px-4 py-2 hover:bg-gray-200 w-full" 
-                      onClick={() => {
-                        setSelectedRecord(record);
-                        setDropdownOpen(null);      
-                      }}>View
-                      </button>
-                      <button className="block px-4 py-2 hover:bg-gray-200 w-full">Paid</button>
-                      <button className="block px-4 py-2 hover:bg-gray-200 w-full">Rejected</button>
+                      {getDropdownOptions(record.status).map((option) => (
+                        <button className="block px-4 py-2 hover:bg-gray-200 w-full"
+                        key={option} 
+                        onClick={() => {
+                          if (option === "View") setSelectedRecord(record);
+                          else updateStatus(record.id, option);
+                        }}>{option}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </TableCell>
