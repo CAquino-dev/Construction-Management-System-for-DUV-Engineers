@@ -11,10 +11,11 @@ import { RecentRegisteredUser } from "../../components/adminComponents/RecentReg
 export const AdminDashboard = () => {
   return (
     <div className="p-6 mt-10">
-      {/* Flex container for layout */}
-      <div className="flex gap-6">
-        {/* Left Section - Sales Graph */}
-        <div className="w-2/3">
+      {/* Flex container for responsive layout */}
+      <div className="flex flex-col md:flex-row gap-6">
+        
+        {/* Left Section - Sales Graph + Stats */}
+        <div className="w-full md:w-2/3">
           <div className="flex flex-wrap gap-4 justify-center mb-6">
             <TotalUserCard totalUsers={150} />
             <TotalEmployeeCard totalEmployee={150} />
@@ -27,9 +28,10 @@ export const AdminDashboard = () => {
 
         {/* Right Section - Announcements + Recent Registered Users */}
         <div className="w-full md:w-1/3 space-y-6">
+          
           {/* Announcements Section */}
           <div className="h-80 p-4 bg-white shadow-md rounded-lg border border-gray-300 flex flex-col">
-            <h2 className="text-lg md:text-xl font-bold mb-4">Announcements</h2>
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center md:text-left">Announcements</h2>
 
             {/* Scrollable Announcement List */}
             <div className="h-full overflow-y-auto space-y-4 pr-2">
@@ -48,12 +50,13 @@ export const AdminDashboard = () => {
 
           {/* Recent Registered Users Section */}
           <div className="h-80 p-4 bg-white shadow-md rounded-lg border border-gray-300 flex flex-col">
-            <h2 className="text-lg md:text-xl font-bold mb-4">Recent Registered Users</h2>
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center md:text-left">Recent Registered Users</h2>
             <div className="h-full overflow-y-auto space-y-4 pr-2">
               <RecentRegisteredUser />
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

@@ -22,7 +22,18 @@ const AdminNavbar = ({ children }) => {
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
     ];
 
-    const currentPage = menuItems.find((item) => location.pathname.includes(item.href))?.name || "Dashboard";
+    const currentPage = (() => {
+        // HR Pages
+        if (location.pathname.startsWith("/admin-dashboard/hr/attendance")) return "Attendance";
+        if (location.pathname.startsWith("/admin-dashboard/hr/payroll")) return "Payroll";
+        if (location.pathname.startsWith("/admin-dashboard/hr/employees")) return "Employee";
+      
+        // Other Admin Pages (Matches Against `menuItems`)
+        const matchedPage = menuItems.find((item) => location.pathname === item.href)?.name;
+        
+        return matchedPage || "Dashboard"; // Default fallback remains "Dashboard"
+      })();
+      
 
     return (
         <div className="flex min-h-screen">
@@ -35,7 +46,7 @@ const AdminNavbar = ({ children }) => {
                 <div className="relative hover:text-gray-400 cursor-pointer">
                 <button className="flex items-center gap-2 cursor-pointer" onClick={toggleProfileDropdown}>
                     <div className="w-8 h-8 bg-black rounded-full"></div> {/* Profile Picture */}
-                    <p className="text-sm font-semibold text-gray-800">Christian Aquino</p>
+                    <p className="text-sm font-semibold text-gray-800 hidden md:block">Christian Aquino</p>
                     <CaretDown size={18} className="text-gray-800" />
                 </button>
 
@@ -55,7 +66,12 @@ const AdminNavbar = ({ children }) => {
                     <ul className="space-y-4">
                         {menuItems.map((item, index) => (
                             <li key={index}>
-                                <Link to={item.href} className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg font-semibold">
+                                <Link 
+                                to={item.href} 
+                                className={`flex items-center gap-3 p-3 rounded-lg font-semibold ${
+                                    location.pathname === item.href ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                }`}
+                                >
                                     {item.icon}
                                     {item.name}
                                 </Link>
@@ -72,13 +88,34 @@ const AdminNavbar = ({ children }) => {
                             {isHrOpen && (
                                 <ul className="pl-6 mt-2 space-y-2">
                                     <li>
-                                        <Link to="/admin-dashboard/hr/attendance" className="block p-2 hover:bg-[#5A8366] rounded-lg">Attendance</Link>
+                                    <Link 
+                                    to="/admin-dashboard/hr/attendance" 
+                                    className={`block p-2 rounded-lg ${
+                                        location.pathname === "/admin-dashboard/hr/attendance" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                    }`}
+                                    >
+                                    Attendance
+                                    </Link>
                                     </li>
                                     <li>
-                                        <Link to="/admin-dashboard/hr/payroll" className="block p-2 hover:bg-[#5A8366] rounded-lg">Payroll</Link>
+                                    <Link 
+                                    to="/admin-dashboard/hr/payroll" 
+                                    className={`block p-2 rounded-lg ${
+                                        location.pathname === "/admin-dashboard/hr/payroll" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                    }`}
+                                    >
+                                    Payroll
+                                    </Link>
                                     </li>
                                     <li>
-                                        <Link to="/admin-dashboard/hr/employees" className="block p-2 hover:bg-[#5A8366] rounded-lg">Employee</Link>
+                                    <Link 
+                                    to="/admin-dashboard/hr/employees" 
+                                    className={`block p-2 rounded-lg ${
+                                        location.pathname === "/admin-dashboard/hr/employees" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                    }`}
+                                    >
+                                    Employee
+                                    </Link>
                                     </li>
                                 </ul>
                             )}
