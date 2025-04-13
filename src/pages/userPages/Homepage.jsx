@@ -96,7 +96,7 @@ const Homepage = () => {
 
       <div className='pt-10'>
         <div className='text-center mb-10'>
-          <p className='text-3xl font-semibold text-[#4c735c]'>Our Projects</p>
+          <p className='text-3xl font-semibold text-[#4c735c] mb-4'>Our Projects</p>
           <div className='grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto px-5'>
             {projects.map((project, index) => (
               <div key={index} className='bg-white p-6 shadow-lg rounded-lg text-center'>
