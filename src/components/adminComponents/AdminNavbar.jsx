@@ -27,6 +27,7 @@ const AdminNavbar = ({ children }) => {
         if (location.pathname.startsWith("/admin-dashboard/hr/attendance")) return "Attendance";
         if (location.pathname.startsWith("/admin-dashboard/hr/payroll")) return "Payroll";
         if (location.pathname.startsWith("/admin-dashboard/hr/employees")) return "Employee";
+        if (location.pathname.startsWith("/admin-dashboard/hr/payslip")) return "Payslip";
       
         // Other Admin Pages (Matches Against `menuItems`)
         const matchedPage = menuItems.find((item) => location.pathname === item.href)?.name;
@@ -105,6 +106,16 @@ const AdminNavbar = ({ children }) => {
                                     }`}
                                     >
                                     Payroll
+                                    </Link>
+                                    </li>
+                                    <li>
+                                    <Link 
+                                    to="/admin-dashboard/hr/payslip" 
+                                    className={`block p-2 rounded-lg ${
+                                        location.pathname === "/admin-dashboard/hr/payslip" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                    }`}
+                                    >
+                                    Payslip
                                     </Link>
                                     </li>
                                     <li>
