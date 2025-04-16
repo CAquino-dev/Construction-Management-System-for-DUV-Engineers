@@ -19,6 +19,7 @@ import { EmployeeAttendance } from './pages/admin/EmployeeAttendance';
 import { EmployeePayroll } from './pages/admin/EmployeePayroll';
 import { Finance } from './pages/admin/Finance';
 import { Payslip } from './pages/admin/Payslip';
+import { Inventory } from './pages/admin/Inventory';
 
 const App = () => {
   return (
@@ -49,6 +50,7 @@ const App = () => {
             <Route path='finance' element={<Finance/>} />
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
+            <Route path='inventory' element={<Inventory/>} />
         </Route>
         </Routes>
       </Router>
