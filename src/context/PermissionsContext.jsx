@@ -3,12 +3,17 @@ import { createContext, useContext, useEffect, useState } from "react";
 const PermissionsContext = createContext();
 
 export const PermissionsProvider = ({ children }) => {
-  const [permissions, setPermissions] = useState({});
+  const [permissions, setPermissions] = useState(null);
 
   useEffect(() => {
-    const storedPermissions = localStorage.getItem('permissions');
-    if (storedPermissions) {
-      setPermissions(JSON.parse(storedPermissions));
+    try {
+      const storedPermissions = localStorage.getItem('permissions');
+      if (storedPermissions) {
+        setPermissions(JSON.parse(storedPermissions));
+      }
+    } catch (error) {
+      console.error('Failed to parse permissions:', error);
+      setPermissions(null);
     }
   }, []);
   

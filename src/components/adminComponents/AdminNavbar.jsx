@@ -12,7 +12,6 @@ const AdminNavbar = ({ children }) => {
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
     const location = useLocation();
     const navigate = useNavigate();
-    console.log(permissions)
 
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen);
     const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);

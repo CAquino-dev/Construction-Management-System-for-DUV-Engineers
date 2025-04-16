@@ -1,19 +1,6 @@
 DATABASE NAME: duv
 TABLES:
 
-CREATE TABLE permissions (
-id INT AUTO_INCREMENT PRIMARY KEY,
-permission_name VARCHAR(100) NOT NULL UNIQUE
-);
-
-CREATE TABLE role_permissions (
-role_id INT,
-permission_id INT,
-PRIMARY KEY (role_id, permission_id),
-FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
-);
-
 {
 "name": "testClient",
 "email": "client@email",
@@ -62,68 +49,129 @@ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY (department_id) REFERENCES departments(id)
 );
 
--- 🔹 Departments Table
-CREATE TABLE departments (
-id INT PRIMARY KEY AUTO_INCREMENT,
-name VARCHAR(100) NOT NULL UNIQUE
-);
+tables:
+-- Create the database
+CREATE DATABASE duvtesting;
+USE duvtesting;
 
--- 🔹 Permissions Table
+-- Permissions Table
 CREATE TABLE permissions (
-role_name VARCHAR(50) PRIMARY KEY,
-can_access_user ENUM('Y', 'N') DEFAULT 'N',
-can_edit_user ENUM('Y', 'N') DEFAULT 'N',
-can_delete_user ENUM('Y', 'N') DEFAULT 'N',
-can_view_reports ENUM('Y', 'N') DEFAULT 'N',
-can_manage_roles ENUM('Y', 'N') DEFAULT 'N',
-can_access_finance ENUM('Y', 'N') DEFAULT 'N'
+id INT AUTO_INCREMENT PRIMARY KEY,
+role_name VARCHAR(50),
+can_access_user ENUM('Y', 'N'),
+can_edit_user ENUM('Y', 'N'),
+can_delete_user ENUM('Y', 'N'),
+can_view_reports ENUM('Y', 'N'),
+can_manage_roles ENUM('Y', 'N'),
+can_access_finance ENUM('Y', 'N'),
+can_access_hr ENUM('Y', 'N'),
+can_access_projects ENUM('Y', 'N'),
+can_create_project ENUM('Y', 'N'),
+can_update_project_status ENUM('Y', 'N'),
+can_view_clients ENUM('Y', 'N'),
+can_edit_clients ENUM('Y', 'N'),
+can_view_payments ENUM('Y', 'N'),
+can_manage_payments ENUM('Y', 'N'),
+can_manage_schedule ENUM('Y', 'N'),
+can_view_attendance ENUM('Y', 'N'),
+can_manage_attendance ENUM('Y', 'N')
 );
 
--- 🔹 Projects Table
-CREATE TABLE projects (
-id INT PRIMARY KEY AUTO_INCREMENT,
-name VARCHAR(255) NOT NULL,
+-- Departments Table
+CREATE TABLE departments (
+id INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(100),
 description TEXT,
-start_date DATE,
-end_date DATE,
-budget DECIMAL(15,2),
-status ENUM('Planned', 'In Progress', 'Completed', 'On Hold') DEFAULT 'Planned',
-assigned_department INT,
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (assigned_department) REFERENCES departments(id)
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- 🔹 Clients Table
-CREATE TABLE clients (
-id INT PRIMARY KEY AUTO_INCREMENT,
-name VARCHAR(255) NOT NULL,
-email VARCHAR(100) UNIQUE NOT NULL,
+-- Users Table
+CREATE TABLE users (
+id INT AUTO_INCREMENT PRIMARY KEY,
+username VARCHAR(50),
+email VARCHAR(100),
+full_name VARCHAR(255),
+password VARCHAR(255),
 phone VARCHAR(20),
 address TEXT,
+company_name VARCHAR(100),
+profile_picture VARCHAR(255),
+role ENUM('Client', 'Employee', 'Admin'),
+role_id INT,
+department_id INT,
+status ENUM('Active', 'Inactive'),
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (role_id) REFERENCES permissions(id),
+FOREIGN KEY (department_id) REFERENCES departments(id)
+);
+
+-- Clients Table
+CREATE TABLE clients (
+id INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(100),
+email VARCHAR(100),
+password_hash VARCHAR(100),
+phone VARCHAR(20),
+address TEXT,
+status ENUM('Active', 'Inactive'),
+company_name VARCHAR(100),
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 🔹 Tasks Table
-CREATE TABLE tasks (
-id INT PRIMARY KEY AUTO_INCREMENT,
-project_id INT NOT NULL,
-assigned_to INT NOT NULL,
-task_name VARCHAR(255) NOT NULL,
-task_description TEXT,
-due_date DATE,
-status ENUM('Pending', 'In Progress', 'Completed') DEFAULT 'Pending',
+-- Employee Salary Table (linked to users now)
+CREATE TABLE employee_salary (
+id INT AUTO_INCREMENT PRIMARY KEY,
+employee_id INT,
+fixed_salary DECIMAL(10,2),
+bonus DECIMAL(10,2),
+deductions DECIMAL(10,2),
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (project_id) REFERENCES projects(id),
-FOREIGN KEY (assigned_to) REFERENCES employees(id)
+FOREIGN KEY (employee_id) REFERENCES users(id)
 );
 
--- 🔹 Payments Table
-CREATE TABLE payments (
-id INT PRIMARY KEY AUTO_INCREMENT,
-client_id INT NOT NULL,
-amount DECIMAL(15,2) NOT NULL,
-payment_date DATE NOT NULL,
-status ENUM('Pending', 'Completed', 'Failed') DEFAULT 'Pending',
+-- Attendance Table (linked to users now)
+CREATE TABLE attendance (
+id INT AUTO_INCREMENT PRIMARY KEY,
+employee_id INT,
+check_in DATETIME,
+check_out DATETIME,
+status ENUM('Present', 'Absent', 'Late'),
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (client_id) REFERENCES clients(id)
+work_date DATE,
+FOREIGN KEY (employee_id) REFERENCES users(id)
 );
+
+-- Payroll Table (linked to users now)
+CREATE TABLE payroll (
+id INT AUTO_INCREMENT PRIMARY KEY,
+employee_id INT,
+period_start DATE,
+period_end DATE,
+total_hours_worked DECIMAL(10,2),
+calculated_salary DECIMAL(10,2),
+status ENUM('Pending', 'Approved by HR', 'Rejected by HR', 'Paid', 'Rejected by Finance'),
+generated_by INT,
+generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+approved_by INT,
+approved_by_hr_at DATETIME,
+paid_by INT,
+paid_by_finance_at DATETIME,
+rejected_by INT,
+rejected_by_finance_at DATETIME,
+remarks TEXT,
+FOREIGN KEY (employee_id) REFERENCES users(id),
+FOREIGN KEY (generated_by) REFERENCES users(id),
+FOREIGN KEY (approved_by) REFERENCES users(id),
+FOREIGN KEY (paid_by) REFERENCES users(id),
+FOREIGN KEY (rejected_by) REFERENCES users(id)
+);
+
+CREATE TABLE payslips (
+id INT PRIMARY KEY AUTO_INCREMENT,
+title VARCHAR(255) NOT NULL,
+created_by INT NOT NULL, -- HR user ID
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE payroll ADD COLUMN payslip_id INT DEFAULT NULL;

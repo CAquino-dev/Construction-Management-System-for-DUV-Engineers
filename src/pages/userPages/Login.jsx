@@ -1,49 +1,63 @@
 import React, { useState } from 'react'
 import img1 from '../../assets/img1.png'
+import { useNavigate } from 'react-router';
+import { usePermissions } from '../../context/PermissionsContext';
 
 const Login = () => {
 
-    const [loginForm, setLoginForm] = useState({
-      username: "",
-      password: "",
-    });
-    
-    const [error, setError] = useState(""); 
-    const [success, setSuccess] = useState("");
+  const navigate = useNavigate(); 
+  const { setPermissions } = usePermissions();
 
-    const handleChange = (e) => {
-      setLoginForm({ ...loginForm, [e.target.name]: e.target.value });
-    }
-    
+  const [loginForm, setLoginForm] = useState({
+    username: "",
+    password: "",
+  });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const [error, setError] = useState(""); 
+  const [success, setSuccess] = useState("");
 
-        try {
-          const response = await fetch(`http://localhost:5000/api/auth/login`, {
-            method:'POST',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username: loginForm.username,
-              password: loginForm.password
-            }),
-          });
-          const data = await response.json();
-          const permissions = data.results;
-          if(response.ok){
-            setSuccess("Login Successful")
-            setTimeout(() => setSuccess(""), 3000);
-            setLoginForm({ username: "", password: "" });
-            localStorage.setItem("permission", JSON.stringify(permissions));
-          }else{
-            setError(data.error || "Login failed");
-            setTimeout(() => setError(""), 3000);
-          }
-        } catch (error) {
-          setError("Server error. Please try again.");
-          setTimeout(() => setError(""), 3000);
+  const handleChange = (e) => {
+    setLoginForm({ ...loginForm, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/auth/login`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginForm.username,
+          password: loginForm.password
+        }),
+      });
+      const data = await response.json();
+      console.log(data)
+      if(response.ok){
+        setSuccess("Login Successful")
+        setTimeout(() => setSuccess(""), 3000);
+        setLoginForm({ username: "", password: "" });
+        console.log('usertype', data.userType)
+        if(data.userType === "Employee"){
+          setPermissions(data.permissions);
+          localStorage.setItem("permissions", JSON.stringify(data.permissions));
+          localStorage.setItem("userId", JSON.stringify(data.userId));
+          navigate('/admin-dashboard');
+        }else{
+          navigate('/');
         }
+      }else{
+        setError(data.error || "Login failed");
+        setTimeout(() => setError(""), 3000);
+      }
+    } catch (error) {
+      console.log(error);
+      setError("Server error. Please try again.");
+      setTimeout(() => setError(""), 3000);
     }
+
+  }
 
   return (
     <div className='p-8 flex items-center justify-center min-h-screen bg-cover bg-center relative' style = {{backgroundImage: `url(${img1})`}}>
@@ -53,9 +67,9 @@ const Login = () => {
           <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
             <input
             name='username' 
-            type="text" 
+            type="email" 
             value={loginForm.username}
-            placeholder='Username'
+            placeholder='Email'
             onChange={handleChange}
             className='p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4c735c]'
             />

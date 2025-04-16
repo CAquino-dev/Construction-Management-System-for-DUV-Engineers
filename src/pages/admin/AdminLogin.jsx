@@ -22,11 +22,11 @@ const AdminLogin = () => {
       e.preventDefault();
 
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/employeeLogin`, {
+        const response = await fetch(`http://localhost:5000/api/auth/login`, {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            username: loginForm.username,
+            email: loginForm.username,
             password: loginForm.password
           }),
         });
@@ -36,11 +36,15 @@ const AdminLogin = () => {
           setSuccess("Login Successful")
           setTimeout(() => setSuccess(""), 3000);
           setLoginForm({ username: "", password: "" });
-          setPermissions(data.results);
-          localStorage.setItem("permissions", JSON.stringify(data.results));
-          localStorage.setItem("userId", JSON.stringify(data.userId));
-          console.log('userID:', data.userId)
-          navigate('/admin-dashboard');
+          console.log('usertype', data.userType)
+          if(data.userType === "Employee"){
+            setPermissions(data.permissions);
+            localStorage.setItem("permissions", JSON.stringify(data.permissions));
+            localStorage.setItem("userId", JSON.stringify(data.userId));
+            navigate('/admin-dashboard');
+          }else{
+            navigate('/');
+          }
         }else{
           setError(data.error || "Login failed");
           setTimeout(() => setError(""), 3000);

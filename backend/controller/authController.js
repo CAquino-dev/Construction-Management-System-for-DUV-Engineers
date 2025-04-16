@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const db = require("../config/db");
 require("dotenv").config();
 
+//working
 const registerUser = async (req, res) => {
     const { name, email, phone, address, password } = req.body;
 
@@ -15,7 +16,7 @@ const registerUser = async (req, res) => {
 
         console.log("hashed password:", hashPassword);
 
-        const query = "INSERT INTO clients (name, email, phone, address, password_hash ) values (?, ?, ?, ?, ? )";
+        const query = "INSERT INTO users (full_name, email, phone, address, password ) values (?, ?, ?, ?, ? )";
         db.query(query, [name, email, phone, address, hashPassword ], (err, results) => {
             if (err) {
                 return res.status(500).json({ error: err.message })
@@ -27,77 +28,61 @@ const registerUser = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ error: "error hashing password" })
     }
-
 }
+//working
+const Login = (req, res) => {
+    const { email, password } = req.body;
 
-const employeeLogin = (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.status(500).json({ error: "All fields are required" })
+    if (!email || !password) {
+        return res.status(400).json({ error: "All fields are required" });
     }
 
-    const query = "SELECT * FROM employees WHERE username = ?";
-    db.query(query, [username], async (err, results) => {
-        if (err) return res.status(500).json({ error: "database error!" })
+    const query = "SELECT * FROM users WHERE email = ?";
+    db.query(query, [email], async (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error!" });
 
         if (results.length === 0) {
-            return res.status(500).json({ error: "invalid username or password" })
+            return res.status(401).json({ error: "Invalid email or password" });
         }
 
         const user = results[0];
-
         const isMatch = await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
-            return res.status(401).json({ error: "Invalid Username or Password" })
+            return res.status(401).json({ error: "Invalid email or password" });
         }
 
+        // If the user has no role_id (i.e., a client), return without permissions
+        if (!user.role_id) {
+            return res.json({
+                message: "Login successful",
+                userId: user.id,
+                userType: "Client",
+                permissions: null
+            });
+        }
+
+        // Otherwise fetch permissions for employee
         const permissionQuery = `
-        SELECT * FROM permissions WHERE id = (SELECT role_id FROM employees WHERE id = ?);`;
+            SELECT * FROM permissions WHERE id = ?;
+        `;
 
-        db.query(permissionQuery, [user.id], (err, results) => {
+        db.query(permissionQuery, [user.role_id], (err, results) => {
             if (err) return res.status(500).json({ error: "Failed to fetch permissions" });
-            const permissionData = results[0];
 
+            const permissionData = results[0];
             delete permissionData.id;
             delete permissionData.role_name;
 
-            res.json({message: "Login Successful", results: permissionData, userId: user.id});
-        })
-
-    })
-}
-
-
-    const clientLogin = (req, res) => {
-        const {email, password} = req.body;
-
-        const query = 'SELECT * FROM clients WHERE email = ?'
-
-        db.query(query, [email], async (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: "Database error" });
-            }
-    
-            if (results.length === 0) {
-                return res.status(401).json({ error: "Invalid Username or Password" });
-            }
-
-            const user = results[0];
-
-            const isMatch = await bcrypt.compare(password, user.password_hash)
-            if (!isMatch) {
-                return res.status(401).json({ error: "Invalid Username or Password" });
-            }
-
             res.json({
-                message: "User logged in successfully"
-            })
-
+                message: "Login successful",
+                userId: user.id,
+                userType: "Employee",
+                permissions: permissionData
+            });
         });
+    });
+};
 
-        
-    }
 
-module.exports = { registerUser, employeeLogin, clientLogin };
+module.exports = { registerUser, Login };

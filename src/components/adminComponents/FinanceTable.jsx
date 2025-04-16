@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { Eye, DotsThree } from "@phosphor-icons/react";
 import { FinanceModal } from "./FinanceModal";
@@ -15,6 +15,37 @@ export const FinanceTable = () => {
   const [selectedRecords, setSelectedRecords] = useState([]); 
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(null);
+
+  useEffect(() => {
+    const fetchFinanceRecords = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/finance/getFInance');
+        const data = await response.json();
+        console.log('finance records', data);
+        if(response.ok){
+          const formatted = data.map((record) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            payroll_id: record.payroll_id,
+            employee_id: record.employee_id,
+            fullname: record.employee_name,
+            period_start: new Date(record.period_start).toLocaleDateString(),
+            period_end: new Date(record.period_end).toLocaleDateString(),
+            hours_worked: record.total_hours_worked,
+            salary: record.calculated_salary,
+            status: record.status,
+            approved_by: record.approved_by_hr,
+            approved_at: new Date(record.approved_by_hr_at).toLocaleDateString(),
+            remarks: record.remarks,
+          }))
+          setFinanceRecords(formatted);
+        }
+      } catch (error) {
+        console.error("Error fetching payroll records:", error);
+      }
+    };
+    fetchFinanceRecords();
+
+  }, [])
 
   // Toggle individual checkbox selection
   const handleSelectRecord = (id) => {
@@ -33,18 +64,44 @@ export const FinanceTable = () => {
     }
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = financeRecords.map((record) =>
-      record.id === id ? { ...record, status: newStatus } : record
-    );
-    setFinanceRecords(updated);
+  
+
+  const updateStatus = async (id, newStatus) => {
+
+    console.log('payrollId:', id)
+    console.log('status', newStatus)
+    const userId = localStorage.getItem('userId'); 
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/finance/payroll/update-status', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, newStatus, userId }),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        // If the status is updated successfully, update the local state
+        const updated = financeRecords.map((record) =>
+          record.payroll_id === id ? { ...record, status: newStatus } : record
+        );
+        setFinanceRecords(updated);
+      } else {
+        console.error("Error updating status:", data.error);
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
   };
+  
 
   const getDropdownOptions = (status) => {
-    const allOptions = ["View", "Paid", "Rejected"];
+    const allOptions = ["View", "Paid", "Rejected by Finance"];
     return allOptions.filter((option) => {
       if (option === "Paid" && status === "Paid") return false;
-      if (option === "Rejected" && status === "Rejected") return false;
+      if (option === "Rejected by Finance" && status === "Rejected by Finance") return false;
       return true;
     });
   }
@@ -63,6 +120,7 @@ export const FinanceTable = () => {
                   className="cursor-pointer"
                 />
               </TableHead>
+              <TableHead className="text-center text-white">Payroll ID</TableHead>
               <TableHead className="text-center text-white">Employee ID</TableHead>
               <TableHead className="text-center text-white">Fullname</TableHead>
               <TableHead className="text-center text-white">Period Start</TableHead>
@@ -85,6 +143,7 @@ export const FinanceTable = () => {
                     className="cursor-pointer"
                   />
                 </TableCell>
+                <TableCell className="text-center p-2">{record.id}</TableCell>
                 <TableCell className="text-center p-2">{record.employee_id}</TableCell>
                 <TableCell className="text-center p-2">{record.fullname}</TableCell>
                 <TableCell className="text-center p-2">{record.period_start}</TableCell>
@@ -93,11 +152,12 @@ export const FinanceTable = () => {
                 <TableCell className="text-center p-2">₱{record.salary}</TableCell>
                 <TableCell className="text-center p-2">
                   <p className={`text-center text-xs p-2 font-semibold rounded-md ${
-                    record.status === "Paid"
+                    record.status === "Paid" || record.status === "Approved by HR"
                       ? "bg-green-100 text-green-800"
                       : record.status === "Pending"
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-red-100 text-red-800"
+                      
                   }`}>
                     {record.status}
                   </p>
@@ -118,7 +178,7 @@ export const FinanceTable = () => {
                         key={option} 
                         onClick={() => {
                           if (option === "View") setSelectedRecord(record);
-                          else updateStatus(record.id, option);
+                          else updateStatus(record.payroll_id, option);
                         }}>{option}
                         </button>
                       ))}

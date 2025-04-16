@@ -27,4 +27,34 @@ const getFinance = (req, res) => {
     })
 }
 
-module.exports = { getFinance };
+const updatePayrollStatus = (req, res) => {
+    const { id, newStatus, userId } = req.body;
+  
+    if (!id || !newStatus || !userId) {
+      return res.status(400).json({ error: "Missing id, newStatus, or userId" });
+    }
+  
+    let query = "UPDATE payroll SET status = ?, ";
+    let values = [];
+  
+    if (newStatus === "Paid") {
+      query += "paid_by = ?, paid_by_finance_at = NOW() WHERE id = ?";
+      values = [newStatus, userId, id];
+    } else if (newStatus === "Rejected by Finance") {
+      query += "rejected_by_finance = ?, rejected_at = NOW() WHERE id = ?";
+      values = [newStatus, userId, id];
+    } else {
+      // For other statuses, just update the status field
+      query += "WHERE id = ?";
+      values = [newStatus, id];
+    }
+  
+    db.query(query, values, (err, results) => {
+      if (err) return res.status(500).json({ error: "Failed to update payroll status" });
+      res.json({ message: "Status updated successfully" });
+    });
+  };
+  
+
+
+module.exports = { getFinance, updatePayrollStatus };
