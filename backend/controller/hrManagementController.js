@@ -245,9 +245,9 @@ const updatePayrollStatus = (req, res) => {
 };
 
 const createPayslip = (req, res) => {
-    const { title, startDate, endDate } = req.body;
+    const { createdBy, title, startDate, endDate } = req.body;
 
-    if (!title || !startDate || !endDate) {
+    if (!createdBy || !title || !startDate || !endDate) {
         return res.status(400).json({ error: "Title, startDate, and endDate are required." });
     }
 
@@ -269,9 +269,9 @@ const createPayslip = (req, res) => {
 
         // Step 2: Insert into payslip table
         const payslipInsert = `
-            INSERT INTO payslip (title, period_start, period_end) VALUES (?, ?, ?)
-        `;
-        db.query(payslipInsert, [title, startDate, endDate], (err, result) => {
+            INSERT INTO payslip (title, period_start, period_end, created_by) VALUES (?, ?, ?, ?)
+      `;
+        db.query(payslipInsert, [title, startDate, endDate, createdBy], (err, result) => {
             if (err) {
                 console.error("Error creating payslip:", err);
                 return res.status(500).json({ error: "Failed to create payslip." });
@@ -301,8 +301,32 @@ const createPayslip = (req, res) => {
     });
 };
 
+const getPayslips = (req, res) => {
+    const query = `
+      SELECT 
+        ps.id, 
+        ps.title, 
+        ps.period_start, 
+        ps.period_end, 
+        ps.created_at,
+        u.full_name AS created_by_name
+      FROM payslip ps
+      LEFT JOIN users u ON ps.created_by = u.id
+      ORDER BY ps.created_at DESC
+    `;
+  
+    db.query(query, (err, results) => {
+      if (err) {
+        console.error("Fetch payslips error:", err);
+        return res.status(500).json({ error: "Failed to fetch payslips" });
+      }
+      res.json(results);
+    });
+  };
+  
 
 
 
 
-module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, createPayslip};
+
+module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, createPayslip, getPayslips};

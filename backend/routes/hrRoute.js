@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 
-const { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, createPayslip} = require('../controller/hrManagementController');
+const { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, createPayslip, getPayslips} = require('../controller/hrManagementController');
 
 router.get('/getSalary', getEmployeeSalary);
 router.get('/payroll', getPayrollRecords);
+router.get('/getPayslips', getPayslips);
 router.get('/employeeAttendance', getEmployeeAttendance);
 router.post('/getPresentEmployees', getPresentEmployee);
 router.post('/calculateSalary', calculateEmployeeSalary);
