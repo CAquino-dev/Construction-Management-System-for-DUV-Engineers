@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { List, X, UserCheck, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
+import { List, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
 import { Link, useLocation } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 
@@ -20,6 +20,7 @@ const AdminNavbar = ({ children }) => {
         { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects" },
         { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
+        { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
     ];
 
     const currentPage = (() => {
