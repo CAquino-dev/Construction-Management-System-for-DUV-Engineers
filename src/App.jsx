@@ -10,6 +10,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import { UserManagement } from './pages/admin/UserManagement';
 import {OurTeam} from './pages/userPages/OurTeam';
 import {AboutUs} from './pages/userPages/AboutUs';
+import { ReportProblem } from './pages/userPages/ReportProblem';
 import {HR} from './pages/admin/HR'
 import {Projects} from './pages/admin/Projects'
 import { EmployeeManagement } from './pages/admin/EmployeeManagement';
@@ -17,6 +18,8 @@ import { PermissionsProvider } from './context/PermissionsContext';
 import { EmployeeAttendance } from './pages/admin/EmployeeAttendance';
 import { EmployeePayroll } from './pages/admin/EmployeePayroll';
 import { Finance } from './pages/admin/Finance';
+import { Payslip } from './pages/admin/Payslip';
+import { Inventory } from './pages/admin/Inventory';
 
 const App = () => {
   return (
@@ -29,6 +32,8 @@ const App = () => {
             <Route path='register' element={<Register/>} />
             <Route path='our-team' element={<OurTeam/>} />
             <Route path='aboutus' element={<AboutUs/>} />
+            <Route path='report-problem' element={<ReportProblem/>} />
+
           </Route>
 
           {/* Admin Routes */}
@@ -40,9 +45,11 @@ const App = () => {
             <Route path='hr/employees' element={<HR/>} />
             <Route path='hr/attendance' element={<EmployeeAttendance/>} />
             <Route path='hr/payroll' element={<EmployeePayroll/>} />
+            <Route path='hr/payslip' element={<Payslip/>} />
             <Route path='finance' element={<Finance/>} />
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
+            <Route path='inventory' element={<Inventory/>} />
         </Route>
         </Routes>
       </Router>

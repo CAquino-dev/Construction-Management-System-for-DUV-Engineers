@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { List, X, UserCheck, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
+import { List, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
@@ -24,6 +24,7 @@ const AdminNavbar = ({ children }) => {
         { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects", permission: "can_access_projects" },
         { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
+        { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
     ];
 
     const currentPage = (() => {
@@ -31,6 +32,7 @@ const AdminNavbar = ({ children }) => {
         if (location.pathname.startsWith("/admin-dashboard/hr/attendance")) return "Attendance";
         if (location.pathname.startsWith("/admin-dashboard/hr/payroll")) return "Payroll";
         if (location.pathname.startsWith("/admin-dashboard/hr/employees")) return "Employee";
+        if (location.pathname.startsWith("/admin-dashboard/hr/payslip")) return "Payslip";
       
         // Other Admin Pages (Matches Against `menuItems`)
         const matchedPage = menuItems.find((item) => location.pathname === item.href)?.name;
@@ -123,6 +125,16 @@ const AdminNavbar = ({ children }) => {
                                     }`}
                                     >
                                     Payroll
+                                    </Link>
+                                    </li>
+                                    <li>
+                                    <Link 
+                                    to="/admin-dashboard/hr/payslip" 
+                                    className={`block p-2 rounded-lg ${
+                                        location.pathname === "/admin-dashboard/hr/payslip" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                    }`}
+                                    >
+                                    Payslip
                                     </Link>
                                     </li>
                                     <li>
