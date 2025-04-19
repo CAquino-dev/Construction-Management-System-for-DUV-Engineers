@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { List, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
+import { usePermissions } from "../../context/PermissionsContext";
 
 const AdminNavbar = ({ children }) => {
+    const { permissions } = usePermissions();
+    const { setPermissions } = usePermissions();
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
     const location = useLocation();
+    const navigate = useNavigate();
 
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen);
     const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);
@@ -15,10 +19,10 @@ const AdminNavbar = ({ children }) => {
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
-        { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management" },
-        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees" },
-        { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects" },
-        { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance" },
+        { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
+        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
+        { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects", permission: "can_access_projects" },
+        { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
         { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
     ];
@@ -35,6 +39,18 @@ const AdminNavbar = ({ children }) => {
         
         return matchedPage || "Dashboard"; // Default fallback remains "Dashboard"
       })();
+      
+
+    const handleLogout = () => {
+        // Clear permissions in the context
+        setPermissions({});  // Reset permissions state
+      
+        // Clear permissions from localStorage
+        localStorage.removeItem('permissions');
+      
+        // Redirect to login page or home page
+        navigate('/login');  // Example redirection
+      };
       
 
     return (
@@ -54,7 +70,7 @@ const AdminNavbar = ({ children }) => {
 
                 {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
-                    <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full">Logout</button>
+                    <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full" >Logout</button>
                     </div>
                 )}
                 </div>
@@ -66,7 +82,9 @@ const AdminNavbar = ({ children }) => {
                         <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
                     </div>
                     <ul className="space-y-4">
-                        {menuItems.map((item, index) => (
+
+                        {menuItems.filter(item => !item.permission || permissions?.[item.permission] === "Y")
+                        .map((item, index) => (
                             <li key={index}>
                                 <Link 
                                 to={item.href} 
@@ -81,12 +99,12 @@ const AdminNavbar = ({ children }) => {
                         ))}
                         {/* Collapsible HR Section */}
                         <li>
-                            <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            { permissions.can_access_hr === 'Y' && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
                                 <span className="flex items-center gap-3 font-semibold">
                                     <UsersThree size={20} /> Human Resources
                                 </span>
                                 <CaretDown size={20} className={`transform transition-all ${isHrOpen ? "rotate-180" : ""}`} />
-                            </button>
+                            </button>}
                             {isHrOpen && (
                                 <ul className="pl-6 mt-2 space-y-2">
                                     <li>
@@ -135,7 +153,7 @@ const AdminNavbar = ({ children }) => {
                     </ul>
                 </div>
                 <div>
-                    <button className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg w-full">
+                    <button className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg w-full" onClick={handleLogout}>
                         <SignOut size={22} /> Logout
                     </button>
                 </div>

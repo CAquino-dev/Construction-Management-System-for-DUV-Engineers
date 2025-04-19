@@ -1,50 +1,73 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { Eye, DotsThree } from "@phosphor-icons/react";
 import { FinanceModal } from "./FinanceModal";
 
-const initialFinanceRecords = [
-  { id: 1, employee_id: "M02489", fullname: "Ajay Lumari", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Paid", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
-  { id: 2, employee_id: "M02490", fullname: "Robert Young", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Rejected", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime"  },
-  { id: 3, employee_id: "M02509", fullname: "Elia Romero", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
-  { id: 4, employee_id: "M02510", fullname: "Liam Smith", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
-];
+// const initialFinanceRecords = [
+//   { id: 1, employee_id: "M02489", fullname: "Ajay Lumari", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Paid", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
+//   { id: 2, employee_id: "M02490", fullname: "Robert Young", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Rejected", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime"  },
+//   { id: 3, employee_id: "M02509", fullname: "Elia Romero", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
+//   { id: 4, employee_id: "M02510", fullname: "Liam Smith", period_start: "2025-07-01", period_end: "2025-07-31", hours_worked: 40, salary: 800, status: "Pending", hr_status: "Approved By Hr", approved_by: "John Doe", approved_at: "2025-07-15", remarks: "Overtime" },
+// ];
 
 export const FinanceTable = () => {
-  const [financeRecords, setFinanceRecords] = useState(initialFinanceRecords);
-  const [selectedRecords, setSelectedRecords] = useState([]); 
+  const [financeRecords, setFinanceRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(null);
 
-  // Toggle individual checkbox selection
-  const handleSelectRecord = (id) => {
-    setSelectedRecords((prevSelected) =>
-      prevSelected.includes(id)
-        ? prevSelected.filter((recordId) => recordId !== id) // Uncheck
-        : [...prevSelected, id] // Check
-    );
-  };
+  useEffect(() => {
+    const fetchFinanceRecords = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/finance/getApprovedPayslips');
+        const data = await response.json();
+        console.log(data.data)
+        setFinanceRecords(data.data);
+      } catch (error) {
+        console.error("Error fetching payroll records:", error);
+      }
+    };
+    fetchFinanceRecords();
 
-  const handleSelectAll = () => {
-    if (selectedRecords.length === financeRecords.length) {
-      setSelectedRecords([]); // Unselect all
-    } else {
-      setSelectedRecords(financeRecords.map((record) => record.id)); // Select all
+  }, [])
+  console.log('Finance Records: ', financeRecords)
+  
+
+  const updateStatus = async (id, newStatus) => {
+
+    console.log('payrollId:', id)
+    console.log('status', newStatus)
+    const userId = localStorage.getItem('userId'); 
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/finance/payroll/update-status', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, newStatus, userId }),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        // If the status is updated successfully, update the local state
+        const updated = financeRecords.map((record) =>
+          record.payroll_id === id ? { ...record, status: newStatus } : record
+        );
+        setFinanceRecords(updated);
+      } else {
+        console.error("Error updating status:", data.error);
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
     }
   };
-
-  const updateStatus = (id, newStatus) => {
-    const updated = financeRecords.map((record) =>
-      record.id === id ? { ...record, status: newStatus } : record
-    );
-    setFinanceRecords(updated);
-  };
+  
 
   const getDropdownOptions = (status) => {
-    const allOptions = ["View", "Paid", "Rejected"];
+    const allOptions = ["View", "Paid", "Rejected by Finance"];
     return allOptions.filter((option) => {
       if (option === "Paid" && status === "Paid") return false;
-      if (option === "Rejected" && status === "Rejected") return false;
+      if (option === "Rejected by Finance" && status === "Rejected by Finance") return false;
       return true;
     });
   }
@@ -55,53 +78,23 @@ export const FinanceTable = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-[#4c735c] text-white hover:bg-[#4c735c]">
-              <TableHead className="text-center">
-                <input
-                  type="checkbox"
-                  onChange={handleSelectAll}
-                  checked={selectedRecords.length === financeRecords.length}
-                  className="cursor-pointer"
-                />
-              </TableHead>
-              <TableHead className="text-center text-white">Employee ID</TableHead>
-              <TableHead className="text-center text-white">Fullname</TableHead>
-              <TableHead className="text-center text-white">Period Start</TableHead>
-              <TableHead className="text-center text-white">Period End</TableHead>
-              <TableHead className="text-center text-white">Hours Worked</TableHead>
-              <TableHead className="text-center text-white">Salary</TableHead>
-              <TableHead className="text-center text-white">Status</TableHead>
+              <TableHead className="text-center text-white">Title</TableHead>
+              <TableHead className="text-center text-white">Start</TableHead>
+              <TableHead className="text-center text-white">End</TableHead>
+              <TableHead className="text-center text-white">Created At</TableHead>
+              <TableHead className="text-center text-white">Created By</TableHead>
               <TableHead className="text-center text-white">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {financeRecords.map((record, index) => (
-              <TableRow key={record.id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
+              <TableRow key={record.payslip_id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
                 {/* Individual Checkbox */}
-                <TableCell className="text-center p-2">
-                  <input
-                    type="checkbox"
-                    onChange={() => handleSelectRecord(record.id)}
-                    checked={selectedRecords.includes(record.id)}
-                    className="cursor-pointer"
-                  />
-                </TableCell>
-                <TableCell className="text-center p-2">{record.employee_id}</TableCell>
-                <TableCell className="text-center p-2">{record.fullname}</TableCell>
-                <TableCell className="text-center p-2">{record.period_start}</TableCell>
-                <TableCell className="text-center p-2">{record.period_end}</TableCell>
-                <TableCell className="text-center p-2">{record.hours_worked}</TableCell>
-                <TableCell className="text-center p-2">₱{record.salary}</TableCell>
-                <TableCell className="text-center p-2">
-                  <p className={`text-center text-xs p-2 font-semibold rounded-md ${
-                    record.status === "Paid"
-                      ? "bg-green-100 text-green-800"
-                      : record.status === "Pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {record.status}
-                  </p>
-                </TableCell>
+                <TableCell className="text-center p-2">{record.title}</TableCell>
+                <TableCell className="text-center p-2">{new Date(record.period_start).toLocaleDateString()}</TableCell>
+                <TableCell className="text-center p-2">{new Date(record.period_end).toLocaleDateString()}</TableCell>
+                <TableCell className="text-center p-2">{new Date(record.payslip_created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-center p-2">{record.created_by_name}</TableCell>
                 <TableCell className="text-center p-2 relative">
                   <button
                     className="text-black hover:text-gray-600 cursor-pointer "
@@ -118,7 +111,7 @@ export const FinanceTable = () => {
                         key={option} 
                         onClick={() => {
                           if (option === "View") setSelectedRecord(record);
-                          else updateStatus(record.id, option);
+                          else updateStatus(record.payroll_id, option);
                         }}>{option}
                         </button>
                       ))}

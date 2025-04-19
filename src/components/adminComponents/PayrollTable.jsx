@@ -70,6 +70,76 @@ export const PayrollTable = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [hasSelectedDateRange, setHasSelectedDateRange] = useState(false);
+  const [startDate, setStartDate] = useState();
+  const [endDate, setEndDate] = useState();
+  const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
+  const [payslipTitle, setPayslipTitle] = useState("");
+
+  const userId = localStorage.getItem('userId');
+
+  const fetchPayrollRecords = async (from, to) => {
+    try {
+        const response = await fetch(`http://localhost:5000/api/hr/payroll?period_start=${from}&period_end=${to}`);
+        if (!response.ok) throw new Error("Failed to fetch payroll records");
+
+        const data = await response.json();
+        console.log(data);
+        if(response.ok){
+          const formatted = data.map((record) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            payrollId: record.id,
+            employeeId: record.employee_id,
+            fullName: record.full_name,
+            department: record.name,
+            fixedSalary: record.fixed_salary,
+            hoursWorked: record.total_hours_worked,
+            calculatedSalary: record.calculated_salary,
+            date: record.generated_at,
+            status: record.status,
+          }))
+          setFilteredRecords(formatted); // ✅ Update table with API response
+        }
+    } catch (error) {
+        console.error("Error fetching payroll records:", error);
+    }
+};
+
+const handleCreatePayslip = async () => {
+  console.log('title', payslipTitle);
+  console.log('start payslip', startDate);
+  console.log('end payslip', endDate);
+  if (!payslipTitle || !startDate || !endDate) {
+    alert("Title and date range are required.");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/api/hr/payslip/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: payslipTitle,
+        startDate: startDate,
+        endDate: endDate,
+        createdBy: userId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert("Payslip created successfully!");
+      setPayslipTitle("");
+      setIsPayslipModalOpen(false);
+    } else {
+      alert(data.error || "Error creating payslip.");
+    }
+  } catch (error) {
+    console.error("Error creating payslip:", error);
+    alert("Something went wrong.");
+  }
+};
+
 
   const handleSelectAll = (e) => {
     setSelectedRecords(
@@ -85,47 +155,124 @@ export const PayrollTable = () => {
     );
   };
 
-  const handleDateSelect = (range) => {
-    setDateRange(range);
+  const handleDateSelect = async (range) => {
     setHasSelectedDateRange(true);
-
+    setDateRange(range);
+    
     if (!range?.from || !range?.to) return;
 
     const formatDate = (date) =>
       `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    
+    // Example usage:
     const formattedFrom = formatDate(range.from);
     const formattedTo = formatDate(range.to);
+    setStartDate(formattedFrom)
+    setEndDate(formattedTo)
 
     const filtered = payrollRecords.filter(
       (record) => record.date >= formattedFrom && record.date <= formattedTo
     );
-
     setFilteredRecords(filtered);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/hr/calculateSalary', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          startDate: formattedFrom,
+          endDate: formattedTo,
+          generatedBy: userId
+        }),
+      });
+      const data = await response.json();
+      if(response.ok){
+        fetchPayrollRecords(formattedFrom, formattedTo);
+      }
+    } catch (error) {
+      setError("Server error. Please try again.");
+      setTimeout(() => setError(""), 3000);
+    }
+
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = payrollRecords.map((record) =>
-      record.id === id ? { ...record, status: newStatus } : record
-    );
-    setPayrollRecords(updated);
-    setFilteredRecords((prev) =>
-      prev.map((record) =>
-        record.id === id ? { ...record, status: newStatus } : record
-      )
-    );
-    setOpenMenuId(null);
-  };
+
+  const updateStatus = async (id, newStatus) => {
+    try {
+        const response = await fetch("http://localhost:5000/api/hr/payroll/update-status", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                selectedPayrollIds: [id], 
+                hrUserId: userId,
+                remarks: `Status updated to ${newStatus}`,
+                newStatus,
+            }),
+        });
+
+        const data = await response.json(); // Log backend response
+        console.log("API Response:", data); // ✅ Check for possible errors
+
+        if (!response.ok) throw new Error(data.error || "Failed to update payroll status");
+
+        // Proceed with UI update only if API succeeds
+        const updated = payrollRecords.map((record) =>
+          record.payrollId === id ? { ...record, status: newStatus } : record // ✅ Use payrollId
+      );
+      console.log('updated', updated);
+      fetchPayrollRecords(startDate, endDate); 
+
+      setOpenMenuId(null);
+    } catch (error) {
+        console.error("Error updating payroll status:", error);
+    }
+};
+
+const handleBulkStatusUpdate = async (newStatus) => {
+  if (selectedRecords.length === 0) return;
+
+  try {
+    // Map selected record IDs to payrollIds from filteredRecords
+    const selectedPayrollIds = filteredRecords
+      .filter((record) => selectedRecords.includes(record.payrollId))
+      .map((record) => record.payrollId);
+
+    console.log("Selected Payroll IDs:", selectedPayrollIds); // ✅ This should now give you the correct payrollIds
+
+    const response = await fetch("http://localhost:5000/api/hr/payroll/update-status", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        selectedPayrollIds,
+        hrUserId: 5,
+        remarks: `Bulk status update to ${newStatus}`,
+        newStatus,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error || "Failed to update payroll status");
+
+    fetchPayrollRecords(startDate, endDate); // Refresh table
+    setSelectedRecords([]); // Clear selected after update
+  } catch (error) {
+    console.error("Error in bulk update:", error);
+  }
+};
+
 
   const getDropdownOptions = (status) => {
-    const allOptions = ["View", "Approved", "Pending", "Reject"];
+    const allOptions = ["View", "Approved by HR", "Pending", "Rejected by HR"];
     return allOptions.filter((option) => {
-      if (option === "Approved" && status === "Approved") return false;
+      if (option === "Approved by HR" && status === "Approved by HR") return false;
       if (option === "Pending" && status === "Pending") return false;
-      if (option === "Reject" && status === "Rejected") return false;
+      if (option === "Rejected by HR" && status === "Rejected by HR") return false;
       return true;
     });
   };
 
+  console.log(selectedRecords)
   return (
     <div className="p-4">
       {/* Date Range Selector */}
@@ -136,9 +283,30 @@ export const PayrollTable = () => {
         >
           <CalendarBlank size={20} /> Select Date Range
         </button>
+
+        {selectedRecords.length > 0 && (
+            <select
+              className="border p-2 rounded-md"
+              onChange={(e) => handleBulkStatusUpdate(e.target.value)}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Update Status
+              </option>
+              <option value="Approved by HR">Approved by HR</option>
+              <option value="Pending">Pending</option>
+              <option value="Rejected by HR">Rejected by HR</option>
+            </select>
+         )}
         <button className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]">
           Export Payroll
         </button>
+        <button
+                className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+                onClick={() => setIsPayslipModalOpen(true)}
+              >
+                Create Payslip
+              </button>
       </div>
 
       {/* Calendar Dropdown */}
@@ -175,7 +343,6 @@ export const PayrollTable = () => {
                 <TableHead className="text-center text-white">Fixed Salary</TableHead>
                 <TableHead className="text-center text-white">Hours Worked</TableHead>
                 <TableHead className="text-center text-white">Calculated Salary</TableHead>
-                <TableHead className="text-center text-white">Status</TableHead>
                 <TableHead className="text-center text-white">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -185,27 +352,18 @@ export const PayrollTable = () => {
                   <TableCell className="text-center p-2">
                     <input
                       type="checkbox"
-                      onChange={() => handleSelectRecord(record.id)}
-                      checked={selectedRecords.includes(record.id)}
+                      onChange={() => handleSelectRecord(record.payrollId)}
+                      checked={selectedRecords.includes(record.payrollId)}
                     />
+                    
                   </TableCell>
                   <TableCell className="text-center p-2">{record.employeeId}</TableCell>
                   <TableCell className="text-center p-2">{record.fullName}</TableCell>
                   <TableCell className="text-center p-2">{record.department}</TableCell>
-                  <TableCell className="text-center p-2">₱{record.hourlyRate}</TableCell>
+                  <TableCell className="text-center p-2">₱{record.fixedSalary}</TableCell>
                   <TableCell className="text-center p-2">{record.hoursWorked}</TableCell>
                   <TableCell className="text-center p-2">₱{record.calculatedSalary}</TableCell>
-                  <TableCell className="text-center p-2">
-                    <p className={`text-center text-xs p-2 font-semibold rounded-md ${
-                      record.status === "Approved"
-                        ? "bg-green-100 text-green-800"
-                        : record.status === "Pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {record.status}
-                    </p>
-                  </TableCell>
+
                   <TableCell className="text-center relative p-2">
                     <div className="relative inline-block">
                       <button
@@ -224,7 +382,7 @@ export const PayrollTable = () => {
                               key={option}
                               onClick={() => {
                                 if (option === "View") setSelectedEmployee(record);
-                                else updateStatus(record.id, option);
+                                else updateStatus(record.payrollId, option);
                               }}
                               className="w-full text-left px-4 py-2 hover:bg-gray-100"
                             >
@@ -241,6 +399,38 @@ export const PayrollTable = () => {
           </Table>
         )}
       </div>
+
+      {isPayslipModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-md shadow-md w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Create Payslip</h2>
+            <input
+              type="text"
+              placeholder="Enter payslip title"
+              value={payslipTitle}
+              onChange={(e) => setPayslipTitle(e.target.value)}
+              className="w-full p-2 border rounded-md mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 bg-gray-300 rounded-md"
+                onClick={() => {
+                  setPayslipTitle("");
+                  setIsPayslipModalOpen(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-md"
+                onClick={handleCreatePayslip}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Employee Payroll Modal */}
       {selectedEmployee && (

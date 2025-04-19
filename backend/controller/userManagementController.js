@@ -2,16 +2,18 @@ const db = require("../config/db");
 
 const getEmployees = (req, res) => {
     const query =  `SELECT 
-    employees.id, 
-    employees.username, 
-    employees.full_name, 
-    employees.profile_picture, 
-    employees.role_id, 
-    employees.email,
-    employees.status,
+    users.id, 
+    users.username, 
+    users.full_name, 
+    users.profile_picture, 
+    users.role_id, 
+    users.email,
+    users.status,
     departments.name AS department_name
-    FROM employees
-    LEFT JOIN departments ON employees.department_id = departments.id;
+    FROM users
+    LEFT JOIN departments ON users.department_id = departments.id
+    WHERE users.role_id IS NOT NULL;
+;
 `
     db.query(query, (err, results) => {
         if (err) return res.status(500).json({ error: "Database error" });

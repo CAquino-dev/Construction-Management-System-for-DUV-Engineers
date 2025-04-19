@@ -1,7 +1,12 @@
 import React from "react";
 import { X } from "@phosphor-icons/react";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import {
+  DotsThree
+} from "@phosphor-icons/react";
 
 export const FinanceModal = ({ closeModal, record }) => {
+  console.log('record', record)
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[600px]">
@@ -15,44 +20,46 @@ export const FinanceModal = ({ closeModal, record }) => {
         </div>
 
         {/* Finance Details */}
-        <div className="grid grid-cols-2 gap-4 text-gray-800 overflow-y-auto max-h-[400px]">
-          <p><strong>Employee ID:</strong></p>
-          <p className="text-right">{record?.employee_id || "N/A"}</p>
+                <div className="space-y-3 flex-1 overflow-auto ">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-[#4c735c] text-white hover:bg-[#4c735c]">
+                        <TableHead className="text-center text-white">Employee Name</TableHead>
+                        <TableHead className="text-center text-white">Total Hours</TableHead>
+                        <TableHead className="text-center text-white">Salary</TableHead>
+                        <TableHead className="text-center text-white">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="overflow-y-auto max-h-[400px]">
+                      {record?.items?.length > 0 ? (
+                        record.items.map((record, index) => (
+                          <TableRow key={index} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
+                            <TableCell className="text-center">{record.employee_name}</TableCell>
+                            <TableCell className="text-center">{parseFloat(record.total_hours_worked).toFixed(2)}</TableCell>
+                            <TableCell className="text-center">₱{parseFloat(record.calculated_salary).toLocaleString()}</TableCell>
+                            <TableCell className="text-center p-2">
+                              <p className={`text-center text-xs p-2 font-semibold rounded-md ${
+                                record.status === "Approved"
+                                  ? "bg-green-100 text-green-800"
+                                  : record.status === "Pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}>
+                                {record.status}
+                              </p>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                        
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center p-4 text-gray-500">No matching employees</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
-          <p><strong>Employee Name:</strong></p>
-          <p className="text-right">{record?.fullname || "N/A"}</p>
-
-          <p><strong>Period Start:</strong></p>
-          <p className="text-right">{record?.period_start || "N/A"}</p>
-
-          <p><strong>Period End:</strong></p>
-          <p className="text-right">{record?.period_end || "N/A"}</p>
-
-          <p><strong>Hours Worked:</strong></p>
-          <p className="text-right">{record?.hours_worked || "0"} hrs</p>
-
-          <p><strong>Salary:</strong></p>
-          <p className="text-right">₱{record?.salary || "0.00"}</p>
-
-          <p><strong>Status:</strong></p>
-          <p className={`text-right font-semibold ${record?.status === "Pending" ? "text-yellow-500" : "Paid" ? "text-green-500" : "text-gray-500"}`}>
-            {record?.status || "N/A"}
-          </p>
-
-          <p><strong>HR Status:</strong></p>
-          <p className={`text-right font-semibold ${record?.status === "Pending" ? "text-yellow-500" : "Approved By Hr" ? "text-green-500" : "text-gray-500"}`}>
-            {record?.hr_status || "N/A"}
-          </p>
-
-          <p><strong>Approved By (HR):</strong></p>
-          <p className="text-right">{record?.approved_by || "N/A"}</p>
-
-          <p><strong>Approved At:</strong></p>
-          <p className="text-right">{record?.approved_at || "N/A"}</p>
-
-          <p><strong>Remarks:</strong></p>
-          <p className="text-right">{record?.remarks || "No remarks"}</p>
-        </div>
 
         {/* Close Button */}
         <div className="flex justify-end mt-6">

@@ -2,6 +2,11 @@ const bcrypt = require("bcrypt");
 const db = require("../config/db");
 require("dotenv").config();
 
+
+const setStatusInactive = (req, res) => {
+    const query = '';
+}
+//working
 const addEmployee = async (req, res) => {
     const { username, email, fullname, password, role_id, department_id } = req.body;
     
@@ -15,7 +20,7 @@ const addEmployee = async (req, res) => {
     
             console.log("hashed password:", hashPassword);
     
-            const query = "INSERT INTO employees (username, email, full_name, password, role_id, department_id) values (?, ?, ?, ?, ?, ?)";
+            const query = "INSERT INTO users (username, email, full_name, password, role_id, department_id) values (?, ?, ?, ?, ?, ?)";
             db.query(query, [username, email, fullname, hashPassword, role_id, department_id], (err, results) => {
                 if (err) {
                     return res.status(500).json({ error: err.message })
@@ -27,12 +32,6 @@ const addEmployee = async (req, res) => {
         } catch (error) {
             return res.status(500).json({ error: "error hashing password" })
         }
-
-    const setStatusInactive = (req, res) => {
-        const query = '';
-    }
-    
-
 }
 
 

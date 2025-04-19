@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router';
 import { usePermissions } from '../../context/PermissionsContext';
 
 const AdminLogin = () => {
+    const navigate = useNavigate(); 
     const { setPermissions } = usePermissions();
 
     const [loginForm, setLoginForm] = useState({
@@ -20,26 +22,35 @@ const AdminLogin = () => {
       e.preventDefault();
 
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/adminLogin`, {
+        const response = await fetch(`http://localhost:5000/api/auth/login`, {
           method: 'POST',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            username: loginForm.username,
+            email: loginForm.username,
             password: loginForm.password
           }),
         });
         const data = await response.json();
-        setPermissions(data.results.map((perm) => perm.permission_name));
         console.log(data)
         if(response.ok){
           setSuccess("Login Successful")
           setTimeout(() => setSuccess(""), 3000);
           setLoginForm({ username: "", password: "" });
+          console.log('usertype', data.userType)
+          if(data.userType === "Employee"){
+            setPermissions(data.permissions);
+            localStorage.setItem("permissions", JSON.stringify(data.permissions));
+            localStorage.setItem("userId", JSON.stringify(data.userId));
+            navigate('/admin-dashboard');
+          }else{
+            navigate('/');
+          }
         }else{
           setError(data.error || "Login failed");
           setTimeout(() => setError(""), 3000);
         }
       } catch (error) {
+        console.log(error);
         setError("Server error. Please try again.");
         setTimeout(() => setError(""), 3000);
       }

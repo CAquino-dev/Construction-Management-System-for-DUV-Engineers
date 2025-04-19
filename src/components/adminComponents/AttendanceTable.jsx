@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table"; // Adjust path if needed
 import { ImportAttendanceModal } from "../../components/adminComponents/ImportAttendanceModal";
 
@@ -9,22 +9,90 @@ const attendanceRecords = [
 ];
 
 export const AttendanceTable = () => {
+
+
   const [selectedDate, setSelectedDate] = useState("");
   const [filteredRecords, setFilteredRecords] = useState(attendanceRecords);
   const [isImportOpen, setIsImportOpen] = useState(false); // Modal state
 
-  const handleSearch = () => {
+  useEffect(() => {
+    
+    const fetchUserAttendance = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/hr/employeeAttendance');
+        const data = await response.json();
+        console.log(data);
+        if(response.ok){
+          const formatted = data.map((record) => ({
+            id: record.employee_id,
+            name: record.full_name,
+            clockIn: record.check_in !== null ? new Date(record.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "-",
+            clockOut: record.check_out
+              ? new Date(record.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : "-",
+            timeCount: record.hours_worked !== null ? record.hours_worked : "-",
+            status: record.attendance_status,
+            date: selectedDate,
+          }));
+          setFilteredRecords(formatted);
+        }else{
+          console.log(`error in fetching data`)
+        }
+      } catch (error) {
+        console.log('error fetching users:', error)
+      }
+    }
+
+    fetchUserAttendance();
+  }, [])
+
+  const handleSearch = async () => {
     if (selectedDate) {
       setFilteredRecords(attendanceRecords.filter((record) => record.date === selectedDate));
     } else {
       setFilteredRecords(attendanceRecords);
     }
+    console.log(selectedDate)
+    try {
+      const response = await fetch(`http://localhost:5000/api/hr/getPresentEmployees`, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: selectedDate
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Transform backend data to match table format
+        const formatted = data.map((record) => ({
+          id: record.employee_id,
+          name: record.full_name,
+          clockIn: new Date(record.check_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          clockOut: record.check_out
+            ? new Date(record.check_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : "-",
+          timeCount: record.hours_worked !== null ? record.hours_worked : "-",
+          status: record.attendance_status,
+          date: selectedDate,
+        }));
+  
+        setFilteredRecords(formatted);
+      }else{
+        console.log(`error in fetching data`)
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
   };
+
+
 
   // Format date to "Monday, 10 July 2025"
   const formattedDate = selectedDate
     ? new Intl.DateTimeFormat("en-US", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }).format(new Date(selectedDate))
     : "All Dates";
+    
 
   return (
     <div className="p-4">
@@ -82,7 +150,7 @@ export const AttendanceTable = () => {
                 <TableCell className="p-2 text-center hidden sm:table-cell">{record.clockIn}</TableCell>
                 <TableCell className="p-2 text-center hidden sm:table-cell">{record.clockOut}</TableCell>
                 <TableCell className="p-2 text-center hidden sm:table-cell">{record.timeCount}</TableCell>
-                <TableCell className={`p-2 text-center font-semibold ${record.status === "Late" ? "text-red-600" : "text-green-600"}`}>
+                <TableCell className={`p-2 text-center font-semibold ${record.status === "Late" ? "text-red-600" : "text-green-600" && record.status === "Absent" ? "text-red-600" : "text-green-600"}`}>
                   {record.status}
                 </TableCell>
               </TableRow>
