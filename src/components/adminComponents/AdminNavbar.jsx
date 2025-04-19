@@ -49,7 +49,7 @@ const AdminNavbar = ({ children }) => {
         localStorage.removeItem('permissions');
       
         // Redirect to login page or home page
-        navigate('/admin');  // Example redirection
+        navigate('/login');  // Example redirection
       };
       
 

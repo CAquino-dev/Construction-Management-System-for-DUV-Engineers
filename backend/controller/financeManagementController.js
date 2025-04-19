@@ -54,7 +54,71 @@ const updatePayrollStatus = (req, res) => {
       res.json({ message: "Status updated successfully" });
     });
   };
+
+  const getApprovedPayslips = (req, res) => {
+    const query = `
+        SELECT 
+            ps.id AS payslip_id,
+            ps.title,
+            ps.period_start,
+            ps.period_end,
+            ps.created_at AS payslip_created_at,
+            creator.full_name AS created_by_name,
+            pi.id AS payslip_item_id,
+            pr.id AS payroll_id,
+            u.full_name AS employee_name,
+            pr.total_hours_worked,
+            pr.calculated_salary,
+            pi.status
+        FROM payslip ps
+        LEFT JOIN users creator ON ps.created_by = creator.id
+        LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+        LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+        LEFT JOIN users u ON pr.employee_id = u.id
+        WHERE ps.status = 'approved' AND pi.status = 'approved'
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error("Error fetching approved payslips:", err);
+            return res.status(500).json({ error: "Failed to fetch approved payslips." });
+        }
+
+        // Group by payslip_id
+        const grouped = {};
+        results.forEach(row => {
+            if (!grouped[row.payslip_id]) {
+                grouped[row.payslip_id] = {
+                    payslip_id: row.payslip_id,
+                    title: row.title,
+                    period_start: row.period_start,
+                    period_end: row.period_end,
+                    payslip_created_at: row.payslip_created_at,
+                    created_by_name: row.created_by_name,
+                    items: []
+                };
+            }
+
+            grouped[row.payslip_id].items.push({
+                payslip_item_id: row.payslip_item_id,
+                payroll_id: row.payroll_id,
+                employee_name: row.employee_name,
+                total_hours_worked: row.total_hours_worked,
+                calculated_salary: row.calculated_salary,
+                status: row.status
+            });
+        });
+
+        const formatted = Object.values(grouped);
+        res.json({
+            success: true,
+            message: "Approved payslips fetched successfully",
+            data: formatted
+        });
+    });
+};
+
   
 
 
-module.exports = { getFinance, updatePayrollStatus };
+module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips };

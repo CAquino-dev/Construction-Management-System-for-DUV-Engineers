@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { PayslipModal } from "./PayslipModal";
@@ -18,6 +18,7 @@ export const PayslipTable = () => {
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [payslips, setPayslips] = useState([]);
 
   const openModal = (record) => {
     setSelectedPayslip(record);
@@ -29,13 +30,33 @@ export const PayslipTable = () => {
     setIsModalOpen(false);
   };
 
-  // Filter payslip records based on search input
-  const filteredPayslips = payslipRecords.filter((record) =>
-    record.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.start.includes(searchTerm) ||
-    record.end.includes(searchTerm) ||
-    record.created_by.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
+  useEffect(() => {
+    const getPayslips = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/hr/getPayslips');
+        const data = await response.json();
+        console.log('payslip records:', data)
+        if(response.ok){
+          const filtered = data.map((record) => ({
+            id: record.id,
+            title: record.title,
+            start: record.period_start ? new Date(record.period_start).toLocaleDateString('en-CA') : '-',
+            end: record.period_end ? new Date(record.period_end).toLocaleDateString('en-CA') : '-',
+            created_at: record.created_at ? new Date(record.created_at).toLocaleDateString('en-CA') : '-',
+            created_by: record.created_by_name,
+          }))
+          setPayslips(filtered);
+          console.log('filtered data:', filtered);
+        }
+      } catch (error) {
+        
+      }
+    };
+
+    getPayslips();
+  }, []) 
+
 
   return (
     <div className="p-6">
@@ -64,8 +85,8 @@ export const PayslipTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPayslips.length > 0 ? (
-              filteredPayslips.map((record, index) => (
+            {payslips.length > 0 ? (
+              payslips.map((record, index) => (
                 <TableRow key={record.id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
                   <TableCell className="text-center p-2">{record.title}</TableCell>
                   <TableCell className="text-center p-2">{record.start}</TableCell>

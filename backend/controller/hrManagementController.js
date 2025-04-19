@@ -323,10 +323,197 @@ const getPayslips = (req, res) => {
       res.json(results);
     });
   };
+
+//   const getPayslipById = (req, res) => {
+//     const payslipId = req.params.id;
+  
+//     const payslipQuery = `
+//       SELECT * FROM payslip WHERE id = ?
+//     `;
+//     const itemsQuery = `
+//       SELECT 
+//         pi.employee_id,
+//         u.full_name AS employee_name,
+//         pi.total_hours_worked,
+//         pi.calculated_salary
+//       FROM payslip_items pi
+//       JOIN users u ON pi.employee_id = u.id
+//       WHERE pi.payslip_id = ?
+//     `;
+  
+//     db.query(payslipQuery, [payslipId], (err, payslipResult) => {
+//       if (err || payslipResult.length === 0) {
+//         return res.status(404).json({ error: "Payslip not found" });
+//       }
+  
+//       db.query(itemsQuery, [payslipId], (err, items) => {
+//         if (err) {
+//           return res.status(500).json({ error: "Failed to fetch payslip items" });
+//         }
+  
+//         res.json({
+//           ...payslipResult[0],
+//           items,
+//         });
+//       });
+//     });
+//   };
+
+
+// const getPayslips = (req, res) => {
+//     const query = `
+//       SELECT 
+//         ps.id AS payslip_id, 
+//         ps.title, 
+//         ps.period_start, 
+//         ps.period_end, 
+//         ps.created_at,
+//         u.full_name AS created_by_name,
+//         GROUP_CONCAT(pi.id) AS payslip_item_ids
+//       FROM payslip ps
+//       LEFT JOIN users u ON ps.created_by = u.id
+//       LEFT JOIN payslip_items pi ON pi.payslip_id = ps.id
+//       GROUP BY ps.id, ps.title, ps.period_start, ps.period_end, ps.created_at, u.full_name
+//       ORDER BY ps.created_at DESC
+//     `;
+  
+//     db.query(query, (err, results) => {
+//       if (err) {
+//         console.error("Fetch payslips error:", err);
+//         return res.status(500).json({ error: "Failed to fetch payslips" });
+//       }
+  
+//       // Optionally parse the item IDs into an array
+//       const formatted = results.map(row => ({
+//         ...row,
+//         payslip_item_ids: row.payslip_item_ids ? row.payslip_item_ids.split(',').map(Number) : [],
+//       }));
+  
+//       res.json(formatted);
+//     });
+//   };
+  
+  
+const getPayslipById = (req, res) => {
+    const { id } = req.params;
+
+    if (!id) {
+        return res.status(400).json({ error: "Payslip ID is required" });
+    }
+
+    const query = `
+        SELECT 
+            ps.id AS payslip_id,
+            ps.title,
+            ps.period_start,
+            ps.period_end,
+            ps.created_at AS payslip_created_at,
+            pi.id AS payslip_item_id,
+            pr.id AS payroll_id,
+            u.full_name AS employee_name,
+            pr.total_hours_worked,
+            pr.calculated_salary,
+            pi.status
+        FROM payslip ps
+        LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+        LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+        LEFT JOIN users u ON pr.employee_id = u.id
+        WHERE ps.id = ?
+    `;
+
+    db.query(query, [id], (err, results) => {
+        if (err) {
+            console.error("Error fetching payslip:", err);
+            return res.status(500).json({ error: "Failed to fetch payslip" });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ error: "Payslip not found" });
+        }
+
+        // Structure the response
+        const payslip = {
+            id: results[0].payslip_id,
+            title: results[0].title,
+            period_start: results[0].period_start,
+            period_end: results[0].period_end,
+            created_at: results[0].payslip_created_at,
+            items: results.map(row => ({
+                payslip_item_id: row.payslip_item_id,
+                payroll_id: row.payroll_id,
+                employee_name: row.employee_name,
+                total_hours_worked: row.total_hours_worked,
+                calculated_salary: row.calculated_salary,
+                status: row.status
+            }))
+        };
+
+        res.json({
+            message: "Payslip fetched successfully",
+            data: payslip
+        });
+    });
+};
+
+const updatePayslipItemStatus = (req, res) => {
+    const { selectedItemIds, newStatus } = req.body;
+
+    if (!selectedItemIds || selectedItemIds.length === 0) {
+        return res.status(400).json({ error: "No payslip items selected for update." });
+    }
+
+    if (!["Approved", "Rejected"].includes(newStatus)) {
+        return res.status(400).json({ error: "Invalid status provided." });
+    }
+
+    const query = `
+        UPDATE payslip_items
+        SET status = ?
+        WHERE id IN (?)
+    `;
+
+    db.query(query, [newStatus, selectedItemIds], (err, result) => {
+        if (err) {
+            console.error("Database error during payslip item status update:", err);
+            return res.status(500).json({ error: "Failed to update payslip item status." });
+        }
+
+        res.json({ message: `Payslip item status updated successfully to ${newStatus}.` });
+    });
+};
+
+const updatePayslipStatus = (req, res) => {
+    const { payslipId, status } = req.body;
+
+    if (!payslipId || !["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+    }
+
+    const query = `UPDATE payslip SET status = ? WHERE id = ?`;
+
+    db.query(query, [status, payslipId], (err, result) => {
+        if (err) {
+            console.error("Error updating payslip status:", err);
+            return res.status(500).json({ error: "Failed to update payslip status." });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Payslip not found." });
+        }
+
+        res.json({ message: `Payslip has been ${status}.` });
+    });
+};
+
+
+
   
 
 
 
 
 
-module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, createPayslip, getPayslips};
+module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, 
+                getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, 
+                createPayslip, getPayslips, getPayslipById, updatePayslipItemStatus, 
+                updatePayslipStatus};
