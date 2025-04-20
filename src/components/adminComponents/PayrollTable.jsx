@@ -298,15 +298,17 @@ const handleBulkStatusUpdate = async (newStatus) => {
               <option value="Rejected by HR">Rejected by HR</option>
             </select>
          )}
-        <button className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]">
-          Export Payroll
-        </button>
-        <button
-                className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-                onClick={() => setIsPayslipModalOpen(true)}
-              >
-                Create Payslip
-              </button>
+         <div className="flex gap-2">
+          <button className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366] cursor-pointer">
+            Export Payroll
+          </button>
+          <button
+            className="bg-none text-[#4c735c] px-4 py-2 rounded-md border border-[#4c735c] hover:bg-[#4c735c] hover:text-white cursor-pointer"
+            onClick={() => setIsPayslipModalOpen(true)}
+            >
+            Create Payslip
+          </button>
+         </div>
       </div>
 
       {/* Calendar Dropdown */}
