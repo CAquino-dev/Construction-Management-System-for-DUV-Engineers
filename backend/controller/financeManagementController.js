@@ -118,7 +118,31 @@ const updatePayrollStatus = (req, res) => {
     });
 };
 
+const financeUpdatePayslipStatus = (req, res) => {
+  const { payslipId, status, approvedBy } = req.body;
+
+  if (!payslipId || !["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+  }
+
+  const query = `UPDATE payslip SET finance_status = ?, approved_by_id = ?, approved_at = NOW() WHERE id = ?`;
+
+  db.query(query, [status, approvedBy, payslipId], (err, result) => {
+      if (err) {
+          console.error("Error updating payslip status:", err);
+          return res.status(500).json({ error: "Failed to update payslip status." });
+      }
+
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "Payslip not found." });
+      }
+
+      res.json({ message: `Payslip has been ${status}.` });
+  });
+}; 
   
 
 
-module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips };
+module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
+  financeUpdatePayslipStatus
+ };
