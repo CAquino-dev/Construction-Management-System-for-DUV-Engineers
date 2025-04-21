@@ -29,7 +29,6 @@ export const FinanceTable = () => {
     fetchFinanceRecords();
 
   }, [])
-  console.log('Finance Records: ', financeRecords)
   
 
   const updateStatus = async (id, newStatus) => {
