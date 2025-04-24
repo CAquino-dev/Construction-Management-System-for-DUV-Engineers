@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import img1 from '../../assets/img1.png'
 import { useNavigate } from 'react-router';
 import { usePermissions } from '../../context/PermissionsContext';
+import  DUVLogoWhite  from '../../assets/DUVLogoWhite.png';
 
 const Login = () => {
 
@@ -60,10 +61,13 @@ const Login = () => {
   }
 
   return (
-    <div className='p-8 flex items-center justify-center min-h-screen bg-cover bg-center relative' style = {{backgroundImage: `url(${img1})`}}>
-        <div className='absolute inset-0 bg-[#4c735c]/30 backdrop-blur-sm'></div>
-        <div className='relative w-full max-w-md min-h-[500px] h-auto bg-white/30 backdrop-blur-lg rounded-lg shadow-xl p-10 flex flex-col justify-center'>
-          <h2 className='text-2xl font-bold text-center mb-6 text-[#4c735c]'>Login</h2>
+    <div className='bg-gray-200 gap-8 flex items-center justify-center min-h-screen bg-cover bg-center relative'>
+        <div className='relative w-full max-w-md min-h-[500px] h-auto bg-white backdrop-blur-lg rounded-lg shadow-xl p-10 flex flex-col justify-center'>
+            <div className='flex flex-col items-center justify-center mb-4 gap-2'>
+              <img src={DUVLogoWhite} alt="" className='w-32 bg-[#4c735c] p-2 rounded mb-6'/>
+              <h2 className='text-2xl font-bold'>Welcome to DUV engineers</h2>
+              <p className='text-md'>We Build for your comfort</p>
+            </div>
           <form onSubmit={handleSubmit} className='flex flex-col gap-4'>
             <input
             name='username' 

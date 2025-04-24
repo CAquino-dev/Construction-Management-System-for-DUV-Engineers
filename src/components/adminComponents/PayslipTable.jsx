@@ -2,17 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { PayslipModal } from "./PayslipModal";
-
-const payslipRecords = [
-  { id: 1, title: "April 1-15, 2025", start: "2025-04-14", end: "2025-04-15", created_at: "2025-04-01", created_by: "Finance", 
-    Employee_Salary:[
-      {employee_name:"John Doe", total_hours: 80, salary: 20000},
-      {employee_name:"Jordan", total_hours: 90, salary: 80000},] 
-    },
-  { id: 2, title: "April 16-30, 2025", start: "2025-04-16", end: "2025-04-30", created_at: "2025-04-01", created_by: "Finance" },
-  { id: 3, title: "May 1-15, 2025", start: "2025-05-01", end: "2025-05-15", created_at: "2025-05-01", created_by: "Finance" },
-  { id: 4, title: "May 16-31, 2025", start: "2025-05-16", end: "2025-05-31", created_at: "2025-05-01", created_by: "Finance" },
-];
+import PaginationComponent from "./Pagination";
 
 export const PayslipTable = () => {
   const [selectedPayslip, setSelectedPayslip] = useState(null);
@@ -67,7 +57,7 @@ export const PayslipTable = () => {
           placeholder="Search Payslip..."
           className="w-full sm:w-80 p-2 border rounded-md"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearch}
         />
       </div>
 
@@ -108,6 +98,13 @@ export const PayslipTable = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      <PaginationComponent 
+        currentPage={currentPage} 
+        totalPages={totalPages} 
+        setCurrentPage={setCurrentPage} 
+      />
 
       {/* Payslip Modal */}
       {isModalOpen && <PayslipModal payslip={selectedPayslip} closeModal={closeModal} />}
