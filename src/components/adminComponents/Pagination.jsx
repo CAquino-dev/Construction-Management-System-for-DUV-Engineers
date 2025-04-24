@@ -35,13 +35,14 @@ const PaginationComponent = ({ currentPage, totalPages, setCurrentPage }) => {
   return (
     <Pagination>
       <PaginationContent className="flex items-center justify-center gap-2 mt-4">
-        
+
         {/* First Page */}
         <PaginationItem>
           <PaginationLink
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-            className="cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300"
+            onClick={() => currentPage > 1 && setCurrentPage(1)}
+            className={`cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300 ${
+              currentPage === 1 ? "opacity-50 pointer-events-none" : ""
+            }`}
           >
             &laquo; First
           </PaginationLink>
@@ -51,8 +52,9 @@ const PaginationComponent = ({ currentPage, totalPages, setCurrentPage }) => {
         <PaginationItem>
           <PaginationLink
             onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300"
+            className={`cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300 ${
+              currentPage === 1 ? "opacity-50 pointer-events-none" : ""
+            }`}
           >
             &lt; Prev
           </PaginationLink>
@@ -61,15 +63,20 @@ const PaginationComponent = ({ currentPage, totalPages, setCurrentPage }) => {
         {/* Page Numbers */}
         {generatePageNumbers().map((page, index) => (
           <PaginationItem key={index}>
-            <PaginationLink
-              onClick={() => typeof page === "number" && setCurrentPage(page)}
-              active={currentPage === page}
-              className={`cursor-pointer px-4 py-2 rounded-md ${
-                currentPage === page ? "bg-[#3b5d47] text-white" : "hover:bg-gray-300"
-              }`}
-            >
-              {page}
-            </PaginationLink>
+            {page === "..." ? (
+              <span className="px-3 py-2 text-gray-500">...</span>
+            ) : (
+              <PaginationLink
+                onClick={() => setCurrentPage(page)}
+                className={`cursor-pointer px-4 py-2 rounded-md ${
+                  currentPage === page
+                    ? "bg-[#3b5d47] text-white"
+                    : "hover:bg-gray-300"
+                }`}
+              >
+                {page}
+              </PaginationLink>
+            )}
           </PaginationItem>
         ))}
 
@@ -77,8 +84,9 @@ const PaginationComponent = ({ currentPage, totalPages, setCurrentPage }) => {
         <PaginationItem>
           <PaginationLink
             onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300"
+            className={`cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300 ${
+              currentPage === totalPages ? "opacity-50 pointer-events-none" : ""
+            }`}
           >
             Next &gt;
           </PaginationLink>
@@ -87,14 +95,14 @@ const PaginationComponent = ({ currentPage, totalPages, setCurrentPage }) => {
         {/* Last Page */}
         <PaginationItem>
           <PaginationLink
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages}
-            className="cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300"
+            onClick={() => currentPage < totalPages && setCurrentPage(totalPages)}
+            className={`cursor-pointer px-6 py-2 rounded-md hover:bg-gray-300 ${
+              currentPage === totalPages ? "opacity-50 pointer-events-none" : ""
+            }`}
           >
             Last &raquo;
           </PaginationLink>
         </PaginationItem>
-
       </PaginationContent>
     </Pagination>
   );

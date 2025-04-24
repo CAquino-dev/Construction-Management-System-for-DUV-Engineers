@@ -275,38 +275,61 @@ const handleBulkStatusUpdate = async (newStatus) => {
   console.log(selectedRecords)
   return (
     <div className="p-4">
-      {/* Date Range Selector */}
-      <div className="flex items-center gap-4 mb-4 justify-between">
-        <button
-          className="flex items-center gap-2 bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-          onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-        >
-          <CalendarBlank size={20} /> Select Date Range
-        </button>
+      <div className="flex flex-wrap gap-4 mb-4 items-center justify-between">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <button
+            className="flex items-center gap-2 bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366] w-full sm:w-auto"
+            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+          >
+            <CalendarBlank size={20} /> Select Date Range
+          </button>
 
-        {selectedRecords.length > 0 && (
+          {selectedRecords.length > 0 && (
             <select
-              className="border p-2 rounded-md"
+              className="border p-2 rounded-md w-full sm:w-auto"
               onChange={(e) => handleBulkStatusUpdate(e.target.value)}
               defaultValue=""
             >
-              <option value="" disabled>
-                Update Status
-              </option>
+              <option value="" disabled>Update Status</option>
               <option value="Approved by HR">Approved by HR</option>
               <option value="Pending">Pending</option>
               <option value="Rejected by HR">Rejected by HR</option>
             </select>
-         )}
-        <button className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]">
-          Export Payroll
-        </button>
-        <button
-                className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-                onClick={() => setIsPayslipModalOpen(true)}
-              >
-                Create Payslip
-              </button>
+          )}
+
+          <p className="text-gray-600 w-full text-center sm:w-auto">Or</p>
+
+          {/* Month Dropdown */}
+          <select className="border p-2 rounded-md w-full sm:w-auto" onChange={(e) => setSelectedMonth(e.target.value)}>
+            <option value="" disabled selected>Select Month</option>
+            {[
+              "January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"
+            ].map((month) => (
+              <option key={month} value={month}>{month}</option>
+            ))}
+          </select>
+
+          {/* Date Range Dropdown */}
+          <select className="border p-2 rounded-md w-full sm:w-auto" onChange={(e) => setSelectedRange(e.target.value)}>
+            <option value="" disabled selected>Select Date Range</option>
+            <option value="1-15">1-15</option>
+            <option value="16-31">16-31</option>
+          </select>
+        </div>
+
+        {/* Action Buttons - Wrapped for Mobile Layout */}
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-center sm:justify-start">
+          <button className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366] w-full sm:w-auto cursor-pointer">
+            Export Payroll
+          </button>
+          <button
+            className="bg-none text-[#4c735c] px-4 py-2 rounded-md border border-[#4c735c] hover:bg-[#4c735c] hover:text-white w-full sm:w-auto cursor-pointer"
+            onClick={() => setIsPayslipModalOpen(true)}
+          >
+            Create Payslip
+          </button>
+        </div>
       </div>
 
       {/* Calendar Dropdown */}
