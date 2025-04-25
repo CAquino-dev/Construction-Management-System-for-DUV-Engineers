@@ -6,7 +6,7 @@ const manageAttendance = (req, res) => {
 //working
 const getEmployeeSalary = (req, res) => {
     query = `SELECT 
-        e.id AS employee_id,
+        e.employee_id AS employee_id,
         e.full_name,
         e.email,
         e.username,
@@ -60,7 +60,7 @@ const getEmployeeSalary = (req, res) => {
             // Step 2: Proceed to calculate and insert new payroll
             const calculationQuery = `
                 SELECT 
-                    e.id AS employee_id,
+                    e.employee_id AS employee_id,
                     es.fixed_salary,
                     ROUND(SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600, 2) AS total_hours_worked,
                     ROUND(
@@ -126,25 +126,25 @@ const getEmployeeSalary = (req, res) => {
         }
     
         const query = `
-            SELECT 
-                p.id,
-                p.employee_id,
-                e.full_name,
-                p.period_start,
-                p.period_end,
-                p.total_hours_worked,
-                p.calculated_salary,
-                p.status,
-                p.generated_by,
-                p.generated_at,
-                es.fixed_salary,
-                d.name
-            FROM payroll p
-            JOIN users e ON p.employee_id = e.id
-            JOIN employee_salary es ON p.employee_id = es.employee_id
-            JOIN departments d on e.department_id = d.id
-            WHERE p.period_start >= ? AND p.period_end <= ?
-            ORDER BY p.period_end DESC
+SELECT 
+    e.employee_id,               -- Get employee_id from the users table
+    e.full_name,
+    p.period_start,
+    p.period_end,
+    p.total_hours_worked,
+    p.calculated_salary,
+    p.status,
+    p.generated_by,
+    p.generated_at,
+    es.fixed_salary,
+    d.name AS department_name    -- Get the department name
+FROM payroll p
+JOIN users e ON p.employee_id = e.id   -- Use the id from users table (since payroll's employee_id links to users' id)
+JOIN employee_salary es ON p.employee_id = es.employee_id
+JOIN departments d on e.department_id = d.id
+WHERE p.period_start >= ? AND p.period_end <= ?
+ORDER BY p.period_end DESC;
+
 ;
         `;
     
@@ -169,7 +169,7 @@ const getPresentEmployee = (req, res) => {
 
     const query = `
         SELECT 
-            e.id AS employee_id,
+            e.employee_id AS employee_id,
             e.full_name,
             e.email,
             a.check_in,
@@ -198,7 +198,7 @@ const getPresentEmployee = (req, res) => {
 //working
 const getEmployeeAttendance = (req, res) => {
     const query = `        SELECT 
-            e.id AS employee_id,
+            e.employee_id AS employee_id,
             e.full_name,
             e.email,
             a.check_in,

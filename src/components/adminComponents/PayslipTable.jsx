@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { PayslipModal } from "./PayslipModal";
@@ -9,6 +9,8 @@ export const PayslipTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [payslips, setPayslips] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filteredPayslips, setFilteredPayslips] = useState([]);
 
   const openModal = (record) => {
     setSelectedPayslip(record);
@@ -20,14 +22,13 @@ export const PayslipTable = () => {
     setIsModalOpen(false);
   };
 
-
+  // Fetch payslips from API
   useEffect(() => {
     const getPayslips = async () => {
       try {
         const response = await fetch('http://localhost:5000/api/hr/getPayslips');
         const data = await response.json();
-        console.log('payslip records:', data)
-        if(response.ok){
+        if (response.ok) {
           const filtered = data.map((record) => ({
             id: record.id,
             title: record.title,
@@ -35,18 +36,32 @@ export const PayslipTable = () => {
             end: record.period_end ? new Date(record.period_end).toLocaleDateString('en-CA') : '-',
             created_at: record.created_at ? new Date(record.created_at).toLocaleDateString('en-CA') : '-',
             created_by: record.created_by_name,
-          }))
+          }));
           setPayslips(filtered);
-          console.log('filtered data:', filtered);
+          setFilteredPayslips(filtered); // Set filtered payslips initially
         }
       } catch (error) {
-        
+        console.error('Error fetching payslips:', error);
       }
     };
 
     getPayslips();
-  }, []) 
+  }, []);
 
+  // Pagination Logic
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredPayslips.length / itemsPerPage));
+  const currentData = filteredPayslips.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Handle search
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    const filtered = payslips.filter(payslip =>
+      payslip.title.toLowerCase().includes(e.target.value.toLowerCase())
+    );
+    setFilteredPayslips(filtered);
+    setCurrentPage(1); // Reset to page 1 after search
+  };
 
   return (
     <div className="p-6">
@@ -75,8 +90,8 @@ export const PayslipTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payslips.length > 0 ? (
-              payslips.map((record, index) => (
+            {currentData.length > 0 ? (
+              currentData.map((record, index) => (
                 <TableRow key={record.id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
                   <TableCell className="text-center p-2">{record.title}</TableCell>
                   <TableCell className="text-center p-2">{record.start}</TableCell>
