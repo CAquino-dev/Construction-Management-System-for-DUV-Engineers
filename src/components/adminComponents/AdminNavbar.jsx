@@ -10,6 +10,8 @@ const AdminNavbar = ({ children }) => {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -146,6 +148,37 @@ const AdminNavbar = ({ children }) => {
                                     >
                                     Employee
                                     </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
+                        {/* Feedback Dropdown */}
+                        <li>
+                            <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3 font-semibold">
+                                    <ListChecks size={20} /> Feedbacks
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isFeedbackOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isFeedbackOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/feedbacks/client-feedback" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/feedbacks/client-feedback" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Client Feedback
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/feedbacks/reported-issues" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/feedbacks/reported-issues" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Reported Issues
+                                        </Link>
                                     </li>
                                 </ul>
                             )}
