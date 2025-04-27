@@ -20,6 +20,8 @@ import { EmployeePayroll } from './pages/admin/EmployeePayroll';
 import { Finance } from './pages/admin/Finance';
 import { Payslip } from './pages/admin/Payslip';
 import { Inventory } from './pages/admin/Inventory';
+import { ClientFeedback } from './pages/admin/ClientFeedback';
+import { ReportedIssues } from './pages/admin/ReportedIssues';
 
 const App = () => {
   return (
@@ -50,6 +52,8 @@ const App = () => {
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
             <Route path='inventory' element={<Inventory/>} />
+            <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
+            <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
         </Route>
         </Routes>
       </Router>
