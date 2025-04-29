@@ -22,6 +22,8 @@ import { Payslip } from './pages/admin/Payslip';
 import { Inventory } from './pages/admin/Inventory';
 import { ClientFeedback } from './pages/admin/ClientFeedback';
 import { ReportedIssues } from './pages/admin/ReportedIssues';
+import { ClientDashboard } from './pages/userPages/ClientDashboard';
+import { ClientLayout } from './layouts/ClientLayout';
 
 const App = () => {
   return (
@@ -35,7 +37,11 @@ const App = () => {
             <Route path='our-team' element={<OurTeam/>} />
             <Route path='aboutus' element={<AboutUs/>} />
             <Route path='report-problem' element={<ReportProblem/>} />
+          </Route>
 
+          {/*Client Logged in Route*/}
+          <Route path='/clientDashboard' element={<ClientLayout/>}>
+            <Route index element={<ClientDashboard/>} />
           </Route>
 
           {/* Admin Routes */}
