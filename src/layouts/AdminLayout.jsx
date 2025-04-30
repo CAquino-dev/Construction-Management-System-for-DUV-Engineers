@@ -8,7 +8,9 @@ const AdminLayout = () => {
     <div className="flex min-h-screen">
       <AdminNavbar className="" />
 
-      
+      <div className="flex-1 p-6 bg-gray-100 overflow-auto">
+        <Outlet />  
+      </div>
     </div>
     </>
   )
