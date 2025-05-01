@@ -85,6 +85,7 @@ export const PayrollTable = () => {
   const [endDate, setEndDate] = useState();
   const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
   const [payslipTitle, setPayslipTitle] = useState("");
+  const [payslipRemarks, setPayslipRemarks] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedRange, setSelectedRange] = useState("");
 
@@ -96,13 +97,14 @@ export const PayrollTable = () => {
       if (!response.ok) throw new Error("Failed to fetch payroll records");
 
       const data = await response.json();
+      console.log(data);
       if(response.ok){
         const formatted = data.map((record) => ({
           id: Math.random().toString(36).substr(2, 9),
           payrollId: record.id,
           employeeId: record.employee_id,
           fullName: record.full_name,
-          department: record.name,
+          department: record.department_name,
           fixedSalary: record.fixed_salary,
           hoursWorked: record.total_hours_worked,
           calculatedSalary: record.calculated_salary,
@@ -117,10 +119,13 @@ export const PayrollTable = () => {
   };
 
   const handleCreatePayslip = async () => {
-    if (!payslipTitle || !startDate || !endDate) {
+    if (!payslipTitle || !payslipRemarks || !startDate || !endDate) {
       alert("Title and date range are required.");
       return;
     }
+
+    console.log("Title: ",payslipTitle)
+    console.log("Remarks: ",payslipRemarks)
 
     try {
       const response = await fetch("http://localhost:5000/api/hr/payslip/create", {
@@ -128,6 +133,7 @@ export const PayrollTable = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: payslipTitle,
+          remarks: payslipRemarks,
           startDate: startDate,
           endDate: endDate,
           createdBy: userId,
@@ -167,6 +173,15 @@ export const PayrollTable = () => {
       (record) => record.date >= formattedFrom && record.date <= formattedTo
     );
     setFilteredRecords(filtered);
+    console.log('start', formattedFrom)
+    console.log('end', formattedTo)
+    console.log('generated', userId)
+
+    console.log({
+      startDate: formattedFrom,
+      endDate: formattedTo,
+      generatedBy: userId
+    });
 
     try {
       const response = await fetch('http://localhost:5000/api/hr/calculateSalary', {
@@ -179,6 +194,9 @@ export const PayrollTable = () => {
         }),
       });
       const data = await response.json();
+      if (!response.ok) {
+        console.error("Error response from API:", data);
+      }
       if(response.ok){
         fetchPayrollRecords(formattedFrom, formattedTo);
       }
@@ -188,14 +206,15 @@ export const PayrollTable = () => {
   };
 
   const handleDateRangeSelection = async (month, range) => {
+    setHasSelectedDateRange(true);
     let startDate, endDate;
     const year = new Date().getFullYear();
 
     if (range === '1-15') {
       startDate = `${year}-${month}-01`;
       endDate = `${year}-${month}-15`;
-    } else if (range === '16-30') {
-      startDate = `${year}-${month}-16`;
+    } else if (range === '15-30') {
+      startDate = `${year}-${month}-15`;
       endDate = `${year}-${month}-30`;
     }
     console.log(startDate, endDate);
@@ -262,7 +281,7 @@ export const PayrollTable = () => {
                   }}>
             <option value="" disabled selected>Select Date Range</option>
             <option value="1-15">1-15</option>
-            <option value="16-30">16-30</option>
+            <option value="15-30">15-30</option>
           </select>
         </div>
 
@@ -277,6 +296,45 @@ export const PayrollTable = () => {
           >
             Create Payslip
           </button>
+          {isPayslipModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-md shadow-md w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Create Payslip</h2>
+            <input
+              type="text"
+              placeholder="Enter payslip title"
+              value={payslipTitle}
+              onChange={(e) => setPayslipTitle(e.target.value)}
+              className="w-full p-2 border rounded-md mb-4"
+            />
+            <input
+              type="text"
+              placeholder="Enter payslip remarks"
+              value={payslipRemarks}
+              onChange={(e) => setPayslipRemarks(e.target.value)}
+              className="w-full p-2 border rounded-md mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 bg-gray-300 rounded-md"
+                onClick={() => {
+                  setPayslipTitle("");
+                  setPayslipRemarks("");
+                  setIsPayslipModalOpen(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-md"
+                onClick={handleCreatePayslip}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
 
@@ -322,7 +380,7 @@ export const PayrollTable = () => {
                   <TableCell className="text-center p-2">
                     <button
                       onClick={() => setSelectedEmployee(record)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                      className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-blue-600"
                     >
                       View
                     </button>

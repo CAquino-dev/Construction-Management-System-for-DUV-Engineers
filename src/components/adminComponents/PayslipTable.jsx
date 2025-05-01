@@ -4,6 +4,7 @@ import { Eye } from "@phosphor-icons/react";
 import { PayslipModal } from "./PayslipModal";
 import PaginationComponent from "./Pagination";
 
+
 export const PayslipTable = () => {
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,6 +33,7 @@ export const PayslipTable = () => {
           const filtered = data.map((record) => ({
             id: record.id,
             title: record.title,
+            remarks: record.remarks,
             start: record.period_start ? new Date(record.period_start).toLocaleDateString('en-CA') : '-',
             end: record.period_end ? new Date(record.period_end).toLocaleDateString('en-CA') : '-',
             created_at: record.created_at ? new Date(record.created_at).toLocaleDateString('en-CA') : '-',
