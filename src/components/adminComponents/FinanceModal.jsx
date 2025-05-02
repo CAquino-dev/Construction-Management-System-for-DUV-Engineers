@@ -4,21 +4,47 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import {
   DotsThree
 } from "@phosphor-icons/react";
+import ConfirmationModal from "./ConfirmationModal";
 
 export const FinanceModal = ({ closeModal, record }) => {
+  console.log('record', record)
+
   const [financeRecords, setFinanceRecords] = useState([]);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [remark, setRemark] = useState("");
+  const [actionType, setActionType] = useState(null);
   
+  const openConfirmationModal = (type) => {
+    setActionType(type);
+    setRemark(""); // Reset the remark
+    setIsConfirmationModalOpen(true);
+  };
+
+  const closeConfirmationModal = () => {
+    setIsConfirmationModalOpen(false);
+  };
+
+  const handleConfirmation = () => {
+    if (actionType === "Approved by Finance") {
+      updatePayslipStatus("Approved by Finance"); // Call the function to approve the payslip
+    } else if (actionType === "Rejected by Finance") {
+      updatePayslipStatus("Rejected by Finance", remark); // Call the function to reject the payslip
+    }
+    setIsConfirmationModalOpen(false); // Close the modal after action
+  };
+  
+  
+
   useEffect(() => {
     setFinanceRecords(record);
   }, [record])
 
-  console.log('finance records: ',financeRecords);
-
-  const updatePayslipStatus = async (status) => {
+  const updatePayslipStatus = async (status, remark) => {
 
     console.log("payslipID", record.payslip_id);
     console.log("Status", status);
     const userId = localStorage.getItem('userId'); 
+
     try {
       const response = await fetch('http://localhost:5000/api/finance/updatePayslipStatus', {
         method: 'PUT',
@@ -28,10 +54,14 @@ export const FinanceModal = ({ closeModal, record }) => {
         body: JSON.stringify({
           payslipId: record.payslip_id,
           status: status,
+          remarks: remark,
           approvedBy: userId
         })
       });
       const data = await response.json();
+      if (!response.ok) {
+        console.error("Error response from API:", data);
+      } 
       if (response.ok) {
         console.log(data.message);
         // Optional: you can set a status in the state if you want to reflect it on UI
@@ -79,7 +109,7 @@ export const FinanceModal = ({ closeModal, record }) => {
                             <TableCell className="text-center">₱{parseFloat(record.calculated_salary).toLocaleString()}</TableCell>
                             <TableCell className="text-center p-2">
                               <p className={`text-center text-xs p-2 font-semibold rounded-md ${
-                                record.status === "Approved"
+                                record.status === "Approved by HR"
                                   ? "bg-green-100 text-green-800"
                                   : record.status === "Pending"
                                   ? "bg-yellow-100 text-yellow-800"
@@ -101,13 +131,13 @@ export const FinanceModal = ({ closeModal, record }) => {
                 </div>
                 <div className="flex justify-center gap-4 mt-4">
                   <button
-                    onClick={() => updatePayslipStatus("approved")}
+                    onClick={() => openConfirmationModal("Approved by Finance")}
                     className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
                   >
                     Accept
                   </button>
                   <button
-                    onClick={() => updatePayslipStatus("rejected")}
+                    onClick={() => openConfirmationModal("Rejected by Finance")}
                     className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
                   >
                     Reject
@@ -121,6 +151,16 @@ export const FinanceModal = ({ closeModal, record }) => {
           </button>
         </div>
       </div>
+        {/* Confirmation Modal */}
+        {isConfirmationModalOpen && (
+          <ConfirmationModal
+            isOpen={isConfirmationModalOpen}
+            onClose={closeConfirmationModal}
+            onConfirm={handleConfirmation}
+            actionType={actionType} // Pass the action type to display in modal
+            setRemark={setRemark}
+          />
+        )}
     </div>
   );
 };
