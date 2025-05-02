@@ -6,6 +6,7 @@ const employeeManagementRoute = require("./routes/employeeManagementRoutes");
 const hrRoute = require('./routes/hrRoute')
 const financeRoute = require('./routes/financeRoute');
 const engineerRoute = require('./routes/engineerRoute');
+const ceoRoutes = require('./routes/ceoRoutes');
  
 require("./config/db"); // Ensure database connects
 
@@ -19,6 +20,7 @@ app.use("/api/employees", employeeManagementRoute);
 app.use("/api/hr", hrRoute);
 app.use("/api/finance", financeRoute);
 app.use("/api/engr", engineerRoute);
+app.use("/api/ceo", ceoRoutes);
 
 app.get("/", (req, res) => {
     res.send("Chat API is running!");
