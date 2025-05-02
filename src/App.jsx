@@ -24,6 +24,7 @@ import { ClientFeedback } from './pages/admin/ClientFeedback';
 import { ReportedIssues } from './pages/admin/ReportedIssues';
 import { ClientDashboard } from './pages/userPages/ClientDashboard';
 import { ClientLayout } from './layouts/ClientLayout';
+import { CeoDashboard } from './pages/admin/CeoDashboard';
 
 const App = () => {
   return (
@@ -60,6 +61,7 @@ const App = () => {
             <Route path='inventory' element={<Inventory/>} />
             <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
             <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
+            <Route path='ceo-dashboard' element={<CeoDashboard/>} />
         </Route>
         </Routes>
       </Router>
