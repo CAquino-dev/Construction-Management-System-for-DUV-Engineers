@@ -20,6 +20,11 @@ import { EmployeePayroll } from './pages/admin/EmployeePayroll';
 import { Finance } from './pages/admin/Finance';
 import { Payslip } from './pages/admin/Payslip';
 import { Inventory } from './pages/admin/Inventory';
+import { ClientFeedback } from './pages/admin/ClientFeedback';
+import { ReportedIssues } from './pages/admin/ReportedIssues';
+import { ClientDashboard } from './pages/userPages/ClientDashboard';
+import { ClientLayout } from './layouts/ClientLayout';
+import { CeoDashboard } from './pages/admin/CeoDashboard';
 
 const App = () => {
   return (
@@ -33,7 +38,11 @@ const App = () => {
             <Route path='our-team' element={<OurTeam/>} />
             <Route path='aboutus' element={<AboutUs/>} />
             <Route path='report-problem' element={<ReportProblem/>} />
+          </Route>
 
+          {/*Client Logged in Route*/}
+          <Route path='/clientDashboard' element={<ClientLayout/>}>
+            <Route index element={<ClientDashboard/>} />
           </Route>
 
           {/* Admin Routes */}
@@ -50,6 +59,9 @@ const App = () => {
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
             <Route path='inventory' element={<Inventory/>} />
+            <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
+            <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
+            <Route path='ceo-dashboard' element={<CeoDashboard/>} />
         </Route>
         </Routes>
       </Router>

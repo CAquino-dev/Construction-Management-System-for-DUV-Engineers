@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { List, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
+import { List,UserCircleCheck, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
@@ -10,6 +10,8 @@ const AdminNavbar = ({ children }) => {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -25,6 +27,7 @@ const AdminNavbar = ({ children }) => {
         { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
         { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
+        { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard",},
     ];
 
     const currentPage = (() => {
@@ -150,6 +153,37 @@ const AdminNavbar = ({ children }) => {
                                 </ul>
                             )}
                         </li>
+                        {/* Feedback Dropdown */}
+                        <li>
+                            <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3 font-semibold">
+                                    <ListChecks size={20} /> Feedbacks
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isFeedbackOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isFeedbackOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/feedbacks/client-feedback" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/feedbacks/client-feedback" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Client Feedback
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/feedbacks/reported-issues" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/feedbacks/reported-issues" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Reported Issues
+                                        </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
                     </ul>
                 </div>
                 <div>
@@ -163,7 +197,7 @@ const AdminNavbar = ({ children }) => {
             {mobileSidebarOpen && (
                 <div className="fixed inset-0 bg-[#3b5d47] text-white p-5 z-50 flex flex-col overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
-                        <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
+                        <img src={DUVLogoWhite} alt="Logo" className="w-3 h-auto" />
                         <button onClick={toggleMobileSidebar}>
                             <X size={24} className="text-white cursor-pointer hover:text-[#5A8366]" />
                         </button>
