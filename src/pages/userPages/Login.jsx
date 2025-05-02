@@ -45,8 +45,8 @@ const Login = () => {
           localStorage.setItem("permissions", JSON.stringify(data.permissions));
           localStorage.setItem("userId", JSON.stringify(data.userId));
           navigate('/admin-dashboard');
-        }else{
-          navigate('/');
+        }else if( data.userType === "Client") {
+          navigate('/clientDashboard')
         }
       }else{
         setError(data.error || "Login failed");
