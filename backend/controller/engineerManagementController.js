@@ -92,9 +92,23 @@ const getClientProject = (req, res) => {
     console.log("Client ID:", clientId);  // Debugging log to ensure clientId is passed correctly
   
     const query = `
-      SELECT *
-      FROM engineer_projects
-      WHERE client_id = ?
+SELECT
+    ep.id,
+    ep.project_name,
+    ep.description,
+    ep.start_date,
+    ep.end_date,
+    ep.status,
+    ep.budget,
+    ep.location,
+    ep.project_type,
+    u.full_name AS engineer_name
+FROM
+    engineer_projects ep
+JOIN
+    users u ON ep.engineer_id = u.id
+WHERE
+    ep.client_id = ?;  -- Use the client_id to filter the projects for a specific client
     `;
   
     // Query the database for the projects of the client

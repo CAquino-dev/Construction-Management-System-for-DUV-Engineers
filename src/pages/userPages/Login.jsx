@@ -46,6 +46,7 @@ const Login = () => {
           localStorage.setItem("userId", JSON.stringify(data.userId));
           navigate('/admin-dashboard');
         }else if( data.userType === "Client") {
+          localStorage.setItem("userId", JSON.stringify(data.userId));
           navigate('/clientDashboard')
         }
       }else{
