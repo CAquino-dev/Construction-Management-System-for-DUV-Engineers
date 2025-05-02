@@ -10,6 +10,7 @@ const AdminNavbar = ({ children }) => {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
+    const [isFinanceOpen, setIsFinanceOpen] = useState(false); // Finance dropdown state
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
     const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
     const location = useLocation();
@@ -18,13 +19,13 @@ const AdminNavbar = ({ children }) => {
     const toggleProfileDropdown = () => setProfileDropdownOpen(!profileDropdownOpen);
     const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);
     const toggleHrDropdown = () => setIsHrOpen(!isHrOpen);
+    const toggleFinanceDropdown = () => setIsFinanceOpen(!isFinanceOpen);
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
         { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
         { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
         { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects", permission: "can_access_projects" },
-        { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
         { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard",},
@@ -36,6 +37,10 @@ const AdminNavbar = ({ children }) => {
         if (location.pathname.startsWith("/admin-dashboard/hr/payroll")) return "Payroll";
         if (location.pathname.startsWith("/admin-dashboard/hr/employees")) return "Employee";
         if (location.pathname.startsWith("/admin-dashboard/hr/payslip")) return "Payslip";
+
+        // Finance Pages
+        if (location.pathname.startsWith("/admin-dashboard/finance/approved-payroll-from-hr")) return "HR Payroll (Approved Records of HR)";
+        if (location.pathname.startsWith("/admin-dashboard/finance/approved-payroll-from-ceo")) return "HR Payroll (Approved Records of CEO)";
       
         // Other Admin Pages (Matches Against `menuItems`)
         const matchedPage = menuItems.find((item) => location.pathname === item.href)?.name;
@@ -73,7 +78,7 @@ const AdminNavbar = ({ children }) => {
 
                 {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
-                    <button className="block px-4 py-2 text-black hover:bg-gray-700 w-full" >Logout</button>
+                    <button className="block px-4 py-2 text-black hover:bg-[#3b5d47] w-full" >Logout</button>
                     </div>
                 )}
                 </div>
@@ -100,6 +105,37 @@ const AdminNavbar = ({ children }) => {
                                 </Link>
                             </li>
                         ))}
+                        {/* Collapsible Finance Section */}
+                        <li>
+                            { permissions.can_access_finance === 'Y' && <button onClick={toggleFinanceDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3 font-semibold"> 
+                                    <Bank size={20} /> Finance
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isFinanceOpen ? "rotate-180" : ""}`} />
+                            </button>}
+                            {isFinanceOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/finance/approved-payroll-from-hr" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/finance/approved-payroll-from-hr" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            HR Payroll (Approved Records of HR) 
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/finance/approved-payroll-from-ceo" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/finance/approved-payroll-from-ceo" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            HR Payroll (Approved Records of CEO) 
+                                        </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
                         {/* Collapsible HR Section */}
                         <li>
                             { permissions.can_access_hr === 'Y' && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
@@ -187,7 +223,7 @@ const AdminNavbar = ({ children }) => {
                     </ul>
                 </div>
                 <div>
-                    <button className="flex items-center gap-3 p-3 hover:bg-gray-700 rounded-lg w-full" onClick={handleLogout}>
+                    <button className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full" onClick={handleLogout}>
                         <SignOut size={22} /> Logout
                     </button>
                 </div>
@@ -211,6 +247,25 @@ const AdminNavbar = ({ children }) => {
                                 </Link>
                             </li>
                         ))}
+                        {/* Finance Section in Mobile Sidebar */}
+                        <li>
+                            <button onClick={toggleFinanceDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3">
+                                    <Bank size={20} /> Finance
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isFinanceOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isFinanceOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link to="/admin-dashboard/finance/approved-payroll-from-hr" className="block p-2 hover:bg-[#5A8366] rounded-lg">HR Payroll (Approved Records of HR)</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin-dashboard/finance/approved-payroll-from-ceo" className="block p-2 hover:bg-[#5A8366] rounded-lg">HR Payroll (Approved Records of CEO)</Link>
+                                    </li>
+                                </ul>
+                                )}
+                        </li>
                         {/* HR Section in Mobile Sidebar */}
                         <li>
                             <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
