@@ -25,6 +25,7 @@ import { ReportedIssues } from './pages/admin/ReportedIssues';
 import { ClientDashboard } from './pages/userPages/ClientDashboard';
 import { ClientLayout } from './layouts/ClientLayout';
 import { CeoDashboard } from './pages/admin/CeoDashboard';
+import { ApprovedPayrollOfCeo } from './pages/admin/ApprovedPayrollOfCeo';
 
 const App = () => {
   return (
@@ -55,7 +56,8 @@ const App = () => {
             <Route path='hr/attendance' element={<EmployeeAttendance/>} />
             <Route path='hr/payroll' element={<EmployeePayroll/>} />
             <Route path='hr/payslip' element={<Payslip/>} />
-            <Route path='finance' element={<Finance/>} />
+            <Route path='finance/approved-payroll-from-hr' element={<Finance/>} />
+            <Route path='finance/approved-payroll-from-ceo' element={<ApprovedPayrollOfCeo/>} />
             <Route path='projects' element={<Projects/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
             <Route path='inventory' element={<Inventory/>} />
