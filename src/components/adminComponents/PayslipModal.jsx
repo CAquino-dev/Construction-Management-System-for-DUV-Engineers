@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { X } from "@phosphor-icons/react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
-import  PaginationComponent  from "./Pagination"; 
-import {
-  DotsThree
-} from "@phosphor-icons/react";
+import PaginationComponent from "./Pagination";
+import { DotsThree } from "@phosphor-icons/react";
+import ConfirmationModal from "./ConfirmationModal";
 
 export const PayslipModal = ({ closeModal, payslip }) => {
   if (!payslip) return null; // Ensures the modal only renders when a payslip is selected
@@ -14,11 +13,45 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   const [employeeSalaries, setEmployeeSalaries] = useState([]);
   const itemsPerPage = 5; // Adjust based on preference
   const [openMenuId, setOpenMenuId] = useState(null); // Track which dropdown is open
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [actionType, setActionType] = useState(null);
+  const [remark, setRemark] = useState(""); // Holds the remark
+  const [selectedPayslips, setSelectedPayslips] = useState([]); // Holds selected payslip items
+  const [isBulkAction, setIsBulkAction] = useState(false); // Flag to differentiate between bulk action or single item update
 
+  const openConfirmationModalForPayslip = (type) => {
+    setActionType(type);
+    setIsBulkAction(false); // Reset to update the entire payslip
+    setRemark(""); // Reset the remark
+    setIsConfirmationModalOpen(true);
+  };
+
+  const openConfirmationModalForItem = (type) => {
+    setActionType(type);
+    setIsBulkAction(true); // Mark this as bulk action for selected items
+    setRemark(""); // Reset the remark
+    setIsConfirmationModalOpen(true);
+  };
+
+  const closeConfirmationModal = () => {
+    setIsConfirmationModalOpen(false);
+  };
+
+  const handleConfirmation = () => {
+    if (isBulkAction) {
+      // Bulk update for selected payslip items
+      updatePayslipItemStatus(selectedPayslips, actionType, remark);
+    } else {
+      // Individual payslip update
+      updatePayslipStatus(actionType, remark);
+    }
+    setIsConfirmationModalOpen(false); // Close the modal after action
+    setSelectedPayslips([]); // Reset selected payslips after action
+  };
 
   // Filter employees based on search term
   const filteredEmployees = payslip.Employee_Salary
-    ? payslip.Employee_Salary.filter(employee =>
+    ? payslip.Employee_Salary.filter((employee) =>
         employee.employee_name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
@@ -30,113 +63,113 @@ export const PayslipModal = ({ closeModal, payslip }) => {
     currentPage * itemsPerPage
   );
 
-    useEffect(() => {
-      const fetchPayslipDetails = async () => {
-        try {
-          const response = await fetch(`http://localhost:5000/api/hr/payslips/${payslip.id}`);
-          const data = await response.json();
-  
-          if (response.ok) {
-            setEmployeeSalaries(data.data?.items || []);
-          } else {
-            console.error("Failed to fetch payslip details:", data.error);
-          }
-        } catch (error) {
-          console.error("Error fetching payslip details:", error);
-        }
-      };
-  
-      if (payslip?.id) {
-        fetchPayslipDetails();
-      }
-    }, [payslip]);
+  useEffect(() => {
+    const fetchPayslipDetails = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/hr/payslips/${payslip.id}`);
+        const data = await response.json();
 
-    const getDropdownOptions = (status) => {
-      const allOptions = ["View", "Approved", "Pending", "Rejected"];
-      return allOptions.filter((option) => {
-        if (option === "Approved" && status === "Approved") return false;
-        if (option === "Pending" && status === "Pending") return false;
-        if (option === "Rejected" && status === "Rejected") return false;
-        return true;
+        if (response.ok) {
+          setEmployeeSalaries(data.data?.items || []);
+        } else {
+          console.error("Failed to fetch payslip details:", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching payslip details:", error);
+      }
+    };
+
+    if (payslip?.id) {
+      fetchPayslipDetails();
+    }
+  }, [payslip]);
+
+  const togglePayslipSelection = (payslipItemId) => {
+    setSelectedPayslips((prevSelected) =>
+      prevSelected.includes(payslipItemId)
+        ? prevSelected.filter((id) => id !== payslipItemId)
+        : [...prevSelected, payslipItemId]
+    );
+  };
+
+  // Update single payslip item status
+  const updatePayslipStatus = async (status, remark) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/hr/updatePayslipStatus", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          payslipId: payslip.id,
+          status: status,
+          remarks: remark,
+        }),
       });
-    };
 
-    const updateStatus = async (payslip_item_id, newStatus) => {
-      console.log('payrollID:', payslip_item_id);
-      console.log('Status:', newStatus);
+      const data = await response.json();
 
-      try {
-        const response = await fetch(`http://localhost:5000/api/hr/updatePayslipItemStatus`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ 
-            selectedItemIds: payslip_item_id,
-            newStatus: newStatus 
-          }),
-        });
-    
-        const data = await response.json();
-        if (response.ok) {
-          // Update local state after successful update
-          setEmployeeSalaries((prev) =>
-            prev.map((emp) =>
-              emp.payslip_item_id === payslip_item_id ? { ...emp, status: newStatus } : emp
-            )
-          );
-          setOpenMenuId(null);
-        } else {
-          console.error("Failed to update status:", data.error);
-        }
-      } catch (error) {
-        console.error("Error updating status:", error);
+      if (response.ok) {
+        alert(`Payslip ${status}`);
+      } else {
+        console.error("Failed to update payslip status:", data.error);
       }
-    };
+    } catch (error) {
+      console.error("Error updating payslip status:", error);
+    }
+  };
 
-    const updatePayslipStatus = async (status) => {
-      console.log("payslipID", payslip.id);
-      console.log("Status", status);
-      try {
-        const response = await fetch(`http://localhost:5000/api/hr/updatePayslipStatus`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ payslipId: payslip.id, status }),
-        });
-    
-        const data = await response.json();
-    
-        if (response.ok) {
-          console.log(data.message);
-          // Optional: you can set a status in the state if you want to reflect it on UI
-          alert(`Payslip ${status}`);
-        } else {
-          console.error("Failed to update payslip status:", data.error);
-        }
-      } catch (error) {
-        console.error("Error updating payslip status:", error);
+  // Bulk update payslip items status
+  const updatePayslipItemStatus = async (selectedItemIds, status, remark) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/hr/updatePayslipItemStatus", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          selectedItemIds: selectedItemIds,
+          newStatus: status,
+          remarks: remark,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setEmployeeSalaries((prev) =>
+          prev.map((emp) =>
+            selectedItemIds.includes(emp.payslip_item_id)
+              ? { ...emp, status: status }
+              : emp
+          )
+        );
+      } else {
+        console.error("Failed to update status:", data.error);
       }
-    };
-    
-    
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[800px] h-[600px] overflow-hidden flex flex-col">
         {/* Modal Header */}
         <div className="flex justify-between items-center w-full mb-4">
-            <div>
-                <div className="flex items-center space-x-2">
-                    <h2 className="text-lg text-gray-500">Payslip:</h2>
-                    <p className="font-bold">{payslip.title}</p>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <h2 className="text-lg text-gray-500">Period:</h2>
-                    <p className="font-bold">{payslip.start} <span className="text-gray-500">to</span> {payslip.end}</p>
-                </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg text-gray-500">Payslip:</h2>
+              <p className="font-bold">{payslip.title}</p>
             </div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg text-gray-500">Remarks:</h2>
+              <p className="font-bold">{payslip.remarks}</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-lg text-gray-500">Period:</h2>
+              <p className="font-bold">{payslip.start} <span className="text-gray-500">to</span> {payslip.end}</p>
+            </div>
+          </div>
           <button onClick={closeModal} className="text-gray-600 hover:text-red-500 cursor-pointer">
             <X size={24} />
           </button>
@@ -152,27 +185,34 @@ export const PayslipModal = ({ closeModal, payslip }) => {
         />
 
         {/* Payslip Details */}
-        <div className="space-y-3 flex-1 overflow-auto ">
+        <div className="space-y-3 flex-1 overflow-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-[#4c735c] text-white hover:bg-[#4c735c]">
+                <TableHead className="text-center text-white">Select</TableHead>
                 <TableHead className="text-center text-white">Employee Name</TableHead>
                 <TableHead className="text-center text-white">Total Hours</TableHead>
                 <TableHead className="text-center text-white">Salary</TableHead>
                 <TableHead className="text-center text-white">Status</TableHead>
-                <TableHead className="text-center text-white">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="overflow-y-auto max-h-[400px]">
+            <TableBody>
               {employeeSalaries.length > 0 ? (
                 employeeSalaries.map((emp, index) => (
                   <TableRow key={index} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
+                    <TableCell className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedPayslips.includes(emp.payslip_item_id)}
+                        onChange={() => togglePayslipSelection(emp.payslip_item_id)}
+                      />
+                    </TableCell>
                     <TableCell className="text-center">{emp.employee_name}</TableCell>
                     <TableCell className="text-center">{parseFloat(emp.total_hours_worked).toFixed(2)}</TableCell>
                     <TableCell className="text-center">₱{parseFloat(emp.calculated_salary).toLocaleString()}</TableCell>
                     <TableCell className="text-center p-2">
                       <p className={`text-center text-xs p-2 font-semibold rounded-md ${
-                        emp.status === "Approved"
+                        emp.status === "Approved by HR"
                           ? "bg-green-100 text-green-800"
                           : emp.status === "Pending"
                           ? "bg-yellow-100 text-yellow-800"
@@ -181,60 +221,60 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                         {emp.status}
                       </p>
                     </TableCell>
-                    <TableCell className="text-center relative p-2">
-                      <div className="relative inline-block">
-                        <button
-                          className="bg-gray-200 hover:bg-gray-300 p-1 rounded"
-                          onClick={() =>
-                            setOpenMenuId(openMenuId === emp.payslip_item_id ? null : emp.payslip_item_id)
-                          }
-                        >
-                          <DotsThree />
-                        </button>
-
-                        {openMenuId === emp.payslip_item_id && (
-                          <div className="absolute right-0 mt-2 w-32 bg-white border rounded shadow-md z-10 flex flex-col">
-                            {getDropdownOptions(emp.status).map((option) => (
-                              <button
-                                key={option}
-                                onClick={() => updateStatus(emp.payslip_item_id, option)}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      </TableCell>
                   </TableRow>
-                  
                 ))
-                
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center p-4 text-gray-500">No matching employees</TableCell>
+                  <TableCell colSpan={5} className="text-center p-4 text-gray-500">No matching employees</TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
-            <div className="flex justify-center gap-4 mt-4">
-              <button
-                onClick={() => updatePayslipStatus("approved")}
-                className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => updatePayslipStatus("rejected")}
-                className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-              >
-                Reject
-              </button>
-            </div>
+
+        {/* Bulk Action Dropdown */}
+        {selectedPayslips.length > 0 && (
+          <div className="mt-4 flex justify-between">
+            <select
+              className="border p-2 rounded-md"
+              onChange={(e) => openConfirmationModalForItem(e.target.value)}
+            >
+              <option value="">Select Action</option>
+              <option value="Approved by HR">Approve</option>
+              <option value="Rejected by HR">Reject</option>
+            </select>
+          </div>
+        )}
+
+        {/* Accept and Reject Buttons */}
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => openConfirmationModalForPayslip("Approved by HR")}
+            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => openConfirmationModalForPayslip("Rejected by HR")}
+            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+          >
+            Reject
+          </button>
+        </div>
+
         <PaginationComponent currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
       </div>
+
+      {/* Confirmation Modal */}
+      {isConfirmationModalOpen && (
+        <ConfirmationModal
+          isOpen={isConfirmationModalOpen}
+          onClose={closeConfirmationModal}
+          onConfirm={handleConfirmation}
+          actionType={actionType} // Pass the action type to display in modal
+          setRemark={setRemark}
+        />
+      )}
     </div>
   );
 };

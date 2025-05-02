@@ -59,20 +59,20 @@ const getEmployeeSalary = (req, res) => {
     
             // Step 2: Proceed to calculate and insert new payroll
             const calculationQuery = `
-                SELECT 
-                    e.id AS employee_id,
-                    es.fixed_salary,
-                    ROUND(SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600, 2) AS total_hours_worked,
-                    ROUND(
-                        (SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600) 
-                        / 120 * (es.fixed_salary / 2), 2
-                    ) AS calculated_salary  
-                FROM users e
-                JOIN employee_salary es ON e.id = es.employee_id
-                JOIN attendance a ON e.id = a.employee_id
-                WHERE a.status = 'Present' 
-                    AND a.check_in BETWEEN ? AND ?
-                GROUP BY e.id, es.fixed_salary`;
+              SELECT 
+                  e.id AS employee_id,
+                  es.fixed_salary,
+                  ROUND(SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600, 2) AS total_hours_worked,
+                  ROUND(
+                      (SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600) 
+                      / 120 * (es.fixed_salary / 2), 2
+                  ) AS calculated_salary  
+              FROM users e
+              JOIN employee_salary es ON e.id = es.employee_id
+              JOIN attendance a ON e.id = a.employee_id
+              WHERE a.status = 'Present' 
+                  AND a.check_in BETWEEN ? AND ?
+              GROUP BY e.id, es.fixed_salary`;
     
             db.query(calculationQuery, [startDate, endDate], (calcErr, results) => {
                 if (calcErr) {
@@ -94,7 +94,9 @@ const getEmployeeSalary = (req, res) => {
                     generatedBy,
                     new Date()
                 ]);
-    
+
+                console.log(payrollData);
+
                 const insertQuery = `
                     INSERT INTO payroll 
                     (employee_id, period_start, period_end, total_hours_worked, calculated_salary, status, generated_by, generated_at)
@@ -126,25 +128,25 @@ const getEmployeeSalary = (req, res) => {
         }
     
         const query = `
-            SELECT 
-                p.id,
-                p.employee_id,
-                e.full_name,
-                p.period_start,
-                p.period_end,
-                p.total_hours_worked,
-                p.calculated_salary,
-                p.status,
-                p.generated_by,
-                p.generated_at,
-                es.fixed_salary,
-                d.name
-            FROM payroll p
-            JOIN users e ON p.employee_id = e.id
-            JOIN employee_salary es ON p.employee_id = es.employee_id
-            JOIN departments d on e.department_id = d.id
-            WHERE p.period_start >= ? AND p.period_end <= ?
-            ORDER BY p.period_end DESC
+SELECT 
+    e.employee_id,               -- Get employee_id from the users table
+    e.full_name,
+    p.period_start,
+    p.period_end,
+    p.total_hours_worked,
+    p.calculated_salary,
+    p.status,
+    p.generated_by,
+    p.generated_at,
+    es.fixed_salary,
+    d.name AS department_name    -- Get the department name
+FROM payroll p
+JOIN users e ON p.employee_id = e.id   -- Use the id from users table (since payroll's employee_id links to users' id)
+JOIN employee_salary es ON p.employee_id = es.employee_id
+JOIN departments d on e.department_id = d.id
+WHERE p.period_start >= ? AND p.period_end <= ?
+ORDER BY p.period_end DESC;
+
 ;
         `;
     
@@ -169,7 +171,7 @@ const getPresentEmployee = (req, res) => {
 
     const query = `
         SELECT 
-            e.id AS employee_id,
+            e.employee_id AS employee_id,
             e.full_name,
             e.email,
             a.check_in,
@@ -198,7 +200,7 @@ const getPresentEmployee = (req, res) => {
 //working
 const getEmployeeAttendance = (req, res) => {
     const query = `        SELECT 
-            e.id AS employee_id,
+            e.employee_id AS employee_id,
             e.full_name,
             e.email,
             a.check_in,
@@ -245,7 +247,7 @@ const updatePayrollStatus = (req, res) => {
 };
 
 const createPayslip = (req, res) => {
-    const { createdBy, title, startDate, endDate } = req.body;
+    const { createdBy, title, remarks, startDate, endDate } = req.body;
 
     if (!createdBy || !title || !startDate || !endDate) {
         return res.status(400).json({ error: "Title, startDate, and endDate are required." });
@@ -413,7 +415,7 @@ const getPayslipById = (req, res) => {
             u.full_name AS employee_name,
             pr.total_hours_worked,
             pr.calculated_salary,
-            pi.status
+            pi.hr_status
         FROM payslip ps
         LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
         LEFT JOIN payroll pr ON pi.payroll_id = pr.id
@@ -444,7 +446,7 @@ const getPayslipById = (req, res) => {
                 employee_name: row.employee_name,
                 total_hours_worked: row.total_hours_worked,
                 calculated_salary: row.calculated_salary,
-                status: row.status
+                status: row.hr_status
             }))
         };
 
@@ -456,23 +458,29 @@ const getPayslipById = (req, res) => {
 };
 
 const updatePayslipItemStatus = (req, res) => {
-    const { selectedItemIds, newStatus } = req.body;
+    const { selectedItemIds, newStatus, remarks } = req.body;
 
     if (!selectedItemIds || selectedItemIds.length === 0) {
         return res.status(400).json({ error: "No payslip items selected for update." });
     }
 
-    if (!["Approved", "Rejected"].includes(newStatus)) {
+    if (!["Approved by HR", "Rejected by HR"].includes(newStatus)) {
         return res.status(400).json({ error: "Invalid status provided." });
+    }
+
+      // If the status is "Rejected by HR", remarks must be provided
+    if (newStatus === "Rejected by HR" && !remarks) {
+      return res.status(400).json({ error: "Remarks are required when rejecting a payslip." });
     }
 
     const query = `
         UPDATE payslip_items
-        SET status = ?
+        SET hr_status = ?,
+        remarks = ?
         WHERE id IN (?)
     `;
 
-    db.query(query, [newStatus, selectedItemIds], (err, result) => {
+    db.query(query, [newStatus, remarks || null, selectedItemIds], (err, result) => {
         if (err) {
             console.error("Database error during payslip item status update:", err);
             return res.status(500).json({ error: "Failed to update payslip item status." });
@@ -483,26 +491,39 @@ const updatePayslipItemStatus = (req, res) => {
 };
 
 const updatePayslipStatus = (req, res) => {
-    const { payslipId, status } = req.body;
+  const { payslipId, status, remarks } = req.body;
 
-    if (!payslipId || !["approved", "rejected"].includes(status)) {
-        return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
-    }
+  // Validate the request
+  if (!payslipId || !["Approved by HR", "Rejected by HR"].includes(status)) {
+      return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+  }
 
-    const query = `UPDATE payslip SET status = ? WHERE id = ?`;
+  // If the status is "Rejected by HR", remarks must be provided
+  if (status === "Rejected by HR" && !remarks) {
+      return res.status(400).json({ error: "Remarks are required when rejecting a payslip." });
+  }
 
-    db.query(query, [status, payslipId], (err, result) => {
-        if (err) {
-            console.error("Error updating payslip status:", err);
-            return res.status(500).json({ error: "Failed to update payslip status." });
-        }
+  // Prepare the query to update the payslip status and remarks
+  const query = `UPDATE payslip 
+                 SET hr_status = ?, 
+                  hr_rejection_remarks = ? 
+                 WHERE id = ?`;
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Payslip not found." });
-        }
+  // Execute the query
+  db.query(query, [status, remarks || null, payslipId], (err, result) => {
+      if (err) {
+          console.error("Error updating payslip status:", err);
+          return res.status(500).json({ error: "Failed to update payslip status." });
+      }
 
-        res.json({ message: `Payslip has been ${status}.` });
-    });
+      // If no rows were affected, return a 404 error
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "Payslip not found." });
+      }
+
+      // Return success message
+      res.json({ message: `Payslip has been ${status}.` });
+  });
 };
 
 

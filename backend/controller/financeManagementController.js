@@ -69,13 +69,13 @@ const updatePayrollStatus = (req, res) => {
             u.full_name AS employee_name,
             pr.total_hours_worked,
             pr.calculated_salary,
-            pi.status
+            pi.hr_status
         FROM payslip ps
         LEFT JOIN users creator ON ps.created_by = creator.id
         LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
         LEFT JOIN payroll pr ON pi.payroll_id = pr.id
         LEFT JOIN users u ON pr.employee_id = u.id
-        WHERE ps.status = 'approved' AND pi.status = 'approved'
+        WHERE ps.hr_status = 'Approved by HR' AND pi.hr_status = 'Approved by HR'
     `;
 
     db.query(query, (err, results) => {
@@ -105,7 +105,7 @@ const updatePayrollStatus = (req, res) => {
                 employee_name: row.employee_name,
                 total_hours_worked: row.total_hours_worked,
                 calculated_salary: row.calculated_salary,
-                status: row.status
+                status: row.hr_status
             });
         });
 
@@ -119,15 +119,15 @@ const updatePayrollStatus = (req, res) => {
 };
 
 const financeUpdatePayslipStatus = (req, res) => {
-  const { payslipId, status, approvedBy } = req.body;
+  const { payslipId, status, remarks, approvedBy } = req.body;
 
-  if (!payslipId || !["approved", "rejected"].includes(status)) {
+  if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
       return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
   }
 
-  const query = `UPDATE payslip SET finance_status = ?, approved_by_id = ?, approved_at = NOW() WHERE id = ?`;
+  const query = `UPDATE payslip SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() WHERE id = ?`;
 
-  db.query(query, [status, approvedBy, payslipId], (err, result) => {
+  db.query(query, [status, remarks || null ,approvedBy, payslipId], (err, result) => {
       if (err) {
           console.error("Error updating payslip status:", err);
           return res.status(500).json({ error: "Failed to update payslip status." });
