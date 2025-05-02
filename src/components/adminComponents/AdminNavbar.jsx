@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { List, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
+import { List,UserCircleCheck, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
@@ -27,6 +27,7 @@ const AdminNavbar = ({ children }) => {
         { name: "Finance", icon: <Bank size={20} />, href: "/admin-dashboard/finance", permission: "can_access_finance" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
         { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
+        { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard",},
     ];
 
     const currentPage = (() => {
@@ -196,7 +197,7 @@ const AdminNavbar = ({ children }) => {
             {mobileSidebarOpen && (
                 <div className="fixed inset-0 bg-[#3b5d47] text-white p-5 z-50 flex flex-col overflow-y-auto">
                     <div className="flex justify-between items-center mb-6">
-                        <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
+                        <img src={DUVLogoWhite} alt="Logo" className="w-3 h-auto" />
                         <button onClick={toggleMobileSidebar}>
                             <X size={24} className="text-white cursor-pointer hover:text-[#5A8366]" />
                         </button>
