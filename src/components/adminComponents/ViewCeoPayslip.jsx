@@ -50,7 +50,7 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
                 selectedPayslips.items.map((record, index) => (
                   <TableRow key={index} className='hover:bg-gray-100 cursor-pointer'>
                     <TableCell className='text-center'>{record.employee_name}</TableCell>
-                    <TableCell className='text-center'>{record.total_hours}</TableCell>
+                    <TableCell className='text-center'>{record.total_hours_worked}</TableCell>
                     <TableCell className='text-center'>₱{record.calculated_salary}</TableCell>
                     <TableCell className={`text-center ${getStatusColor(record?.status)}`}>
                       {record?.status || "No Status"}

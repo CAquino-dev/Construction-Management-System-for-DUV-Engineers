@@ -82,7 +82,34 @@ export const AddProject = () => {
       engineer_id: selectedEngineer, // Include selected engineer in the project data
     };
 
-    console.log(projectDataToSubmit);
+    try {
+      const response = await fetch(`http://localhost:5000/api/engr/createProject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_name: projectData.projectName,
+          client_id: selectedClient ,
+          project_type: projectData.projectType,
+          description: projectData.description,
+          location: projectData.location,
+          start_date: projectData.startDate,
+          end_date: projectData.endDate,
+          budget: projectData.budgetAllocated,
+          status: projectData.status,
+          cost_breakdown: projectData.costBreakdown,
+          payment_schedule: projectData.paymentSchedule,
+          engineer_id: selectedEngineer, // Include selected engineer in the project data
+        }),
+      });
+      const data = await response.json();
+      if(response.ok){
+        alert('Project Added Succesfully')
+      } else{
+        alert('an error has occured in adding projects')
+      }
+    } catch (error) {
+      console.log('error message', error)
+    }
 
     // You can now submit this data to your backend for storing in the database.
   };
