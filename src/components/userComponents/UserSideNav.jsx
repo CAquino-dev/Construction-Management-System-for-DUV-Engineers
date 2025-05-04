@@ -16,7 +16,7 @@ export const UserSideNav = ({ children }) => {
 
     const menuItems = [
         { name: "Home", icon: <House size={20} />, href: "/ClientDashboard" },
-        { name: "Projects", icon: <ClipboardText size={20} />, href: "/ClientDashboard/projects" },
+        { name: "Projects", icon: <ClipboardText size={20} />, href: "/ClientDashboard/projects-client" },
         { name: "Messages", icon: <Envelope size={20} />, href: "/ClientDashboard/messages" },
         
     ];
