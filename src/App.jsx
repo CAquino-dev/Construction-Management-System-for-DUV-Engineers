@@ -26,6 +26,8 @@ import { ClientDashboard } from './pages/userPages/ClientDashboard';
 import { ClientLayout } from './layouts/ClientLayout';
 import { CeoDashboard } from './pages/admin/CeoDashboard';
 import { ApprovedPayrollOfCeo } from './pages/admin/ApprovedPayrollOfCeo';
+import { ProjectsClient } from './pages/userPages/ProjectsClient';
+import { ChatBot } from './pages/userPages/ChatBot';
 
 const App = () => {
   return (
@@ -39,11 +41,13 @@ const App = () => {
             <Route path='our-team' element={<OurTeam/>} />
             <Route path='aboutus' element={<AboutUs/>} />
             <Route path='report-problem' element={<ReportProblem/>} />
+            <Route path='chatbot' element={<ChatBot/>} />
           </Route>
 
           {/*Client Logged in Route*/}
           <Route path='/clientDashboard' element={<ClientLayout/>}>
-            <Route index element={<ClientDashboard/>} />
+            <Route index element={<ClientDashboard/>} />  
+            <Route path='projects-client' element={<ProjectsClient/>} />
           </Route>
 
           {/* Admin Routes */}
