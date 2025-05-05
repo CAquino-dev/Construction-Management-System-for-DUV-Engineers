@@ -24,6 +24,7 @@ const UserNavbar = () => {
           <Link to="/projects" className="hover:text-gray-400 transition">Projects</Link>
           <Link to="/our-team" className="hover:text-gray-400 transition">Our Team</Link>
           <Link to="/aboutus" className="hover:text-gray-400 transition">About Us</Link>
+          <Link to="/chatbot" className="hover:text-gray-400 transition">ChatBot</Link>
           <Link to="/login" className="hover:text-gray-400 transition">Login</Link>
 
           {/* Support Desk Dropdown */}
@@ -58,6 +59,7 @@ const UserNavbar = () => {
         <Link to="/projects" className="py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>Projects</Link>
         <Link to="/our-team" className="py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>Our Team</Link>
         <Link to="/aboutus" className="py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>About Us</Link>
+        <Link to="/chatbot" className="py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>ChatBot</Link>
         <Link to="/login" className="py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>Login</Link>
 
         {/* Mobile Support Desk Dropdown */}
