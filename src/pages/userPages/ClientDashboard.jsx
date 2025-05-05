@@ -6,8 +6,6 @@ export const ClientDashboard = () => {
   const [error, setError] = useState(null);
 
   const userId = localStorage.getItem('userId');
-  console.log(userId);
-  
 
   useEffect(() => {
     const fetchClientProjects = async () => {
