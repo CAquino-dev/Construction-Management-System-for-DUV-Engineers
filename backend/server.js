@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require('path');  // Make sure to require 'path'
 const authRoutes = require("./routes/authRoute")
 const userManagementRoute = require("./routes/userManagementRoute");
 const employeeManagementRoute = require("./routes/employeeManagementRoutes");
@@ -13,6 +14,7 @@ require("./config/db"); // Ensure database connects
 const app = express();
 app.use(express.json()); // Parse JSON
 app.use(cors()); // Handle CORS
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 app.use("/api/auth", authRoutes); // Use the auth routes
 app.use("/api/users", userManagementRoute); 

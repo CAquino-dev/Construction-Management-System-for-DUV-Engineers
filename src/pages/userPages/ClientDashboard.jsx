@@ -77,6 +77,12 @@ export const ClientDashboard = () => {
             )}
           </tbody>
         </table>
+        {projects.map(project => (
+            <div key={project.id}>
+              <img src={`${project.project_photo}`} alt={project.project_name} />
+            </div>
+          ))}
+
       </div>
     </div>
     </div>

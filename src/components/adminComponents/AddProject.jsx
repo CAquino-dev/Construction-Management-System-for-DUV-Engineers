@@ -27,6 +27,8 @@ export const AddProject = () => {
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(""); // Store selected engineer ID
   const [selectedEngineer, setSelectedEngineer] = useState(""); // Store selected engineer ID
+  const [projectPhoto, setProjectPhoto] = useState(null); // State for storing the selected photo
+  const [photoPreview, setPhotoPreview] = useState(null); // State for photo preview
 
   useEffect(() => {
     const getEngineers = async () => {
@@ -64,54 +66,59 @@ export const AddProject = () => {
     }));
   };
 
+  // Handle the photo upload and preview
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    setProjectPhoto(file);
+  
+    // Generate preview of the selected photo
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result); // Set the preview URL
+    };
+    if (file) {
+      reader.readAsDataURL(file); // Read the file as a base64 URL
+    }
+  };
+  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const projectDataToSubmit = {
-      project_name: projectData.projectName,
-      client_id: selectedClient ,
-      project_type: projectData.projectType,
-      description: projectData.description,
-      location: projectData.location,
-      start_date: projectData.startDate,
-      end_date: projectData.endDate,
-      budget: projectData.budgetAllocated,
-      status: projectData.status,
-      cost_breakdown: projectData.costBreakdown,
-      payment_schedule: projectData.paymentSchedule,
-      engineer_id: selectedEngineer, // Include selected engineer in the project data
-    };
-
+  
+    const formData = new FormData();
+    formData.append('project_name', projectData.projectName);
+    formData.append('client_id', selectedClient);
+    formData.append('project_type', projectData.projectType);
+    formData.append('description', projectData.description);
+    formData.append('location', projectData.location);
+    formData.append('start_date', projectData.startDate);
+    formData.append('end_date', projectData.endDate);
+    formData.append('budget', projectData.budgetAllocated);
+    formData.append('status', projectData.status);
+    formData.append('cost_breakdown', projectData.costBreakdown);
+    formData.append('payment_schedule', projectData.paymentSchedule);
+    formData.append('engineer_id', selectedEngineer);
+  
+    if (projectPhoto) {
+      formData.append('project_photo', projectPhoto);  // Append the photo to FormData
+    }
+  
     try {
-      const response = await fetch(`http://localhost:5000/api/engr/createProject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_name: projectData.projectName,
-          client_id: selectedClient ,
-          project_type: projectData.projectType,
-          description: projectData.description,
-          location: projectData.location,
-          start_date: projectData.startDate,
-          end_date: projectData.endDate,
-          budget: projectData.budgetAllocated,
-          status: projectData.status,
-          cost_breakdown: projectData.costBreakdown,
-          payment_schedule: projectData.paymentSchedule,
-          engineer_id: selectedEngineer, // Include selected engineer in the project data
-        }),
+      const response = await fetch('http://localhost:5000/api/engr/createProject', {
+        method: 'POST',
+        body: formData,  // Send the FormData (multipart/form-data)
       });
+  
       const data = await response.json();
-      if(response.ok){
-        alert('Project Added Succesfully')
-      } else{
-        alert('an error has occured in adding projects')
+  
+      if (response.ok) {
+        alert('Project Added Successfully');
+      } else {
+        alert('An error occurred while adding the project');
       }
     } catch (error) {
-      console.log('error message', error)
+      console.log('Error message:', error);
     }
-
-    // You can now submit this data to your backend for storing in the database.
   };
 
   return (
@@ -253,9 +260,8 @@ export const AddProject = () => {
               className="w-full p-2 border rounded-md"
             >
               <option value="">Select Status</option>
-              <option value="Completed">Completed</option>
               <option value="In Progress">In Progress</option>
-              <option value="Not Started">Not Started</option>
+              <option value="Pending">Pending</option>
             </select>
           </div>
         </div>
@@ -279,6 +285,30 @@ export const AddProject = () => {
               className="w-full p-2 border rounded-md"
             ></textarea>
           </div>
+        </div>
+
+        {/* Photo Upload Section */}
+        <div>
+          <label htmlFor="projectPhoto" className="block text-sm font-medium text-gray-700">
+            Add Contract Photo
+          </label>
+          <div>
+              <input id="projectPhoto" 
+              name="project_photo"  // Add this to match backend expectation
+              type="file" 
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="mt-2 block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-teal-500 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:bg-teal-700 focus:outline-none disabled:pointer-events-none disabled:opacity-60" />
+          </div>
+          {photoPreview && (
+            <div className="mt-2">
+              <img
+                src={photoPreview}
+                alt="Project Photo Preview"
+                className="w-32 h-auto object-cover"
+              />
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}
