@@ -8,28 +8,23 @@ export const MyProject = () => {
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {
-    // This is where the backend data would come from.
-    const fetchedProjects = [
-      {
-        id: 1,
-        projectname_: "Project A",
-        Client: "King kong",
-        date_started: "2025-01-01",
-        date_end: "2025-06-01",
-        image: duvLogo 
-      },
-      {
-        id: 2,
-        projectname_: "Project B",
-        Client: "Monkey D Luffy",
-        date_started: "2025-02-01",
-        date_end: "2025-07-01",
-        image: duvLogo 
-      },
+    const fetchEngineerProjects = async () => {
+      try {
+        
+      const response = await fetch(`http://localhost:5000/api/engr/getEngineerProjects/10`);
+      if(response.ok){
+      const data = await response.json();
+      setProjects(data.projects)
+      }  else {
+        throw new Error("Failed to fetch projects.");
+      }        
+      } catch (error) {
+       console.error(error) 
+      }
+    };
 
-    ];
+    fetchEngineerProjects();
 
-    setProjects(fetchedProjects);
   }, []);
 
   return (

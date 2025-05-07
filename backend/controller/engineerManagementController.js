@@ -157,8 +157,32 @@ const createProject = (req, res) => {
     });
   };
   
+  const getEngineerProjects = (req, res) => {
+    const { engineerId } = req.params;  // Get engineerId from request params
+
+    // SQL query to fetch all projects assigned to the engineer
+    const query = `
+        SELECT ep.id, ep.project_name, ep.description, ep.start_date, ep.end_date, ep.status, 
+               ep.budget, ep.location, ep.project_type, ep.project_photo, 
+               u.full_name AS client_name
+        FROM engineer_projects ep
+        JOIN users u ON ep.client_id = u.id
+        WHERE ep.engineer_id = ?;
+    `;
+
+    db.query(query, [engineerId], (err, results) => {
+        if (err) {
+            console.error("Error fetching engineer's projects:", err);
+            return res.status(500).json({ error: "Failed to fetch engineer's projects" });
+        }
+
+        // Send the list of projects as a response
+        res.json({ projects: results });
+    });
+};
+
   
   
 
 
-module.exports = { getEngineers, createProject, getClients, getClientProject };
+module.exports = { getEngineers, createProject, getClients, getClientProject, getEngineerProjects};
