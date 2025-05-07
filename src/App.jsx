@@ -28,6 +28,8 @@ import { CeoDashboard } from './pages/admin/CeoDashboard';
 import { ApprovedPayrollOfCeo } from './pages/admin/ApprovedPayrollOfCeo';
 import { ProjectsClient } from './pages/userPages/ProjectsClient';
 import { ChatBot } from './pages/userPages/ChatBot';
+import { Messages } from './pages/userPages/Messages';
+import { MyProject } from './pages/admin/MyProject';
 
 const App = () => {
   return (
@@ -48,6 +50,7 @@ const App = () => {
           <Route path='/clientDashboard' element={<ClientLayout/>}>
             <Route index element={<ClientDashboard/>} />  
             <Route path='projects-client' element={<ProjectsClient/>} />
+            <Route path='messages' element={<Messages/>} />
           </Route>
 
           {/* Admin Routes */}
@@ -62,7 +65,8 @@ const App = () => {
             <Route path='hr/payslip' element={<Payslip/>} />
             <Route path='finance/approved-payroll-from-hr' element={<Finance/>} />
             <Route path='finance/approved-payroll-from-ceo' element={<ApprovedPayrollOfCeo/>} />
-            <Route path='projects' element={<Projects/>} />
+            <Route path='engineer/projects' element={<Projects/>} />
+            <Route path='engineer/my-project' element={<MyProject/>} />
             <Route path='employees' element={<EmployeeManagement/>} />
             <Route path='inventory' element={<Inventory/>} />
             <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
