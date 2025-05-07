@@ -66,4 +66,24 @@ const getEstimate = async (req, res) => {
   }
 };
 
-module.exports = { getEstimate };
+// Get all milestones for a specific project
+const getMilestones = (req, res) => {
+  const { projectId } = req.params;  // Get projectId from request params
+
+  const query = `
+      SELECT id, project_id, timestamp, status, details
+      FROM milestones
+      WHERE project_id = ?
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+      if (err) {
+          console.error("Error fetching milestones:", err);
+          return res.status(500).json({ error: "Failed to fetch milestones" });
+      }
+      res.json({ milestones: results });
+  });
+};
+
+
+module.exports = { getEstimate, getMilestones };
