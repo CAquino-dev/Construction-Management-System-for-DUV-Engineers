@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { List,UserCircleCheck, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown } from "@phosphor-icons/react";
+import { List,UserCircleCheck, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown, HardHat } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
@@ -12,6 +12,7 @@ const AdminNavbar = ({ children }) => {
     const [isHrOpen, setIsHrOpen] = useState(false); // HR dropdown state
     const [isFinanceOpen, setIsFinanceOpen] = useState(false); // Finance dropdown state
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const [isEngineerOpen, setIsEngineerOpen] = useState(false); // Engineer dropdown state
     const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
     const location = useLocation();
     const navigate = useNavigate();
@@ -20,12 +21,12 @@ const AdminNavbar = ({ children }) => {
     const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);
     const toggleHrDropdown = () => setIsHrOpen(!isHrOpen);
     const toggleFinanceDropdown = () => setIsFinanceOpen(!isFinanceOpen);
+    const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
         { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
         { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
-        { name: "Projects", icon: <ListChecks size={20} />, href: "/admin-dashboard/projects", permission: "can_access_projects" },
         { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
         { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard",},
@@ -105,6 +106,38 @@ const AdminNavbar = ({ children }) => {
                                 </Link>
                             </li>
                         ))}
+
+                        {/* Collapsible Engineering Section */}
+                        <li>
+                            <button onClick={toggleEngineerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3 font-semibold"> 
+                                    <HardHat size={20} /> Engineer
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isEngineerOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isEngineerOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/engineer/projects" 
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/engineer/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Projects
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            to="/admin-dashboard/engineer/my-project"
+                                            className={`block p-2 rounded-lg ${
+                                                location.pathname === "/admin-dashboard/engineer/my-project" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            My Project
+                                        </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
                         {/* Collapsible Finance Section */}
                         <li>
                             { permissions.can_access_finance === 'Y' && <button onClick={toggleFinanceDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
