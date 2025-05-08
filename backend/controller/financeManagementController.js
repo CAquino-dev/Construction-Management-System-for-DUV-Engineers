@@ -119,27 +119,43 @@ const updatePayrollStatus = (req, res) => {
 };
 
 const financeUpdatePayslipStatus = (req, res) => {
-  const { payslipId, status, remarks, approvedBy } = req.body;
-
-  if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
-      return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
-  }
-
-  const query = `UPDATE payslip SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() WHERE id = ?`;
-
-  db.query(query, [status, remarks || null ,approvedBy, payslipId], (err, result) => {
+    const { payslipId, status, remarks, approvedBy } = req.body;
+  
+    if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
+        return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+    }
+  
+    // Update the finance status of the payslip
+    const updatePayslipQuery = `UPDATE payslip 
+      SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() 
+      WHERE id = ?`;
+  
+    db.query(updatePayslipQuery, [status, remarks || null, approvedBy, payslipId], (err, result) => {
       if (err) {
-          console.error("Error updating payslip status:", err);
-          return res.status(500).json({ error: "Failed to update payslip status." });
+        console.error("Error updating payslip status:", err);
+        return res.status(500).json({ error: "Failed to update payslip status." });
       }
-
+  
       if (result.affectedRows === 0) {
-          return res.status(404).json({ error: "Payslip not found." });
+        return res.status(404).json({ error: "Payslip not found." });
       }
-
-      res.json({ message: `Payslip has been ${status}.` });
-  });
-}; 
+  
+      // Update the finance status of the payslip items
+      const updatePayslipItemsQuery = `UPDATE payslip_items 
+        SET finance_status = ? 
+        WHERE payslip_id = ?`;
+  
+      db.query(updatePayslipItemsQuery, [status, payslipId], (err2, result2) => {
+        if (err2) {
+          console.error("Error updating payslip items' finance status:", err2);
+          return res.status(500).json({ error: "Failed to update payslip items' finance status." });
+        }
+  
+        res.json({ message: `Payslip and associated items have been ${status}.` });
+      });
+    });
+  };
+  
   
 
 

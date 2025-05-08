@@ -1,25 +1,31 @@
 import React, { useState } from 'react';
 import { X } from '@phosphor-icons/react'; // Importing the close icon
 import  ConfirmationModal  from './ConfirmationModal'; // Assuming your modal component
+import { format } from 'date-fns';
 
-export const MyProjectAddMilestone = ({ onSave, onCancel }) => {
+export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
+  console.log('details', project)
   const [status, setStatus] = useState('');
   const [details, setDetails] = useState('');
-  const [pictures, setPictures] = useState([]);
+  const [milestonePhoto, setMilestonePhoto] = useState(null); // State for storing the selected photo
+  const [photoPreview, setPhotoPreview] = useState(null); // State for photo preview
   const [files, setFiles] = useState([]);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false); // Manage confirmation modal visibility
   const [remark, setRemark] = useState(''); // For rejection remark
 
   // Handle picture file selection
-  const handlePictureChange = (e) => {
-    const selectedPictures = Array.from(e.target.files);
-    setPictures((prevPictures) => [...prevPictures, ...selectedPictures]);
-  };
-
-  // Handle file selection
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    setMilestonePhoto(file);
+  
+    // Generate preview of the selected photo
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result); // Set the preview URL
+    };
+    if (file) {
+      reader.readAsDataURL(file); // Read the file as a base64 URL
+    }
   };
 
   // Handle removing a picture or file
@@ -33,7 +39,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel }) => {
 
   // Handle saving the new milestone
   const handleSave = () => {
-    const newMilestone = { status, details, pictures, files };
+    const newMilestone = { status, details, milestonePhoto};
     onSave(newMilestone); // Pass the new milestone to the parent component
   };
 
@@ -45,8 +51,29 @@ export const MyProjectAddMilestone = ({ onSave, onCancel }) => {
     setIsConfirmationModalOpen(false); // Close confirmation modal
   };
 
-  const handleConfirmation = () => {
+  const handleConfirmation = async () => {
     handleSave(); // Save the milestone
+
+    const formData = new FormData();
+    formData.append('status', status);
+    formData.append('details', details);
+    formData.append('project_photo', milestonePhoto);
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/engr/createMilestones/${project.id}`,{
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert('Milestone Added Successfully');
+      } else {
+        alert('An error occurred while adding the milestone');
+      }
+    } catch (error) {
+      console.log('Error message:', error);
+    }
+
     closeConfirmationModal(); // Close the modal
   };
 
@@ -65,7 +92,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel }) => {
 
         {/* Milestone Details */}
         <div>
-          <label className="block text-sm font-semibold mb-2">Title</label>
+          <label className="block text-sm font-semibold mb-2">Status</label>
           <input
             type="text"
             placeholder="Enter milestone title"
@@ -82,59 +109,27 @@ export const MyProjectAddMilestone = ({ onSave, onCancel }) => {
           ></textarea>
         </div>
 
-        {/* Picture Upload */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold mb-2">Add Pictures</label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handlePictureChange}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          {/* Display selected pictures */}
-          <div className="flex overflow-x-auto space-x-2 py-2">
-            {pictures.map((picture, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={URL.createObjectURL(picture)}
-                  alt="Uploaded"
-                  className="w-24 h-24 object-cover rounded-md"
-                />
-                <button
-                  onClick={() => handleRemove(index, 'picture')}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+        <div>
+          <label htmlFor="projectPhoto" className="block text-sm font-medium text-gray-700">
+            Add Contract Photo
+          </label>
+          <div>
+              <input id="projectPhoto" 
+              name="project_photo"  // Add this to match backend expectation
+              type="file" 
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="mt-2 block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-teal-500 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:bg-teal-700 focus:outline-none disabled:pointer-events-none disabled:opacity-60" />
           </div>
-        </div>
-
-        {/* File Upload */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold mb-2">Add Files</label>
-          <input
-            type="file"
-            multiple
-            onChange={handleFileChange}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          {/* Display selected files */}
-          <div className="space-y-2">
-            {files.map((file, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <span className="text-sm text-gray-700">{file.name}</span>
-                <button
-                  onClick={() => handleRemove(index, 'file')}
-                  className="bg-red-500 text-white text-sm px-2 py-1 rounded"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
+          {photoPreview && (
+            <div className="mt-2">
+              <img
+                src={photoPreview}
+                alt="Project Photo Preview"
+                className="w-32 h-auto object-cover"
+              />
+            </div>
+          )}
         </div>
 
         {/* Buttons */}

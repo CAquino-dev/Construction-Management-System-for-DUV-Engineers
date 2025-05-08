@@ -4,33 +4,32 @@ import { ViewProjectClient } from '../../components/userComponents/ViewProjectCl
 import duvLogo from '../../assets/duvLogo.jpg'; // Ensure the correct path to duvLogo
 
 export const ProjectsClient = () => {
-  const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
-    // This is where the backend data would come from.
-    const fetchedProjects = [
-      {
-        id: 1,
-        projectname_: "Project A",
-        Engineer: "John Doe",
-        date_started: "2025-01-01",
-        date_end: "2025-06-01",
-        image: duvLogo 
-      },
-      {
-        id: 2,
-        projectname_: "Project B",
-        Engineer: "Jane Smith",
-        date_started: "2025-02-01",
-        date_end: "2025-07-01",
-        image: duvLogo 
-      },
+    const fetchClientProjects = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/engr/getClientProject/${userId}`)
+        if(response.ok){
+          const data = await response.json();
+          setProjects(data.projects);
+        } else {
+          throw new Error("Failed to fetch projects.");
+        }
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    ];
-
-    setProjects(fetchedProjects);
-  }, []);
+    fetchClientProjects();
+  }, [])
 
   return (
     <div className="container mx-auto p-6 mt-10">

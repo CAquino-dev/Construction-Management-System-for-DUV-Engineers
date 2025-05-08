@@ -13,10 +13,10 @@ export const ProjectDetailsClient = ({ selectedProject }) => {
       <div className="space-y-4">
         <h4 className="text-lg font-semibold text-gray-800">Project Overview</h4>
         <p className="text-sm text-gray-600">
-          <span className="font-semibold">Project Name:</span> {selectedProject.projectname_ || "No project name available"}
+          <span className="font-semibold">Project Name:</span> {selectedProject.project_name|| "No project name available"}
         </p>
         <p className="text-sm text-gray-600">
-          <span className="font-semibold">Engineer:</span> {selectedProject.Engineer || "No engineer assigned"}
+          <span className="font-semibold">Engineer:</span> {selectedProject.engineer_name || "No engineer assigned"}
         </p>
         <p className="text-sm text-gray-600">
           <span className="font-semibold">Start Date:</span> {selectedProject.date_started || "No start date available"}

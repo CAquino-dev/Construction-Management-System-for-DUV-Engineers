@@ -3,10 +3,10 @@ import React, { useState } from 'react'
 export const MyProjectDetails = ({ selectedProject }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [projectDetails, setProjectDetails] = useState({
-    projectname_: selectedProject?.projectname_ || "",
-    Client: selectedProject?.Client || "",
-    date_started: selectedProject?.date_started || "",
-    date_end: selectedProject?.date_end || ""
+    projectname_: selectedProject?.project_name|| "",
+    Client: selectedProject?.client_name || "",
+    date_started: selectedProject?.start_date || "",
+    date_end: selectedProject?.end_date || ""
   });
 
   const handleEditClick = () => {
@@ -86,7 +86,7 @@ export const MyProjectDetails = ({ selectedProject }) => {
               className="text-sm border border-gray-300 rounded p-1"
             />
           ) : (
-            projectDetails.date_started || "No start date available"
+           new Date(projectDetails.date_started).toLocaleDateString() || "No start date available"
           )}
         </p>
         <p className="text-sm text-gray-600">
@@ -100,7 +100,7 @@ export const MyProjectDetails = ({ selectedProject }) => {
               className="text-sm border border-gray-300 rounded p-1"
             />
           ) : (
-            projectDetails.date_end || "No end date available"
+          new Date(projectDetails.date_end ).toLocaleDateString()|| "No end date available"
           )}
         </p>
       </div>

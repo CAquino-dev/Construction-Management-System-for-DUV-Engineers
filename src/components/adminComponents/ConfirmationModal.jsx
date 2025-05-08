@@ -3,6 +3,7 @@ import { useState } from "react";
 
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, setRemark }) => {
   if (!isOpen) return null;
+  console.log('action', actionType)
 
   const handleChange = (event) => {
     setRemark(event.target.value); // Update the remark text as the user types
@@ -16,7 +17,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, setRemark }
           Are you sure you want to mark this record as <strong>{actionType}</strong>?
         </p>
 
-        {actionType === "Rejected by HR" || actionType === "Rejected by Finance"&& (
+        {(actionType === "Rejected by HR" || actionType === "Rejected by Finance") && (
           <div className="mt-4">
             <textarea
               className="w-full p-2 border rounded-md"

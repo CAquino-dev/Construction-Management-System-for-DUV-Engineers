@@ -311,6 +311,7 @@ const getPayslips = (req, res) => {
         ps.period_start, 
         ps.period_end, 
         ps.created_at,
+        ps.remarks,
         u.full_name AS created_by_name
       FROM payslip ps
       LEFT JOIN users u ON ps.created_by = u.id
