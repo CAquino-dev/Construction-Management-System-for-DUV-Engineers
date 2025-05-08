@@ -71,7 +71,7 @@ const getMilestones = (req, res) => {
   const { projectId } = req.params;  // Get projectId from request params
 
   const query = `
-      SELECT id, project_id, timestamp, status, details
+      SELECT id, project_id, timestamp, status, details, project_photo
       FROM milestones
       WHERE project_id = ?
   `;

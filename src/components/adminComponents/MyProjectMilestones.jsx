@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MyProjectAddMilestone } from './MyProjectAddMilestone'; // Assuming your modal component
 import { MyProjectViewMilestone } from './MyProjectViewMilestone'; // View milestone modal
 
@@ -47,11 +47,24 @@ const milestones = [
   },
 ];
 
-export const MyProjectMilestones = () => {
+export const MyProjectMilestones = ({ selectedProject }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false); // Track view modal state
   const [milestonesList, setMilestonesList] = useState(milestones);
   const [selectedMilestone, setSelectedMilestone] = useState(null); // Selected milestone for viewing
+
+
+    useEffect(() => {
+      const getMilestones = async () => {
+        const response = await fetch(`http://localhost:5000/api/project/getMilestones/${selectedProject.id}`);
+        if(response.ok){
+        const data = await response.json();
+        setMilestonesList(data.milestones);
+        }
+      };
+  
+      getMilestones();
+    }, [])
 
   // Open the Add Milestone modal
   const openModal = () => setIsModalOpen(true);
@@ -119,8 +132,9 @@ export const MyProjectMilestones = () => {
       {/* Modal for Adding Milestone */}
       {isModalOpen && (
         <MyProjectAddMilestone
-          onSave={addMilestone}
-          onCancel={closeModal}
+        project={selectedProject}
+        onSave={addMilestone}
+        onCancel={closeModal}
         />
       )}
 

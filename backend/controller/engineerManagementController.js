@@ -114,8 +114,6 @@ const createProject = (req, res) => {
   const getClientProject = (req, res) => {
     const { clientId } = req.params;  // Get the clientId from the request params
   
-    console.log("Client ID:", clientId);  // Debugging log to ensure clientId is passed correctly
-  
     const query = `
       SELECT
         ep.id,
@@ -181,8 +179,52 @@ const createProject = (req, res) => {
     });
 };
 
+// Create Milestone function
+// Create Milestone function
+const createMilestone = (req, res) => {
+  // Handle file upload and milestone data
+  upload(req, res, (err) => {
+      if (err) {
+          return res.status(400).json({ error: err.message });
+      }
+
+      // If file is uploaded, get its path
+      const projectPhoto = req.file ? `/uploads/${req.file.filename}` : null;  // Store relative path in DB
+
+      const { projectId } = req.params;  // Get projectId from request params
+      const { status, details } = req.body;  // Get status and details from request body
+
+      // If status or details are missing, return an error
+      if (!status || !details) {
+          return res.status(400).json({ error: 'Status and details are required' });
+      }
+
+      // Get the current timestamp
+      const timestamp = new Date().toISOString();  // Get the current timestamp in ISO 8601 format
+
+      // SQL query to insert the milestone into the database
+      const query = `
+          INSERT INTO milestones (project_id, timestamp, status, details, project_photo)
+          VALUES (?, ?, ?, ?, ?)
+      `;
+
+      db.query(query, [projectId, timestamp, status, details, projectPhoto], (err, result) => {
+          if (err) {
+              console.error("Error creating milestone:", err);
+              return res.status(500).json({ error: "Failed to create milestone" });
+          }
+
+          // Return success response
+          res.status(201).json({
+              message: "Milestone created successfully",
+              milestoneId: result.insertId
+          });
+      });
+  });
+};
   
   
 
 
-module.exports = { getEngineers, createProject, getClients, getClientProject, getEngineerProjects};
+module.exports = { getEngineers, createProject, getClients, 
+                  getClientProject, getEngineerProjects, createMilestone};

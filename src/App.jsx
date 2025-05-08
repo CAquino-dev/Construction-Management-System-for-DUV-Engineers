@@ -30,6 +30,7 @@ import { ProjectsClient } from './pages/userPages/ProjectsClient';
 import { ChatBot } from './pages/userPages/ChatBot';
 import { Messages } from './pages/userPages/Messages';
 import { MyProject } from './pages/admin/MyProject';
+import { Attendance } from './pages/admin/AttendanceMonitoring';
 
 const App = () => {
   return (
@@ -72,6 +73,7 @@ const App = () => {
             <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
             <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
             <Route path='ceo-dashboard' element={<CeoDashboard/>} />
+            <Route path='AttendanceMonitoring' element={<Attendance/>} />
         </Route>
         </Routes>
       </Router>
