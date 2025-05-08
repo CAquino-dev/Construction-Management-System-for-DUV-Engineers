@@ -1,39 +1,55 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const milestones = [
-  {
-    timestamp: "2 Mar 12:36",
-    status: "Nakapag Lagay na kami ng semento boss",
-    details: "Lagay semento sabay kain ng buhangin",
-  },
-  {
-    timestamp: "2 Mar 09:04",
-    status: "Tanim ng Omad para hindi mahuli ng silup",
-    details: "Nagtanim kami ng omad para pag lagay ng tiles nakatago",
-  },
-  {
-    timestamp: "2 Mar 09:03",
-    status: "Lagay ng tiles",
-    details: "Safe ng yung tanim natakpan na ng tiles",
-  },
-  {
-    timestamp: "2 Mar 06:07",
-    status: "Lagay ng Bubong ng salamin para mainitan omad",
-    details: "Safe na yung tanim",
-  },
-  {
-    timestamp: "2 Mar 03:52",
-    status: "Lagay ng pinto",
-    details: "Lagay pinto baka magalit si boss",
-  },
-  {
-    timestamp: "2 Mar 02:32",
-    status: "Lagay lock ng pinto",
-    details: " Lagay lock ng pinto para hindi magalit si boss",
-  },
-];
+// const milestones = [
+//   {
+//     timestamp: "2 Mar 12:36",
+//     status: "Nakapag Lagay na kami ng semento boss",
+//     details: "Lagay semento sabay kain ng buhangin",
+//   },
+//   {
+//     timestamp: "2 Mar 09:04",
+//     status: "Tanim ng Omad para hindi mahuli ng silup",
+//     details: "Nagtanim kami ng omad para pag lagay ng tiles nakatago",
+//   },
+//   {
+//     timestamp: "2 Mar 09:03",
+//     status: "Lagay ng tiles",
+//     details: "Safe ng yung tanim natakpan na ng tiles",
+//   },
+//   {
+//     timestamp: "2 Mar 06:07",
+//     status: "Lagay ng Bubong ng salamin para mainitan omad",
+//     details: "Safe na yung tanim",
+//   },
+//   {
+//     timestamp: "2 Mar 03:52",
+//     status: "Lagay ng pinto",
+//     details: "Lagay pinto baka magalit si boss",
+//   },
+//   {
+//     timestamp: "2 Mar 02:32",
+//     status: "Lagay lock ng pinto",
+//     details: " Lagay lock ng pinto para hindi magalit si boss",
+//   },
+// ];
 
-export const MilestoneClient = () => {
+
+export const MilestoneClient = ({selectedProject}) => {
+  const [milestones, setMilestones] = useState([]);
+
+
+  useEffect(() => {
+    const getMilestones = async () => {
+      const response = await fetch(`http://localhost:5000/api/project/getMilestones/${selectedProject.id}`);
+      if(response.ok){
+      const data = await response.json();
+      setMilestones(data.milestones);
+      }
+    };
+
+    getMilestones();
+  }, [])
+
   return (
     <div className="">
       <div className="relative">
@@ -45,7 +61,7 @@ export const MilestoneClient = () => {
                 {/* Milestone Dot and Timestamp */}
                 <div className="flex items-center mb-2 sm:mb-0 sm:mr-4">
                   <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full mr-2" />
-                  <p className="text-sm text-gray-600">{milestone.timestamp}</p>
+                  <p className="text-sm text-gray-600">{new Date(milestone.timestamp).toLocaleDateString()}</p>
                 </div>
                 
                 {/* Milestone Status and Details */}

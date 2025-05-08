@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 
 export const AddProject = () => {
   const [projectData, setProjectData] = useState({
@@ -23,12 +23,102 @@ export const AddProject = () => {
     updatedAt: ""
   });
 
+  const [engineers, setEngineers] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(""); // Store selected engineer ID
+  const [selectedEngineer, setSelectedEngineer] = useState(""); // Store selected engineer ID
+  const [projectPhoto, setProjectPhoto] = useState(null); // State for storing the selected photo
+  const [photoPreview, setPhotoPreview] = useState(null); // State for photo preview
+
+  useEffect(() => {
+    const getEngineers = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/engr/getEngineers');
+        const data = await response.json();
+        if (response.ok) {
+          setEngineers(data);
+        }
+      } catch (error) {
+        console.error("Error fetching engineers:", error);
+      }
+    };
+
+    const getClients = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/engr/getClients');
+        const data = await response.json();
+        if (response.ok) {
+          setClients(data);
+        }
+      } catch (error) {
+        console.error("Error fetching engineers:", error);
+      }
+    };
+    getEngineers();
+    getClients();
+  }, []);
+
   const handleChange = (e) => {
     const { id, value } = e.target;
     setProjectData((prevData) => ({
       ...prevData,
       [id]: value
     }));
+  };
+
+  // Handle the photo upload and preview
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    setProjectPhoto(file);
+  
+    // Generate preview of the selected photo
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result); // Set the preview URL
+    };
+    if (file) {
+      reader.readAsDataURL(file); // Read the file as a base64 URL
+    }
+  };
+  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    const formData = new FormData();
+    formData.append('project_name', projectData.projectName);
+    formData.append('client_id', selectedClient);
+    formData.append('project_type', projectData.projectType);
+    formData.append('description', projectData.description);
+    formData.append('location', projectData.location);
+    formData.append('start_date', projectData.startDate);
+    formData.append('end_date', projectData.endDate);
+    formData.append('budget', projectData.budgetAllocated);
+    formData.append('status', projectData.status);
+    formData.append('cost_breakdown', projectData.costBreakdown);
+    formData.append('payment_schedule', projectData.paymentSchedule);
+    formData.append('engineer_id', selectedEngineer);
+  
+    if (projectPhoto) {
+      formData.append('project_photo', projectPhoto);  // Append the photo to FormData
+    }
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/engr/createProject', {
+        method: 'POST',
+        body: formData,  // Send the FormData (multipart/form-data)
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        alert('Project Added Successfully');
+      } else {
+        alert('An error occurred while adding the project');
+      }
+    } catch (error) {
+      console.log('Error message:', error);
+    }
   };
 
   return (
@@ -66,29 +156,41 @@ export const AddProject = () => {
         {/* Client Name Input */}
         <div>
           <label htmlFor="client" className="block text-sm font-medium text-gray-700">
-            Client Name
+            Client
           </label>
-          <input
+          <select
             id="client"
-            type="text"
-            value={projectData.client}
-            onChange={handleChange}
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
             className="w-full p-2 border rounded-md"
-          />
+          >
+            <option value="">Select Client</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.full_name} ({client.username})
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Location Input */}
+        {/* Engineer Selection Dropdown */}
         <div>
-          <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-            Location
+          <label htmlFor="engineer" className="block text-sm font-medium text-gray-700">
+            Select Engineer
           </label>
-          <input
-            id="location"
-            type="text"
-            value={projectData.location}
-            onChange={handleChange}
+          <select
+            id="engineer"
+            value={selectedEngineer}
+            onChange={(e) => setSelectedEngineer(e.target.value)}
             className="w-full p-2 border rounded-md"
-          />
+          >
+            <option value="">Select Engineer</option>
+            {engineers.map((engineer) => (
+              <option key={engineer.id} value={engineer.id}>
+                {engineer.full_name} ({engineer.username})
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Project Type Dropdown */}
@@ -110,155 +212,109 @@ export const AddProject = () => {
           </select>
         </div>
 
-        {/* Project Manager Input */}
-        <div>
-          <label htmlFor="projectManager" className="block text-sm font-medium text-gray-700">
-            Project Manager
-          </label>
-          <input
-            id="projectManager"
-            type="text"
-            value={projectData.projectManager}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-            {/* Start Date Input */}
-            <div >
-            <label htmlFor="startDate" className="text-sm font-medium text-gray-700">
-                Start Date
-            </label>
+        {/* Project Scope & Details */}
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold text-gray-700">Project Scope & Details</h3>
+          <div className="space-y-3 mt-2">
+            <textarea
+              value={projectData.description}
+              onChange={handleChange}
+              id="description"
+              placeholder="Project Description"
+              className="w-full p-2 border rounded-md"
+            ></textarea>
             <input
-                id="startDate"
-                type="date"
-                value={projectData.startDate}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md"
+              value={projectData.location}
+              onChange={handleChange}
+              id="location"
+              type="text"
+              placeholder="Location"
+              className="w-full p-2 border rounded-md"
             />
-            </div>
-            {/* End Date Input */}
-            <div>
-            <label htmlFor="endDate" className="text-sm font-medium text-gray-700">
-                End Date
-            </label>
             <input
-                id="endDate"
-                type="date"
-                value={projectData.endDate}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md"
+              value={projectData.startDate}
+              onChange={handleChange}
+              id="startDate"
+              type="date"
+              className="w-full p-2 border rounded-md"
             />
+            <input
+              value={projectData.endDate}
+              onChange={handleChange}
+              id="endDate"
+              type="date"
+              className="w-full p-2 border rounded-md"
+            />
+            <input
+              value={projectData.budgetAllocated}
+              onChange={handleChange}
+              id="budgetAllocated"
+              type="number"
+              placeholder="Budget Allocated"
+              className="w-full p-2 border rounded-md"
+            />
+            <select
+              value={projectData.status}
+              onChange={handleChange}
+              id="status"
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="">Select Status</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Financials & Payments */}
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold text-gray-700">Financials & Payments</h3>
+          <div className="space-y-3 mt-2">
+            <textarea
+              value={projectData.costBreakdown}
+              onChange={handleChange}
+              id="costBreakdown"
+              placeholder="Project Cost Breakdown"
+              className="w-full p-2 border rounded-md"
+            ></textarea>
+            <textarea
+              value={projectData.paymentSchedule}
+              onChange={handleChange}
+              id="paymentSchedule"
+              placeholder="Payment Schedule"
+              className="w-full p-2 border rounded-md"
+            ></textarea>
+          </div>
+        </div>
+
+        {/* Photo Upload Section */}
+        <div>
+          <label htmlFor="projectPhoto" className="block text-sm font-medium text-gray-700">
+            Add Contract Photo
+          </label>
+          <div>
+              <input id="projectPhoto" 
+              name="project_photo"  // Add this to match backend expectation
+              type="file" 
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="mt-2 block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-teal-500 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:bg-teal-700 focus:outline-none disabled:pointer-events-none disabled:opacity-60" />
+          </div>
+          {photoPreview && (
+            <div className="mt-2">
+              <img
+                src={photoPreview}
+                alt="Project Photo Preview"
+                className="w-32 h-auto object-cover"
+              />
             </div>
-        </div>
-        
-
-        {/* Completion Date Input */}
-        <div>
-          <label htmlFor="completionDate" className="block text-sm font-medium text-gray-700">
-            Completion Date
-          </label>
-          <input
-            id="completionDate"
-            type="date"
-            value={projectData.completionDate}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        {/* Contract Value Input */}
-        <div>
-          <label htmlFor="contractValue" className="block text-sm font-medium text-gray-700">
-            Contract Value
-          </label>
-          <input
-            id="contractValue"
-            type="text"
-            value={projectData.contractValue}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        {/* Budget Allocated Input */}
-        <div>
-          <label htmlFor="budgetAllocated" className="block text-sm font-medium text-gray-700">
-            Budget Allocated
-          </label>
-          <input
-            id="budgetAllocated"
-            type="text"
-            value={projectData.budgetAllocated}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        {/* Budget Used Input */}
-        <div>
-          <label htmlFor="budgetUsed" className="block text-sm font-medium text-gray-700">
-            Budget Used
-          </label>
-          <input
-            id="budgetUsed"
-            type="text"
-            value={projectData.budgetUsed}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        {/* Status Dropdown */}
-        <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-            Status
-          </label>
-          <select
-            id="status"
-            value={projectData.status}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          >
-            <option value="">Select Status</option>
-            <option value="Completed">Completed</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Not Started">Not Started</option>
-          </select>
-        </div>
-
-        {/* Budget Input */}
-        <div>
-          <label htmlFor="budget" className="block text-sm font-medium text-gray-700">
-            Budget
-          </label>
-          <input
-            id="budget"
-            type="text"
-            value={projectData.budget}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
-        </div>
-
-        {/* Progress Input */}
-        <div>
-          <label htmlFor="progress" className="block text-sm font-medium text-gray-700">
-            Progress
-          </label>
-          <input
-            id="progress"
-            type="number"
-            value={projectData.progress}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md"
-          />
+          )}
         </div>
 
         {/* Submit Button */}
-        <div className="mt-4">
+        <div className="mt-6 flex justify-end">
           <button
+            onClick={handleSubmit}
             className="w-full py-2 bg-[#3b5d47] text-white rounded-md"
           >
             Add Project
@@ -268,3 +324,5 @@ export const AddProject = () => {
     </div>
   );
 };
+
+export default AddProject;

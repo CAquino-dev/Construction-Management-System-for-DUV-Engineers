@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import duvLogo from '../../assets/duvLogo.jpg'; // Path to the logo
 
 export const ChatBot = () => {
@@ -6,24 +6,49 @@ export const ChatBot = () => {
     { sender: 'bot', text: 'Hello! How can I assist you today?' }
   ]);
 
+  const [userInputs, setUserInputs] = useState({
+    projectType: '',
+    materialType: '',
+    sizeInSqm: '',  // Changed from size selection to size input (square meters)
+    location: ''
+  });
+
+  const [step, setStep] = useState(0); // Track which step of the estimation flow we're in
+  const [isEstimation, setIsEstimation] = useState(false); // Flag to track if we are in estimation flow
+  const [isEstimationStarted, setIsEstimationStarted] = useState(false);  // Flag to check if estimation has started
+
   const choices = [
     'Estimation for a project',
     'About Us',
     'Who are you?'
   ];
 
-  const handleChoice = (choice) => {
-    // Send to the system (you can replace this with an actual API call)
-    console.log(`Sending to system: ${choice}`);
+  const projectTypes = ['Residential', 'Commercial', 'Industrial'];
+  const materials = ['Concrete', 'Steel', 'Wood'];
+  const locations = ['Dasmarinas', 'Tagaytay', 'Silang'];
 
-    // Add the choice to the conversation
+  useEffect(() => {
+    if (userInputs.location && !isEstimationStarted) {
+      // If location is set and estimation hasn't started, then calculate the estimate
+      setIsEstimationStarted(true);
+      // setMessages((prevMessages) => [
+      //   ...prevMessages,
+      //   { sender: 'bot', text: 'I will now calculate your project estimate...' }
+      // ]);
+      submitEstimation(userInputs);  // Pass the latest user inputs to submitEstimation
+    }
+  }, [userInputs.location]);  // Run when location is updated
+
+  const handleChoice = (choice) => {
+    console.log(`Sending to system: ${choice}`);
     setMessages([...messages, { sender: 'user', text: choice }]);
 
-    // Add a response from the bot
     let botResponse = '';
     switch (choice) {
       case 'Estimation for a project':
-        botResponse = 'I will send you the project estimation details shortly.';
+        botResponse = 'Please select the project type:';
+        setIsEstimation(true); // Start the estimation flow
+        setStep(1); // Set the step to project type selection
         break;
       case 'About Us':
         botResponse = 'We are a leading architecture firm that specializes in designing remarkable structures.';
@@ -41,6 +66,101 @@ export const ChatBot = () => {
       { sender: 'bot', text: botResponse }
     ]);
   };
+
+  // Function to handle user input for project details
+  const handleSelection = (category, selection) => {
+    setUserInputs((prevState) => {
+      const updatedState = { ...prevState, [category]: selection };
+      return updatedState;
+    });
+
+    // Add user's input to messages after selecting project details
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { sender: 'user', text: selection }
+    ]);
+
+    // Handle bot responses for each selection
+    let botResponse = '';
+    if (category === 'projectType') {
+      botResponse = 'Please select the material type:';
+      setStep(2); // Move to material selection
+    } else if (category === 'materialType') {
+      botResponse = 'Please input the area (in square meters) for your project:';
+      setStep(3); // Move to size input (sqm)
+    } else if (category === 'sizeInSqm') {
+      botResponse = 'Please select the location:';
+      setStep(4); // Move to location selection
+    } else if (category === 'location') {
+      botResponse = 'I will now calculate your project estimate...';  
+    }
+
+    // Add bot response for project details selection
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { sender: 'bot', text: botResponse }
+    ]);
+  };
+
+  // Function to handle size input for the user (size in sqm)
+  const handleSizeInput = (e) => {
+    const value = e.target.value;
+    setUserInputs({ ...userInputs, sizeInSqm: value });
+  };
+
+  // Function to submit the estimation and get the estimate from the backend using fetch
+  const submitEstimation = async (updatedUserInputs) => {
+    try {
+      const { projectType, materialType, sizeInSqm, location } = updatedUserInputs;
+  
+      // Prepare the request payload with the updated userInputs
+      const requestBody = {
+        projectType,
+        materialType,
+        sizeInSqm,
+        location
+      };
+  
+      console.log('Request Body:', requestBody);  // Log the request body to check it
+  
+      // Make the POST request to the backend using fetch
+      const response = await fetch('http://localhost:5000/api/project/estimate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody), // Send the request body
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error calculating estimate');
+      }
+  
+      const data = await response.json();
+      const estimate = data.estimate;
+  
+      // Format the estimate as currency (PHP format)
+      const formattedEstimate = new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP',
+        minimumFractionDigits: 2, // Ensures two decimal places
+        maximumFractionDigits: 2, // Ensures two decimal places
+      }).format(estimate);
+  
+      // Show the formatted estimated result
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: 'bot', text: `The estimated cost for your project is ${formattedEstimate}` }
+      ]);
+      setIsEstimation(false); // End the estimation flow
+    } catch (error) {
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { sender: 'bot', text: 'Sorry, there was an error calculating the estimate.' }
+      ]);
+    }
+  };
+  
 
   return (
     <div className="fixed inset-0 flex justify-center items-center bg-transparent pt-16">
@@ -77,17 +197,67 @@ export const ChatBot = () => {
 
         {/* Buttons for user choices */}
         <div className="p-4 border-t border-gray-300 overflow-y-auto bg-white" style={{ minHeight: '150px' }}>
-          <div className="grid grid-cols-2 gap-3">
-            {choices.map((choice, index) => (
-              <button
-                key={index}
-                onClick={() => handleChoice(choice)}
-                className="text-[#4c735c] border-2 border-[#4c735c] w-full py-2 rounded-md cursor-pointer transition duration-200 hover:bg-[#4c735c] hover:text-white"
-              >
-                {choice}
-              </button>
-            ))}
-          </div>
+          {isEstimation ? (
+            <div className="grid grid-cols-2 gap-3">
+              {/* Dynamic buttons for project details based on step */}
+              {step === 1 && projectTypes.map((type, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelection('projectType', type)}
+                  className="text-[#4c735c] border-2 border-[#4c735c] w-full py-2 rounded-md cursor-pointer transition duration-200 hover:bg-[#4c735c] hover:text-white"
+                >
+                  {type}
+                </button>
+              ))}
+              {step === 2 && materials.map((material, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelection('materialType', material)}
+                  className="text-[#4c735c] border-2 border-[#4c735c] w-full py-2 rounded-md cursor-pointer transition duration-200 hover:bg-[#4c735c] hover:text-white"
+                >
+                  {material}
+                </button>
+              ))}
+              {step === 3 && (
+                <div className="flex flex-col">
+                  <input
+                    type="number"
+                    placeholder="Enter area in square meters"
+                    className="border-2 border-[#4c735c] p-2 rounded-md"
+                    value={userInputs.sizeInSqm}
+                    onChange={handleSizeInput}
+                  />
+                  <button
+                    onClick={() => handleSelection('sizeInSqm', userInputs.sizeInSqm)}
+                    className="text-[#4c735c] border-2 border-[#4c735c] w-full py-2 rounded-md cursor-pointer transition duration-200 hover:bg-[#4c735c] hover:text-white mt-3"
+                  >
+                    Confirm Size
+                  </button>
+                </div>
+              )}
+              {step === 4 && locations.map((location, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelection('location', location)}
+                  className="text-[#4c735c] border-2 border-[#4c735c] w-full py-2 rounded-md cursor-pointer transition duration-200 hover:bg-[#4c735c] hover:text-white"
+                >
+                  {location}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {choices.map((choice, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleChoice(choice)}
+                  className="text-[#4c735c] border-2 border-[#4c735c] w-full py-2 rounded-md cursor-pointer transition duration-200 hover:bg-[#4c735c] hover:text-white"
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

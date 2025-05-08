@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table"; // Ensure correct path
 import { Eye } from "@phosphor-icons/react";
 import Pagination from "./Pagination"; // Ensure correct path
@@ -50,6 +50,24 @@ export const CeoTable = ({ setSelectedPayslips }) => {
   const itemsPerPage = 5; 
   const totalPages = Math.ceil(initialData.length / itemsPerPage);
   const currentData = initialData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const [payslips, setPayslips] = useState([]);
+
+  useEffect(() => {
+    const fetchApprovedPayslips = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/ceo/getFinanceApprovedPayslips');
+        if(response.ok){
+          const data = await response.json();
+          setPayslips(data.data);
+        }
+
+      } catch (error) {
+        
+      }
+    }
+    fetchApprovedPayslips();
+  }, [])
+
 
   return (
     <div className="p-6">
@@ -66,14 +84,14 @@ export const CeoTable = ({ setSelectedPayslips }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentData.length > 0 ? (
-              currentData.map((record) => (
+            {payslips.length > 0 ? (
+              payslips.map((record) => (
                 <TableRow key={record.id} className="hover:bg-gray-100 cursor-pointer">
                   <TableCell className="text-center">{record.title}</TableCell>
-                  <TableCell className="text-center">{record.period_start}</TableCell>
-                  <TableCell className="text-center">{record.period_end}</TableCell>
-                  <TableCell className="text-center">{record.approved_at}</TableCell>
-                  <TableCell className="text-center">{record.approved_by}</TableCell>
+                  <TableCell className="text-center">{new Date(record.period_start).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-center">{new Date(record.period_end).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-center">{new Date(record.approved_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-center">{record.approved_by_name}</TableCell>
                   <TableCell className="text-center">
                     <button onClick={() => setSelectedPayslips(record)} className="text-black hover:text-gray-600 cursor-pointer">
                       <Eye size={18} />

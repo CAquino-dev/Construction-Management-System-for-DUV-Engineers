@@ -3,6 +3,8 @@ import { Button } from '../ui/button';
 import { Card, CardHeader, CardContent } from '../ui/card';
 import { ProjectDetailsClient } from './ProjectDetailsClient';
 import { MilestoneClient } from './MilestoneClient';
+import duvLogo from '../../assets/duvLogo.jpg'
+
 
 export const ViewProjectClient = ({ selectedProject, onBack }) => {
   const [activeTab, setActiveTab] = useState('projectDetails');
@@ -24,7 +26,7 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
             {/* Project Image */}
             <div className="w-full sm:w-1/3 p-2">
               <img
-                src={selectedProject.image}
+                src={duvLogo}
                 alt="Project"
                 className="w-full h-auto object-cover rounded-lg"
               />
@@ -33,17 +35,17 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
             {/* Project Details */}
             <div className="w-full sm:w-2/3 p-2">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                {selectedProject.projectname_}
+                {selectedProject.project_name}
               </h3>
               <div className="flex flex-col gap-1">
                 <p className="text-md text-gray-600">
-                  <span className="font-semibold">Engineer:</span> {selectedProject.Engineer}
+                  <span className="font-semibold">Engineer:</span> {selectedProject.engineer_name}
                 </p>
                 <p className="text-md text-gray-600">
-                  <span className="font-semibold">Start Date:</span> {selectedProject.date_started}
+                  <span className="font-semibold">Start Date:</span> {new Date(selectedProject.start_date).toLocaleDateString()}
                 </p>
                 <p className="text-md text-gray-600">
-                  <span className="font-semibold">End Date:</span> {selectedProject.date_end}
+                  <span className="font-semibold">End Date:</span> {new Date(selectedProject.end_date).toLocaleDateString()}
                 </p>
               </div>
             </div>
