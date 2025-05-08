@@ -109,7 +109,7 @@ const AdminNavbar = ({ children }) => {
 
                         {/* Collapsible Engineering Section */}
                         <li>
-                            <button onClick={toggleEngineerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            <button onClick={toggleEngineerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                                 <span className="flex items-center gap-3 font-semibold"> 
                                     <HardHat size={20} /> Engineer
                                 </span>
@@ -120,7 +120,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                         <Link 
                                             to="/admin-dashboard/engineer/projects" 
-                                            className={`block p-2 rounded-lg ${
+                                            className={`block p-2 rounded-lg cursor-pointer ${
                                                 location.pathname === "/admin-dashboard/engineer/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             Projects
@@ -129,7 +129,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                         <Link
                                             to="/admin-dashboard/engineer/my-project"
-                                            className={`block p-2 rounded-lg ${
+                                            className={`block p-2 rounded-lg cursor-pointer ${
                                                 location.pathname === "/admin-dashboard/engineer/my-project" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             My Project
@@ -140,7 +140,7 @@ const AdminNavbar = ({ children }) => {
                         </li>
                         {/* Collapsible Finance Section */}
                         <li>
-                            { permissions.can_access_finance === 'Y' && <button onClick={toggleFinanceDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            { permissions.can_access_finance === 'Y' && <button onClick={toggleFinanceDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                                 <span className="flex items-center gap-3 font-semibold"> 
                                     <Bank size={20} /> Finance
                                 </span>
@@ -151,7 +151,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                         <Link 
                                             to="/admin-dashboard/finance/approved-payroll-from-hr" 
-                                            className={`block p-2 rounded-lg ${
+                                            className={`block p-2 rounded-lg cursor-pointer ${
                                                 location.pathname === "/admin-dashboard/finance/approved-payroll-from-hr" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             HR Payroll (Approved Records of HR) 
@@ -160,7 +160,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                         <Link 
                                             to="/admin-dashboard/finance/approved-payroll-from-ceo" 
-                                            className={`block p-2 rounded-lg ${
+                                            className={`block p-2 rounded-lg cursor-pointer ${
                                                 location.pathname === "/admin-dashboard/finance/approved-payroll-from-ceo" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             HR Payroll (Approved Records of CEO) 
@@ -171,7 +171,7 @@ const AdminNavbar = ({ children }) => {
                         </li>
                         {/* Collapsible HR Section */}
                         <li>
-                            { permissions.can_access_hr === 'Y' && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            { permissions.can_access_hr === 'Y' && <button onClick={toggleHrDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                                 <span className="flex items-center gap-3 font-semibold">
                                     <UsersThree size={20} /> Human Resources
                                 </span>
@@ -182,7 +182,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                     <Link 
                                     to="/admin-dashboard/hr/attendance" 
-                                    className={`block p-2 rounded-lg ${
+                                    className={`block p-2 rounded-lg cursor-pointer ${
                                         location.pathname === "/admin-dashboard/hr/attendance" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                     }`}
                                     >
@@ -192,7 +192,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                     <Link 
                                     to="/admin-dashboard/hr/payroll" 
-                                    className={`block p-2 rounded-lg ${
+                                    className={`block p-2 rounded-lg cursor-pointer ${
                                         location.pathname === "/admin-dashboard/hr/payroll" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                     }`}
                                     >
@@ -202,7 +202,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                     <Link 
                                     to="/admin-dashboard/hr/payslip" 
-                                    className={`block p-2 rounded-lg ${
+                                    className={`block p-2 rounded-lg cursor-pointer ${
                                         location.pathname === "/admin-dashboard/hr/payslip" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                     }`}
                                     >
@@ -212,7 +212,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                     <Link 
                                     to="/admin-dashboard/hr/employees" 
-                                    className={`block p-2 rounded-lg ${
+                                    className={`block p-2 rounded-lg cursor-pointer ${
                                         location.pathname === "/admin-dashboard/hr/employees" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                     }`}
                                     >
@@ -224,7 +224,7 @@ const AdminNavbar = ({ children }) => {
                         </li>
                         {/* Feedback Dropdown */}
                         <li>
-                            <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                            <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                                 <span className="flex items-center gap-3 font-semibold">
                                     <ListChecks size={20} /> Feedbacks
                                 </span>
@@ -235,7 +235,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                         <Link 
                                             to="/admin-dashboard/feedbacks/client-feedback" 
-                                            className={`block p-2 rounded-lg ${
+                                            className={`block p-2 rounded-lg cursor-pointer ${
                                                 location.pathname === "/admin-dashboard/feedbacks/client-feedback" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             Client Feedback
@@ -244,7 +244,7 @@ const AdminNavbar = ({ children }) => {
                                     <li>
                                         <Link 
                                             to="/admin-dashboard/feedbacks/reported-issues" 
-                                            className={`block p-2 rounded-lg ${
+                                            className={`block p-2 rounded-lg cursor-pointer ${
                                                 location.pathname === "/admin-dashboard/feedbacks/reported-issues" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             Reported Issues
@@ -256,7 +256,7 @@ const AdminNavbar = ({ children }) => {
                     </ul>
                 </div>
                 <div>
-                    <button className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full" onClick={handleLogout}>
+                    <button className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full cursor-pointer" onClick={handleLogout}>
                         <SignOut size={22} /> Logout
                     </button>
                 </div>
@@ -280,6 +280,25 @@ const AdminNavbar = ({ children }) => {
                                 </Link>
                             </li>
                         ))}
+                        {/* Engineer Section in Mobile Sidebar */}
+                        <li>
+                            <button onClick={toggleEngineerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3">
+                                    <HardHat size={20} /> Engineer
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isEngineerOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isEngineerOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link to="/admin-dashboard/engineer/projects" className="block p-2 hover:bg-[#5A8366] rounded-lg">Projects</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin-dashboard/engineer/my-project" className="block p-2 hover:bg-[#5A8366] rounded-lg">My Project</Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
                         {/* Finance Section in Mobile Sidebar */}
                         <li>
                             <button onClick={toggleFinanceDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
@@ -317,6 +336,25 @@ const AdminNavbar = ({ children }) => {
                                     </li>
                                     <li>
                                         <Link to="/admin-dashboard/hr/employees" className="block p-2 hover:bg-[#5A8366] rounded-lg">Employee</Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
+                        {/* Feedback Section in Mobile Sidebar */}
+                        <li>
+                            <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
+                                <span className="flex items-center gap-3">
+                                    <ListChecks size={20} /> Feedbacks
+                                </span>
+                                <CaretDown size={20} className={`transform transition-all ${isFeedbackOpen ? "rotate-180" : ""}`} />
+                            </button>
+                            {isFeedbackOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link to="/admin-dashboard/feedbacks/client-feedback" className="block p-2 hover:bg-[#5A8366] rounded-lg">Client Feedback</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin-dashboard/feedbacks/reported-issues" className="block p-2 hover:bg-[#5A8366] rounded-lg">Reported Issues</Link>
                                     </li>
                                 </ul>
                             )}

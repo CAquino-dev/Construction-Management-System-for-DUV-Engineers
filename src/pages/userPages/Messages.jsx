@@ -10,9 +10,9 @@ export const Messages = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row gap-4 p-6 mt-6">
+    <div className="flex flex mt-13 gap-2 h-screen">
       {/* Left panel: MessagesLeft component */}
-      <div className="lg:w-1/3 w-full bg-gray-100 p-4 rounded-lg shadow-md h-full overflow-y-auto">
+      <div className="lg:w-1/3 w-full bg-white p-4 rounded-lg shadow-md h-full overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Select a User</h2>
         <MessagesLeft onSelectUser={handleSelectUser} />
       </div>
