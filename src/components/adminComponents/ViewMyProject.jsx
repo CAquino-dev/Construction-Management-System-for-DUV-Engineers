@@ -4,9 +4,13 @@ import { Card, CardHeader, CardContent } from '../ui/card';
 import { MyProjectDetails } from './MyProjectDetails';
 import { MyProjectMilestones } from './MyProjectMilestones';
 import { MyprojectLegals } from './MyprojectLegals';
+import duvLogo from '../../assets/duvLogo.jpg';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
+    console.log(selectedProject);
     const [activeTab, setActiveTab] = useState('projectDetails');
+    const startDate = new Date(selectedProject.start_date).toLocaleDateString();
+    const endDate = new Date(selectedProject.end_date).toLocaleDateString();
 
     const handleTabClick = (tab) => {
       setActiveTab(tab);
@@ -24,7 +28,7 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                     {/* Project Image */}
                     <div className="w-full sm:w-1/3 p-2">
                         <img
-                            src={selectedProject.image}
+                            src={duvLogo}
                             alt="Project"
                             className="w-full h-auto object-cover rounded-lg"
                         />
@@ -33,16 +37,16 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                     {/* Project Details */}
                     <div className="w-full sm:w-2/3 p-2">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                            {selectedProject.projectname_}
+                            {selectedProject.project_name}
                         </h3>
                         <p className="text-sm text-gray-600">
-                            <strong>Client:</strong> {selectedProject.Client}
+                            <strong>Client:</strong> {selectedProject.client_name}
                         </p>
                         <p className="text-sm text-gray-600">
-                            <strong>Start Date:</strong> {selectedProject.date_started}
+                            <strong>Start Date:</strong> {startDate}
                         </p>
                         <p className="text-sm text-gray-600">
-                            <strong>End Date:</strong> {selectedProject.date_end}
+                            <strong>End Date:</strong> {endDate}
                         </p>
                     </div>
                 </div>
