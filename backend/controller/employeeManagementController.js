@@ -67,7 +67,95 @@ const addEmployee = (req, res) => {
     });
   };
   
+  const checkIn = (req, res) => {
+    const { employeeId } = req.body;
 
+    if (!employeeId) {
+      return res.status(400).json({ error: "Employee ID is required" });
+    }
+  
+    // Check if the employee is already checked in
+    const checkQuery = `
+      SELECT * FROM attendance
+      WHERE employee_id = ? AND check_out IS NULL
+      ORDER BY created_at DESC LIMIT 1;
+    `;
+  
+    db.query(checkQuery, [employeeId], (err, results) => {
+      if (err) {
+        console.error("Error checking attendance:", err);
+        return res.status(500).json({ error: "Failed to check attendance status" });
+      }
+  
+      if (results.length > 0) {
+        return res.status(400).json({ error: "Employee is already checked in" });
+      }
+  
+      // If employee hasn't checked in, handle check-in
+      const insertQuery = `
+        INSERT INTO attendance (employee_id, check_in, status, work_date)
+        VALUES (?, NOW(), 'Present', CURDATE())
+      `;
+  
+      db.query(insertQuery, [employeeId], (err, result) => {
+        if (err) {
+          console.error("Error inserting check-in:", err);
+          return res.status(500).json({ error: "Failed to check-in" });
+        }
+  
+        res.status(201).json({
+          message: "Check-in successful",
+          check_in: new Date(),
+          status: 'Present',
+        });
+      });
+    });
+  };
 
+  const checkOut = (req, res) => {
+    const { employeeId } = req.body;
+  
+    if (!employeeId) {
+      return res.status(400).json({ error: "Employee ID is required" });
+    }
+  
+    // Check if the employee has already checked in (check-out is null)
+    const checkQuery = `
+      SELECT * FROM attendance
+      WHERE employee_id = ? AND check_out IS NULL
+      ORDER BY created_at DESC LIMIT 1;
+    `;
+  
+    db.query(checkQuery, [employeeId], (err, results) => {
+      if (err) {
+        console.error("Error checking attendance:", err);
+        return res.status(500).json({ error: "Failed to check attendance status" });
+      }
+  
+      if (results.length === 0) {
+        return res.status(400).json({ error: "Employee has not checked in yet" });
+      }
+  
+      // If employee is checked in, update check-out time
+      const updateQuery = `
+        UPDATE attendance
+        SET check_out = NOW(), status = 'Present'
+        WHERE employee_id = ? AND check_out IS NULL
+      `;
+  
+      db.query(updateQuery, [employeeId], (err, result) => {
+        if (err) {
+          console.error("Error updating check-out:", err);
+          return res.status(500).json({ error: "Failed to check-out" });
+        }
+  
+        res.status(200).json({
+          message: "Check-out successful",
+          check_out: new Date(),
+          status: 'Present',
+        });
+      });
+    });
+  };
 
-module.exports = { addEmployee };
+module.exports = { addEmployee, checkIn, checkOut };

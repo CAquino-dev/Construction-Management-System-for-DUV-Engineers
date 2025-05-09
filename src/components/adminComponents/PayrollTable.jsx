@@ -119,13 +119,15 @@ export const PayrollTable = () => {
   };
 
   const handleCreatePayslip = async () => {
+    console.log("Title: ",payslipTitle)
+    console.log("Remarks: ",payslipRemarks)
+    console.log("Start: ",startDate)
+    console.log("End: ",endDate)
+    
     if (!payslipTitle || !payslipRemarks || !startDate || !endDate) {
       alert("Title and date range are required.");
       return;
     }
-
-    console.log("Title: ",payslipTitle)
-    console.log("Remarks: ",payslipRemarks)
 
     try {
       const response = await fetch("http://localhost:5000/api/hr/payslip/create", {
@@ -217,7 +219,9 @@ export const PayrollTable = () => {
       startDate = `${year}-${month}-15`;
       endDate = `${year}-${month}-30`;
     }
-    console.log(startDate, endDate);
+    
+    setStartDate(startDate)
+    setEndDate(endDate)
 
     const filtered = payrollRecords.filter(
       (record) => record.date >= startDate && record.date <= endDate  
