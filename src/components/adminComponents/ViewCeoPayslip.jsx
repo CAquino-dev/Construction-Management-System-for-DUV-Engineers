@@ -30,9 +30,14 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
           </p>
           <p className='text-lg font-semibold mb-2'>
             <span className='text-gray-700/60'>
-              Title: {selectedPayslips?.title || "No title"}
-            </span>
+              Title: 
+            </span> 
+            {selectedPayslips?.title || "No title"}
           </p>
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg text-gray-500">Period:</h2>
+            <p className="font-bold">{selectedPayslips?.period_start} <span className="text-gray-500">to</span> {selectedPayslips?.period_end}</p>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
