@@ -31,6 +31,7 @@ import { ChatBot } from './pages/userPages/ChatBot';
 import { Messages } from './pages/userPages/Messages';
 import { MyProject } from './pages/admin/MyProject';
 import { Attendance } from './pages/admin/AttendanceMonitoring';
+import { SendFeedback } from './pages/userPages/SendFeedback';
 
 const App = () => {
   return (
@@ -45,6 +46,7 @@ const App = () => {
             <Route path='aboutus' element={<AboutUs/>} />
             <Route path='report-problem' element={<ReportProblem/>} />
             <Route path='chatbot' element={<ChatBot/>} />
+            <Route path='send-feedback' element={<SendFeedback/>} />
           </Route>
 
           {/*Client Logged in Route*/}
