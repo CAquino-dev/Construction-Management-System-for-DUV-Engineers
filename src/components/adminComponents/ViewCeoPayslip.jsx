@@ -28,12 +28,10 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
           <p className='text-sm font-medium text-gray-700/80'>
             {new Date(selectedPayslips?.approved_at).toLocaleDateString() || "No approval date available"}
           </p>
-          <p className='text-lg font-semibold mb-2'>
-            <span className='text-gray-700/60'>
-              Title: 
-            </span> 
-            {selectedPayslips?.title || "No title"}
-          </p>
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg text-gray-500">Title:</h2>
+            <p className="font-bold">{selectedPayslips?.title || "No title"}</p>
+          </div>
           <div className="flex items-center space-x-2">
             <h2 className="text-lg text-gray-500">Period:</h2>
             <p className="font-bold">{selectedPayslips?.period_start} <span className="text-gray-500">to</span> {selectedPayslips?.period_end}</p>
@@ -79,6 +77,20 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
           setCurrentPage={setCurrentPage}
         />
       </Card>
+
+      {/* Accept and Reject Buttons */}
+      <div className="flex justify-center gap-4 mt-4">
+          <button
+            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+          >
+            Accept
+          </button>
+          <button
+            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+          >
+            Reject
+          </button>
+        </div>
     </div>
   );
 };
