@@ -26,8 +26,6 @@ const AdminNavbar = ({ children }) => {
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
         { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
-        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
-        { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
         { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard",},
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
