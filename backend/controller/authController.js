@@ -65,7 +65,7 @@ const Login = (req, res) => {
             });
         }
 
-        // Create the JWT token with userType and permissions included in the payload
+        // Create the JWT token, including userType and permissions
         const payload = {
             userId: user.id,
             userType: user.role_id ? "Employee" : "Client",  // Keep userType in the payload
@@ -75,12 +75,12 @@ const Login = (req, res) => {
         // Ensure JWT_SECRET is set in your .env file
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
 
-        // Send the token, userType, and permissions in the response
+        // Send response with token, userType, permissions, and userId
         res.json({
             message: "Login successful",
-            token,  // Send the JWT token back to the client
-            userType: payload.userType,  // Send userType in the response
-            permissions: payload.permissions,  // Send permissions in the response
+            userId: user.id,        // Include userId
+            userType: user.role_id ? "Employee" : "Client",  // Include userType
+            permissions: permissions ? permissions : null,  // Include permissions
         });
     });
 };
