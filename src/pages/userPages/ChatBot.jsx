@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import duvLogo from '../../assets/duvLogo.jpg'; // Path to the logo
 
 export const ChatBot = () => {
@@ -17,6 +17,7 @@ export const ChatBot = () => {
   const [isEstimation, setIsEstimation] = useState(false); // Flag to track if we are in estimation flow
   const [isEstimationStarted, setIsEstimationStarted] = useState(false);  // Flag to check if estimation has started
 
+  // Choices for the initial interaction with the chatbot
   const choices = [
     'Estimation for a project',
     'About Us',
@@ -27,14 +28,17 @@ export const ChatBot = () => {
   const materials = ['Concrete', 'Steel', 'Wood'];
   const locations = ['Dasmarinas', 'Tagaytay', 'Silang'];
 
+  const messagesEndRef = useRef(null);  // Ref to the end of messages container
+
+  // Scroll to the bottom whenever a new message is added
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   useEffect(() => {
     if (userInputs.location && !isEstimationStarted) {
       // If location is set and estimation hasn't started, then calculate the estimate
       setIsEstimationStarted(true);
-      // setMessages((prevMessages) => [
-      //   ...prevMessages,
-      //   { sender: 'bot', text: 'I will now calculate your project estimate...' }
-      // ]);
       submitEstimation(userInputs);  // Pass the latest user inputs to submitEstimation
     }
   }, [userInputs.location]);  // Run when location is updated
@@ -160,7 +164,6 @@ export const ChatBot = () => {
       ]);
     }
   };
-  
 
   return (
     <div className="fixed inset-0 flex justify-center items-center bg-transparent pt-16">
@@ -193,6 +196,7 @@ export const ChatBot = () => {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} /> {/* Invisible div to scroll to the bottom */}
         </div>
 
         {/* Buttons for user choices */}
