@@ -304,28 +304,30 @@ const createPayslip = (req, res) => {
 };
 
 const getPayslips = (req, res) => {
-    const query = `
-      SELECT 
-        ps.id, 
-        ps.title, 
-        ps.period_start, 
-        ps.period_end, 
-        ps.created_at,
-        ps.remarks,
-        u.full_name AS created_by_name
-      FROM payslip ps
-      LEFT JOIN users u ON ps.created_by = u.id
-      ORDER BY ps.created_at DESC
-    `;
+  const query = `
+    SELECT 
+      ps.id, 
+      ps.title, 
+      ps.period_start, 
+      ps.period_end, 
+      ps.created_at,
+      ps.remarks,
+      u.full_name AS created_by_name
+    FROM payslip ps
+    LEFT JOIN users u ON ps.created_by = u.id
+    WHERE ps.hr_status = 'Pending'
+    ORDER BY ps.created_at DESC
+  `;
   
-    db.query(query, (err, results) => {
-      if (err) {
-        console.error("Fetch payslips error:", err);
-        return res.status(500).json({ error: "Failed to fetch payslips" });
-      }
-      res.json(results);
-    });
-  };
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Fetch payslips error:", err);
+      return res.status(500).json({ error: "Failed to fetch payslips" });
+    }
+    res.json(results);
+  });
+};
+
 
 //   const getPayslipById = (req, res) => {
 //     const payslipId = req.params.id;
