@@ -89,6 +89,21 @@ export const FinanceModal = ({ closeModal, record }) => {
           </button>
         </div>
 
+        <div>
+          <div className="flex flex-row gap-2 mb-2">
+            <h2 className="text-lg text-gray-500">Payslip:</h2>
+            <p className="text-lg text-gray-800 font-semibold">{record.title}</p>
+          </div>
+          <div>
+            <h2 className="text-lg text-gray-500">Remarks:</h2>
+            <p className="font-bold">{record.remarks}</p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg text-gray-500">Period:</h2>
+            <p className="font-bold">{record.period_start} <span className="text-gray-500">to</span> {record.period_end}</p>
+          </div>
+        </div>
+
         {/* Finance Details */}
                 <div className="space-y-3 flex-1 overflow-auto ">
                   <Table>

@@ -36,7 +36,7 @@ const UserNavbar = () => {
             {supportOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white shadow-md rounded-md py-2 z-10">
                 <Link to="/report-problem" className="block px-4 py-2 hover:bg-gray-200 text-black font-semibold">Report a Problem</Link>
-                <Link to="/send" className="block px-4 py-2 hover:bg-gray-200 text-black font-semibold">Send Feedback</Link>
+                <Link to="/send-feedback" className="block px-4 py-2 hover:bg-gray-200 text-black font-semibold">Send Feedback</Link>
               </div>
             )}
           </div>
@@ -70,7 +70,7 @@ const UserNavbar = () => {
           {supportOpen && (
             <div className="ml-4 bg-[#4c735c]">
               <Link to="/report-problem" className="block py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>Report a Problem</Link>
-              <Link to="/send" className="block py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>Send Feedback</Link>
+              <Link to="/send-feedback" className="block py-2 hover:text-gray-300 transition" onClick={() => setMenuOpen(false)}>Send Feedback</Link>
             </div>
           )}
         </div>

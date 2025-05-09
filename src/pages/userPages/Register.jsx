@@ -50,9 +50,8 @@ const Register = () => {
     }
 
   return (
-    <div className='p-8 flex items-center justify-center min-h-screen bg-cover bg-center relative' style = {{backgroundImage: `url(${img1})`}}>
-      <div className='absolute inset-0 bg-[#4c735c]/30 backdrop-blur-sm'></div>
-      <div className='relative w-full max-w-md min-h-[500px] h-auto bg-white/30 backdrop-blur-lg rounded-lg shadow-xl p-10 flex flex-col justify-center'>
+    <div className='bg-gray-200 gap-8 flex items-center justify-center min-h-screen bg-cover bg-center relative' >
+      <div className='elative w-full max-w-md min-h-[500px] h-auto bg-white backdrop-blur-lg rounded-lg shadow-xl p-10 flex flex-col justify-center'>
       <h2 className='text-2xl font-bold text-center mb-6 text-[#4c735c]'>Register</h2>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {success && <p style={{ color: "green" }}>{success}</p>}
