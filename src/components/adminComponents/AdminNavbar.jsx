@@ -86,7 +86,7 @@ const AdminNavbar = ({ children }) => {
                 </div>
             </div>
             {/* Sidebar */}
-            <div className="bg-[#3b5d47] h-screen lg:w-64 w-0 text-white fixed top-0 left-0 shadow-lg p-5 flex flex-col justify-between z-50 overflow-y-auto hidden lg:block">
+            <div className="bg-[#3b5d47] h-screen lg:w-66 w-0 text-white fixed top-0 left-0 shadow-lg p-5 flex flex-col justify-between z-50 overflow-y-auto hidden lg:block">
                 <div>
                     <div className="flex justify-center items-center mb-6">
                         <img src={DUVLogoWhite} alt="Logo" className="w-32 h-auto" />
