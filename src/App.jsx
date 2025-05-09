@@ -32,53 +32,64 @@ import { Messages } from './pages/userPages/Messages';
 import { MyProject } from './pages/admin/MyProject';
 import { Attendance } from './pages/admin/AttendanceMonitoring';
 import { SendFeedback } from './pages/userPages/SendFeedback';
+import { LoadingSpinner } from './components/userComponents/LoadingSpinner';
 
 const App = () => {
+  const [loading, setLoading] = useState(true);
+
+  // Simulate loading, like fetching data or waiting for a condition
+  useEffect(() => {
+    setTimeout(() => {
+      setLoading(false); // Hide spinner after 3 seconds or once data is loaded
+    }, 3000);
+  }, []);
+
   return (
-      <Router>
-        <Routes>
-          {/* User Routes */} 
-          <Route path='/' element={<UserLayout/>}>
-            <Route index element={<Homepage/>} />
-            <Route path='login' element={<Login/>} />
-            <Route path='register' element={<Register/>} />
-            <Route path='our-team' element={<OurTeam/>} />
-            <Route path='aboutus' element={<AboutUs/>} />
-            <Route path='report-problem' element={<ReportProblem/>} />
-            <Route path='chatbot' element={<ChatBot/>} />
-            <Route path='send-feedback' element={<SendFeedback/>} />
-          </Route>
-
-          {/*Client Logged in Route*/}
-          <Route path='/clientDashboard' element={<ClientLayout/>}>
-            <Route index element={<ClientDashboard/>} />  
-            <Route path='projects-client' element={<ProjectsClient/>} />
-            <Route path='messages' element={<Messages/>} />
-          </Route>
-
-          {/* Admin Routes */}
-          <Route path='/admin' element={<AdminLogin/>} />
-
-          <Route path='/admin-dashboard' element={<AdminLayout/>}>
-            <Route index element={<AdminDashboard/>} /> 
-            <Route path='user-management' element={<UserManagement/>} />
-            <Route path='hr/employees' element={<HR/>} />
-            <Route path='hr/attendance' element={<EmployeeAttendance/>} />
-            <Route path='hr/payroll' element={<EmployeePayroll/>} />
-            <Route path='hr/payslip' element={<Payslip/>} />
-            <Route path='finance/approved-payroll-from-hr' element={<Finance/>} />
-            <Route path='finance/approved-payroll-from-ceo' element={<ApprovedPayrollOfCeo/>} />
-            <Route path='engineer/projects' element={<Projects/>} />
-            <Route path='engineer/my-project' element={<MyProject/>} />
-            <Route path='employees' element={<EmployeeManagement/>} />
-            <Route path='inventory' element={<Inventory/>} />
-            <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
-            <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
-            <Route path='ceo-dashboard' element={<CeoDashboard/>} />
-            <Route path='AttendanceMonitoring' element={<Attendance/>} />
+    <Router>
+      {loading && <LoadingSpinner />} {/* Show loading spinner while loading */}
+      <Routes>
+        {/* User Routes */} 
+        <Route path='/' element={<UserLayout/>}>
+          <Route index element={<Homepage/>} />
+          <Route path='login' element={<Login/>} />
+          <Route path='register' element={<Register/>} />
+          <Route path='our-team' element={<OurTeam/>} />
+          <Route path='aboutus' element={<AboutUs/>} />
+          <Route path='report-problem' element={<ReportProblem/>} />
+          <Route path='chatbot' element={<ChatBot/>} />
+          <Route path='send-feedback' element={<SendFeedback/>} />
         </Route>
-        </Routes>
-      </Router>
+
+        {/*Client Logged in Route*/}
+        <Route path='/clientDashboard' element={<ClientLayout/>}>
+          <Route index element={<ClientDashboard/>} />  
+          <Route path='projects-client' element={<ProjectsClient/>} />
+          <Route path='messages' element={<Messages/>} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route path='/admin' element={<AdminLogin/>} />
+
+        <Route path='/admin-dashboard' element={<AdminLayout/>}>
+          <Route index element={<AdminDashboard/>} /> 
+          <Route path='user-management' element={<UserManagement/>} />
+          <Route path='hr/employees' element={<HR/>} />
+          <Route path='hr/attendance' element={<EmployeeAttendance/>} />
+          <Route path='hr/payroll' element={<EmployeePayroll/>} />
+          <Route path='hr/payslip' element={<Payslip/>} />
+          <Route path='finance/approved-payroll-from-hr' element={<Finance/>} />
+          <Route path='finance/approved-payroll-from-ceo' element={<ApprovedPayrollOfCeo/>} />
+          <Route path='engineer/projects' element={<Projects/>} />
+          <Route path='engineer/my-project' element={<MyProject/>} />
+          <Route path='employees' element={<EmployeeManagement/>} />
+          <Route path='inventory' element={<Inventory/>} />
+          <Route path='feedbacks/client-feedback' element={<ClientFeedback/>} />
+          <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
+          <Route path='ceo-dashboard' element={<CeoDashboard/>} />
+          <Route path='AttendanceMonitoring' element={<Attendance/>} />
+      </Route>
+      </Routes>
+    </Router>
   );
 };
 
