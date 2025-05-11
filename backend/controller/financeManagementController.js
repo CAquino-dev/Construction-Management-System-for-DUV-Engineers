@@ -62,6 +62,7 @@ const getApprovedPayslips = (req, res) => {
         ps.title,
         ps.period_start,
         ps.period_end,
+        ps.remarks,
         ps.created_at AS payslip_created_at,
         creator.full_name AS created_by_name,
         pi.id AS payslip_item_id,

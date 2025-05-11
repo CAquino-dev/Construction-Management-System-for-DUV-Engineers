@@ -47,7 +47,7 @@ const Login = () => {
           setPermissions(data.permissions);
           localStorage.setItem("permissions", JSON.stringify(data.permissions));
           localStorage.setItem("userId", JSON.stringify(data.userId));
-          navigate('/admin-dashboard');
+          navigate('/admin-dashboard/AttendanceMonitoring');
         } else if (data.userType === "Client") {
           localStorage.setItem("userId", JSON.stringify(data.userId));
           navigate('/clientDashboard');

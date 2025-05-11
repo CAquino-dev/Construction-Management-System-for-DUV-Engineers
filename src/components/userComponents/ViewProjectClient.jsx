@@ -4,6 +4,7 @@ import { Card, CardHeader, CardContent } from '../ui/card';
 import { ProjectDetailsClient } from './ProjectDetailsClient';
 import { MilestoneClient } from './MilestoneClient';
 import duvLogo from '../../assets/duvLogo.jpg'
+import { ClientLegals } from './ClientLegals';
 
 
 export const ViewProjectClient = ({ selectedProject, onBack }) => {
@@ -105,13 +106,10 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
           )}
 
           {activeTab === 'legals' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold">Legals</h4>
-              <p className="text-sm text-gray-600">
-                {/* Legal content here */}
-                Legal documents and terms related to the project can be displayed here.
-              </p>
-            </div>
+              <div className='p-4'>
+                  <h4 className='text-lg font-semibold'>Legals Documents</h4>
+                  <ClientLegals selectedProject={selectedProject} />
+              </div>
           )}
         </CardContent>
       </Card>

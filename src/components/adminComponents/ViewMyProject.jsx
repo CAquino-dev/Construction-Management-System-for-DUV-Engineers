@@ -104,7 +104,7 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
 
                 {activeTab === 'legals' && (
                     <div className='p-4'>
-                        <h4 className='text-lg font-semibold'>Legals</h4>
+                        <h4 className='text-lg font-semibold'>Legals Documents</h4>
                         <MyprojectLegals selectedProject={selectedProject} />
                     </div>
                 )}

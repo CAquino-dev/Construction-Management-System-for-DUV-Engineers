@@ -271,9 +271,9 @@ const createPayslip = (req, res) => {
 
         // Step 2: Insert into payslip table
         const payslipInsert = `
-            INSERT INTO payslip (title, period_start, period_end, created_by) VALUES (?, ?, ?, ?)
+            INSERT INTO payslip (title, period_start, remarks, period_end, created_by) VALUES (?, ?, ?, ?, ?)
       `;
-        db.query(payslipInsert, [title, startDate, endDate, createdBy], (err, result) => {
+        db.query(payslipInsert, [title, startDate, remarks, endDate, createdBy], (err, result) => {
             if (err) {
                 console.error("Error creating payslip:", err);
                 return res.status(500).json({ error: "Failed to create payslip." });
