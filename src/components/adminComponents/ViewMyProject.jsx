@@ -5,6 +5,8 @@ import { MyProjectDetails } from './MyProjectDetails';
 import { MyProjectMilestones } from './MyProjectMilestones';
 import { MyprojectLegals } from './MyprojectLegals';
 import duvLogo from '../../assets/duvLogo.jpg';
+import { MyProjectExpenses } from './MyProjectExpenses';
+import { MyprojectSupply } from './MyprojectSupply';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
     console.log(selectedProject);
@@ -85,6 +87,26 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
             >
                 Legals
             </button>
+            <button
+                onClick={() => handleTabClick('expenses')}
+                className={`text-lg font-medium cursor-pointer p-2 ${
+                    activeTab === 'expenses'
+                        ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+                        : 'text-gray-500 hover:text-[#4c735c]'
+                }`}
+            >
+                Expenses Tracking
+            </button>
+            <button
+                onClick={() => handleTabClick('supply')}
+                className={`text-lg font-medium cursor-pointer p-2 ${
+                    activeTab === 'supply'
+                        ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+                        : 'text-gray-500 hover:text-[#4c735c]'
+                }`}
+            >
+                Supply
+            </button>
         </div>
 
         {/* Tab Content */}
@@ -106,6 +128,19 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                     <div className='p-4'>
                         <h4 className='text-lg font-semibold'>Legals Documents</h4>
                         <MyprojectLegals selectedProject={selectedProject} />
+                    </div>
+                )}
+                {activeTab === 'expenses' && (
+                    <div className='p-4'>
+                        <h4 className='text-lg font-semibold'>Expenses Tracking</h4>
+                        <MyProjectExpenses selectedProject={selectedProject} />
+                    </div>
+                )}
+
+                {activeTab === 'supply' && (
+                    <div className='p-4'>
+                        <h4 className='text-lg font-semibold'>Supply</h4>
+                        <MyprojectSupply selectedProject={selectedProject} />
                     </div>
                 )}
             </CardContent>

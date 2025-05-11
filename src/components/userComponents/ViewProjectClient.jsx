@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { Card, CardHeader, CardContent } from '../ui/card';
 import { ProjectDetailsClient } from './ProjectDetailsClient';
 import { MilestoneClient } from './MilestoneClient';
+import { ExpensesClient } from './ExpensesClient';
 import duvLogo from '../../assets/duvLogo.jpg'
 import { ClientLegals } from './ClientLegals';
 
@@ -86,6 +87,18 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
         >
           Legals
         </button>
+        <button
+          onClick={() => handleTabClick('expenses')}
+          className={`text-lg font-medium cursor-pointer p-2 ${
+            activeTab === 'expenses'
+              ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+              : 'text-gray-500'
+          }`}
+        >
+          Expenses Tracking
+        </button>
+
+        <button>Supply</button>
       </div>
 
       {/* Tab Content */}
@@ -110,6 +123,13 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
                   <h4 className='text-lg font-semibold'>Legals Documents</h4>
                   <ClientLegals selectedProject={selectedProject} />
               </div>
+          )}
+
+          {activeTab === 'expenses' && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold">Expenses</h4>
+              <ExpensesClient selectedProject={selectedProject} />
+            </div>
           )}
         </CardContent>
       </Card>
