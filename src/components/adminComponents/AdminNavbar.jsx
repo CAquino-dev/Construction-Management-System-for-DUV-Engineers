@@ -26,10 +26,8 @@ const AdminNavbar = ({ children }) => {
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
         { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
-        { name: "Employees", icon: <UserCheck size={20} />, href: "/admin-dashboard/employees", },
-        { name: "Scheduler", icon: <Calendar size={20} />, href: "/admin-dashboard/scheduler" },
-        { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory" },
-        { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard",},
+        { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
+        { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard", permission: "can_access_ceo_dashboard"},
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
     ];
 
@@ -108,12 +106,12 @@ const AdminNavbar = ({ children }) => {
 
                         {/* Collapsible Engineering Section */}
                         <li>
-                            <button onClick={toggleEngineerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
+                            {permissions.can_access_engineer === "Y" && <button onClick={toggleEngineerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                                 <span className="flex items-center gap-3 font-semibold"> 
                                     <HardHat size={20} /> Engineer
                                 </span>
                                 <CaretDown size={20} className={`transform transition-all ${isEngineerOpen ? "rotate-180" : ""}`} />
-                            </button>
+                            </button>}
                             {isEngineerOpen && (
                                 <ul className="pl-6 mt-2 space-y-2">
                                     <li>
