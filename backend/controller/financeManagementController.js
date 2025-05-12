@@ -70,6 +70,12 @@ const getApprovedPayslips = (req, res) => {
         u.full_name AS employee_name,
         pr.total_hours_worked,
         pr.calculated_salary,
+        pr.overtime_pay,
+        pr.philhealth_deduction,
+        pr.sss_deduction,
+        pr.pagibig_deduction,
+        pr.total_deductions,
+        pr.final_salary,
         pi.hr_status,
         pi.finance_status
     FROM payslip ps
@@ -109,6 +115,12 @@ const getApprovedPayslips = (req, res) => {
         employee_name: row.employee_name,
         total_hours_worked: row.total_hours_worked,
         calculated_salary: row.calculated_salary,
+        overtime_pay: row.overtime_pay,
+        philhealth_deduction: row.philhealth_deduction,
+        sss_deduction: row.sss_deduction,
+        pagibig_deduction: row.pagibig_deduction,
+        total_deductions: row.total_deductions,
+        final_salary: row.final_salary,
         status: row.hr_status,
         finance_status: row.finance_status
       });
@@ -122,6 +134,7 @@ const getApprovedPayslips = (req, res) => {
     });
   });
 };
+
 
 
 const financeUpdatePayslipStatus = (req, res) => {
