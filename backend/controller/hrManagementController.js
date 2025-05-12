@@ -30,135 +30,219 @@ const getEmployeeSalary = (req, res) => {
 
 
     //working
-    const calculateEmployeeSalary = (req, res) => {
-        const { startDate, endDate, generatedBy } = req.body;
-    
-        // Step 1: Check if payroll already exists for this period
-        const existingQuery = `
-            SELECT 
+const calculateEmployeeSalary = (req, res) => {
+    const { startDate, endDate, generatedBy } = req.body;
+
+    // Step 1: Check if payroll already exists for this period
+    const existingQuery = `
+        SELECT 
             p.*, e.full_name AS employee_name
-            FROM payroll p
-            JOIN users e ON p.employee_id = e.id
-            WHERE p.period_start = ? AND p.period_end = ?
+        FROM payroll p
+        JOIN users e ON p.employee_id = e.id
+        WHERE p.period_start = ? AND p.period_end = ?
+    `;
+
+    db.query(existingQuery, [startDate, endDate], (existErr, existingRows) => {
+        if (existErr) {
+            console.error("Payroll fetch error:", existErr);
+            return res.status(500).json({ error: "Failed to check existing payroll" });
+        }
+
+        if (existingRows.length > 0) {
+            return res.json({
+                message: "Payroll already exists for this period. Fetched existing records.",
+                type: "existing",
+                payrollData: existingRows
+            });
+        }
+
+        // Step 2: Calculate payroll based on attendance
+        const calculationQuery = `
+            SELECT e.id AS employee_id, es.hourly_rate, a.check_in, a.check_out
+            FROM users e
+            JOIN employee_salary es ON e.id = es.employee_id
+            JOIN attendance a ON e.id = a.employee_id
+            WHERE a.status = 'Present' 
+              AND a.check_in BETWEEN ? AND ?
         `;
-    
-        db.query(existingQuery, [startDate, endDate], (existErr, existingRows) => {
-            if (existErr) {
-                console.error("Payroll fetch error:", existErr);
-                return res.status(500).json({ error: "Failed to check existing payroll" });
+
+        db.query(calculationQuery, [startDate, endDate], (calcErr, results) => {
+            if (calcErr) {
+                console.error("Payroll calculation error:", calcErr.message);
+                return res.status(500).json({ error: "Failed to calculate payroll", details: calcErr.message });
             }
-    
-            // If payroll records already exist for this period, return them
-            if (existingRows.length > 0) {
-                return res.json({
-                    message: "Payroll already exists for this period. Fetched existing records.",
-                    type: "existing",
-                    payrollData: existingRows
-                });
+
+            if (results.length === 0) {
+                return res.status(400).json({ message: "No attendance found for this period." });
             }
-    
-            // Step 2: Proceed to calculate and insert new payroll
-            const calculationQuery = `
-              SELECT 
-                  e.id AS employee_id,
-                  es.fixed_salary,
-                  ROUND(SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600, 2) AS total_hours_worked,
-                  ROUND(
-                      (SUM(TIMESTAMPDIFF(SECOND, a.check_in, a.check_out)) / 3600) 
-                      / 120 * (es.fixed_salary / 2), 2
-                  ) AS calculated_salary  
-              FROM users e
-              JOIN employee_salary es ON e.id = es.employee_id
-              JOIN attendance a ON e.id = a.employee_id
-              WHERE a.status = 'Present' 
-                  AND a.check_in BETWEEN ? AND ?
-              GROUP BY e.id, es.fixed_salary`;
-    
-            db.query(calculationQuery, [startDate, endDate], (calcErr, results) => {
-                if (calcErr) {
-                    console.error("Payroll calculation error:", calcErr);
-                    return res.status(500).json({ error: "Failed to calculate payroll" });
+
+            // Step 3: Calculate breakdown for each employee
+            const payrollData = [];
+            let currentEmployee = null;
+            let totalHoursWorked = 0;
+            let baseSalary = 0;
+            let overtimePay = 0;
+            let totalDeductions = 0;
+            let overtimeHours = 0;
+            let philhealthDeduction = 0;
+            let sssDeduction = 0;
+            let pagibigDeduction = 0;
+            let finalSalary = 0;
+
+            results.forEach(row => {
+                // If the current employee changes, process the previous employee's payroll
+                if (currentEmployee && currentEmployee !== row.employee_id) {
+                    // Calculate final salary
+                    finalSalary = baseSalary + overtimePay - totalDeductions;
+
+                    payrollData.push([
+                        currentEmployee,
+                        startDate,
+                        endDate,
+                        totalHoursWorked,
+                        baseSalary,
+                        'Pending', // Status
+                        generatedBy,
+                        new Date(), // Generated At
+                        overtimePay,
+                        philhealthDeduction,
+                        sssDeduction,
+                        pagibigDeduction,
+                        totalDeductions,
+                        finalSalary
+                    ]);
+
+                    // Reset for new employee
+                    totalHoursWorked = 0;
+                    baseSalary = 0;
+                    overtimePay = 0;
+                    totalDeductions = 0;
+                    overtimeHours = 0;
+                    philhealthDeduction = 0;
+                    sssDeduction = 0;
+                    pagibigDeduction = 0;
+                    finalSalary = 0;
                 }
-    
-                if (results.length === 0) {
-                    return res.status(400).json({ message: "No attendance found for this period." });
-                }
-    
-                const payrollData = results.map(row => [
-                    row.employee_id,
+
+                // Calculate hours worked for the day
+                const totalSeconds = (new Date(row.check_out) - new Date(row.check_in)) / 1000;
+                const dailyHoursWorked = totalSeconds / 3600; // convert seconds to hours
+                totalHoursWorked += dailyHoursWorked;
+
+                baseSalary = totalHoursWorked * row.hourly_rate;
+
+                // Calculate overtime (if any)
+                const normalWorkingHours = 8; // Assume 8 hours workday
+                const daysWorked = (new Date(endDate) - new Date(startDate)) / (1000 * 3600 * 24); // Calculate number of days worked
+                const maxNormalHours = normalWorkingHours * daysWorked; // Total normal hours for the period
+
+                overtimeHours = totalHoursWorked > maxNormalHours ? totalHoursWorked - maxNormalHours : 0;
+                overtimePay = overtimeHours * row.hourly_rate * 1.5; // Overtime rate is 1.5x the hourly rate
+
+                // **Dynamic Deduction Calculations**:
+                philhealthDeduction = baseSalary * 0.0225; // 2.25% for employee share
+                sssDeduction = baseSalary * 0.0563; // 5.63% for employee share
+                pagibigDeduction = baseSalary > 5000 ? 100 : 0; // Fixed Pag-IBIG Deduction for salary > ₱5,000
+                totalDeductions = philhealthDeduction + sssDeduction + pagibigDeduction;
+
+                // Update current employee ID
+                currentEmployee = row.employee_id;
+            });
+
+            // Process the last employee in the loop
+            if (currentEmployee) {
+                finalSalary = baseSalary + overtimePay - totalDeductions;
+                payrollData.push([
+                    currentEmployee,
                     startDate,
                     endDate,
-                    row.total_hours_worked,
-                    row.calculated_salary,
+                    totalHoursWorked,
+                    baseSalary,
                     'Pending',
                     generatedBy,
-                    new Date()
+                    new Date(),
+                    overtimePay,
+                    philhealthDeduction,
+                    sssDeduction,
+                    pagibigDeduction,
+                    totalDeductions,
+                    finalSalary
                 ]);
+            }
 
-                console.log(payrollData);
+            // Step 4: Insert payroll data into the database
+            const insertQuery = `
+                INSERT INTO payroll 
+                (employee_id, period_start, period_end, total_hours_worked, calculated_salary, status, generated_by, generated_at, 
+                 overtime_pay, philhealth_deduction, sss_deduction, pagibig_deduction, total_deductions, final_salary)
+                VALUES ?
+            `;
 
-                const insertQuery = `
-                    INSERT INTO payroll 
-                    (employee_id, period_start, period_end, total_hours_worked, calculated_salary, status, generated_by, generated_at)
-                    VALUES ?`;
-    
-                db.query(insertQuery, [payrollData], (insertErr) => {
-                    if (insertErr) {
-                        console.error("Insert error:", insertErr);
-                        return res.status(500).json({ error: "Failed to insert payroll" });
-                    }
-    
-                    res.json({
-                        message: "Payroll successfully generated.",
-                        type: "new",
-                        insertedCount: payrollData.length
-                    });
+            db.query(insertQuery, [payrollData], (insertErr) => {
+                if (insertErr) {
+                    console.error("Insert error:", insertErr);
+                    return res.status(500).json({ error: "Failed to insert payroll" });
+                }
+
+                res.json({
+                    message: "Payroll successfully generated.",
+                    type: "new",
+                    insertedCount: payrollData.length,
+                    payroll_details: payrollData
                 });
             });
         });
-    };
+    });
+};
+
+
+
+
     
     
     //working
-    const getPayrollRecords = (req, res) => {
-        const { period_start, period_end } = req.query;
-    
-        if (!period_start || !period_end) {
-            return res.status(400).json({ error: "Missing required date range parameters." });
-        }
-    
-        const query = `
-SELECT 
-    e.employee_id,               -- Get employee_id from the users table
-    e.full_name,
-    p.period_start,
-    p.period_end,
-    p.total_hours_worked,
-    p.calculated_salary,
-    p.status,
-    p.generated_by,
-    p.generated_at,
-    es.fixed_salary,
-    d.name AS department_name    -- Get the department name
-FROM payroll p
-JOIN users e ON p.employee_id = e.id   -- Use the id from users table (since payroll's employee_id links to users' id)
-JOIN employee_salary es ON p.employee_id = es.employee_id
-JOIN departments d on e.department_id = d.id
-WHERE p.period_start >= ? AND p.period_end <= ?
-ORDER BY p.period_end DESC;
+const getPayrollRecords = (req, res) => {
+    const { period_start, period_end } = req.query;
 
-;
-        `;
-    
-        db.query(query, [period_start, period_end], (err, results) => {
-            if (err) {
-                console.error("Error fetching payroll records:", err);
-                return res.status(500).json({ error: "Failed to retrieve payroll records." });
-            }
-    
-            res.json(results);
-        });
-    };  
+    if (!period_start || !period_end) {
+        return res.status(400).json({ error: "Missing required date range parameters." });
+    }
+
+    const query = `
+        SELECT 
+            e.id AS employee_id,               -- Get employee_id from the users table
+            e.full_name,
+            p.period_start,
+            p.period_end,
+            p.total_hours_worked,
+            p.calculated_salary,
+            p.status,
+            p.generated_by,
+            p.generated_at,
+            p.overtime_pay,
+            p.philhealth_deduction,
+            p.sss_deduction,
+            p.pagibig_deduction,
+            p.total_deductions,
+            p.final_salary,
+            d.name AS department_name            -- Get the department name
+        FROM payroll p
+        JOIN users e ON p.employee_id = e.id   -- Use the id from users table (since payroll's employee_id links to users' id)
+        JOIN departments d on e.department_id = d.id
+        WHERE p.period_start >= ? AND p.period_end <= ?
+        ORDER BY p.period_end DESC;
+    `;
+
+    db.query(query, [period_start, period_end], (err, results) => {
+        if (err) {
+            console.error("Error fetching payroll records:", err);
+            return res.status(500).json({ error: "Failed to retrieve payroll records." });
+        }
+
+        res.json(results);
+    });
+};
+
 
 //working
 const getPresentEmployee = (req, res) => {
@@ -329,6 +413,9 @@ const getPayslips = (req, res) => {
 };
 
 
+
+
+
 //   const getPayslipById = (req, res) => {
 //     const payslipId = req.params.id;
   
@@ -418,6 +505,12 @@ const getPayslipById = (req, res) => {
             u.full_name AS employee_name,
             pr.total_hours_worked,
             pr.calculated_salary,
+            pr.overtime_pay,
+            pr.philhealth_deduction,
+            pr.sss_deduction,
+            pr.pagibig_deduction,
+            pr.total_deductions,
+            pr.final_salary,
             pi.hr_status
         FROM payslip ps
         LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
@@ -449,6 +542,12 @@ const getPayslipById = (req, res) => {
                 employee_name: row.employee_name,
                 total_hours_worked: row.total_hours_worked,
                 calculated_salary: row.calculated_salary,
+                overtime_pay: row.overtime_pay,
+                philhealth_deduction: row.philhealth_deduction,
+                sss_deduction: row.sss_deduction,
+                pagibig_deduction: row.pagibig_deduction,
+                total_deductions: row.total_deductions,
+                final_salary: row.final_salary,
                 status: row.hr_status
             }))
         };
@@ -459,6 +558,7 @@ const getPayslipById = (req, res) => {
         });
     });
 };
+
 
 const updatePayslipItemStatus = (req, res) => {
     const { selectedItemIds, newStatus, remarks } = req.body;

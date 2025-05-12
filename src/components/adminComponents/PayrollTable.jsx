@@ -100,16 +100,21 @@ export const PayrollTable = () => {
       console.log(data);
       if(response.ok){
         const formatted = data.map((record) => ({
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).substr(2, 9), // Generate a unique id for each record
           payrollId: record.id,
           employeeId: record.employee_id,
           fullName: record.full_name,
           department: record.department_name,
-          fixedSalary: record.fixed_salary,
-          hoursWorked: record.total_hours_worked,
+          totalHoursWorked: record.total_hours_worked,
           calculatedSalary: record.calculated_salary,
-          date: record.generated_at,
+          overtimePay: record.overtime_pay,
+          philhealthDeduction: record.philhealth_deduction, 
+          sssDeduction: record.sss_deduction,
+          pagibigDeduction: record.pagibig_deduction,
+          totalDeductions: record.total_deductions,
+          finalSalary: record.final_salary,
           status: record.status,
+          generatedAt: record.generated_at,
         }))
         setFilteredRecords(formatted); // ✅ Update table with API response
       }
