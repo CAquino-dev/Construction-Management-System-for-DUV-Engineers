@@ -4,6 +4,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import PaginationComponent from "./Pagination";
 import { DotsThree } from "@phosphor-icons/react";
 import ConfirmationModal from "./ConfirmationModal";
+import { EmployeePayrollModal } from "./EmployeePayrollModal"; // Import the EmployeePayrollModal component
 
 export const PayslipModal = ({ closeModal, payslip }) => {
   if (!payslip) return null; // Ensures the modal only renders when a payslip is selected
@@ -18,6 +19,8 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   const [remark, setRemark] = useState(""); // Holds the remark
   const [selectedPayslips, setSelectedPayslips] = useState([]); // Holds selected payslip items
   const [isBulkAction, setIsBulkAction] = useState(false); // Flag to differentiate between bulk action or single item update
+  const [isEmployeePayrollModalOpen, setIsEmployeePayrollModalOpen] = useState(false); // Control modal visibility
+  const [selectedEmployee, setSelectedEmployee] = useState(null); // Store selected employee data
 
   const openConfirmationModalForPayslip = (type) => {
     setActionType(type);
@@ -151,6 +154,34 @@ export const PayslipModal = ({ closeModal, payslip }) => {
     }
   };
 
+    const formatEmployeeData = (employeeData) => {
+    return {
+      fullName: employeeData?.employee_name || "N/A",
+      department: employeeData?.department_name || "Unknown",
+      totalHoursWorked: parseFloat(employeeData?.total_hours_worked || 0).toFixed(2),
+      calculated_salary: parseFloat(employeeData?.calculated_salary || 0).toLocaleString(),
+      overtimePay: parseFloat(employeeData?.overtime_pay || 0).toLocaleString(),
+      philhealthDeduction: parseFloat(employeeData?.philhealth_deduction || 0).toLocaleString(),
+      sssDeduction: parseFloat(employeeData?.sss_deduction || 0).toLocaleString(),
+      pagibigDeduction: parseFloat(employeeData?.pagibig_deduction || 0).toLocaleString(),
+      totalDeductions: parseFloat(employeeData?.total_deductions || 0).toLocaleString(),
+      finalSalary: parseFloat(employeeData?.final_salary || 0).toLocaleString(),
+    };
+  };
+
+  // Open the Employee Payroll Modal and pass the selected employee data
+  const openEmployeePayrollModal = (employee) => {
+    const formattedEmployee = formatEmployeeData(employee);
+    setSelectedEmployee(formattedEmployee);
+    
+    setIsEmployeePayrollModalOpen(true);
+  };
+
+  const closeEmployeePayrollModal = () => {
+    setIsEmployeePayrollModalOpen(false);
+    setSelectedEmployee(null); // Reset selected employee
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[800px] h-[600px] overflow-hidden flex flex-col">
@@ -194,6 +225,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                 <TableHead className="text-center text-white">Total Hours</TableHead>
                 <TableHead className="text-center text-white">Salary</TableHead>
                 <TableHead className="text-center text-white">Status</TableHead>
+                <TableHead className="text-center text-white">View</TableHead> {/* View Column */}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -221,18 +253,25 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                         {emp.status}
                       </p>
                     </TableCell>
+                    <TableCell className="text-center">
+                      <button
+                        onClick={() => openEmployeePayrollModal(emp)} // Open the modal when clicked
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        View
+                      </button>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center p-4 text-gray-500">No matching employees</TableCell>
+                  <TableCell colSpan={6} className="text-center p-4 text-gray-500">No matching employees</TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
 
-        {/* Bulk Action Dropdown */}
         {selectedPayslips.length > 0 && (
           <div className="mt-4 flex justify-between">
             <select
@@ -263,16 +302,24 @@ export const PayslipModal = ({ closeModal, payslip }) => {
         </div>
 
         <PaginationComponent currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
+
+        {/* Confirmation Modal */}
+        {isConfirmationModalOpen && (
+          <ConfirmationModal
+            isOpen={isConfirmationModalOpen}
+            onClose={closeConfirmationModal}
+            onConfirm={handleConfirmation}
+            actionType={actionType} // Pass the action type to display in modal
+            setRemark={setRemark}
+          />
+        )}
       </div>
 
-      {/* Confirmation Modal */}
-      {isConfirmationModalOpen && (
-        <ConfirmationModal
-          isOpen={isConfirmationModalOpen}
-          onClose={closeConfirmationModal}
-          onConfirm={handleConfirmation}
-          actionType={actionType} // Pass the action type to display in modal
-          setRemark={setRemark}
+      {/* Employee Payslip Modal */}
+      {isEmployeePayrollModalOpen && (
+        <EmployeePayrollModal
+          closeModal={closeEmployeePayrollModal}
+          employee={selectedEmployee}
         />
       )}
     </div>

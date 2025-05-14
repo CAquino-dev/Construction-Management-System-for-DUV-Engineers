@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MyProjectViewMilestone } from '../adminComponents/MyProjectViewMilestone'; // View milestone modal
 
 // const milestones = [
 //   {
@@ -36,6 +37,9 @@ import React, { useEffect, useState } from 'react';
 
 export const MilestoneClient = ({selectedProject}) => {
   const [milestones, setMilestones] = useState([]);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false); // Track view modal state
+  const [milestonesList, setMilestonesList] = useState(milestones);
+    const [selectedMilestone, setSelectedMilestone] = useState(null); // Selected milestone for viewing
 
 
   useEffect(() => {
@@ -49,6 +53,15 @@ export const MilestoneClient = ({selectedProject}) => {
 
     getMilestones();
   }, [])
+
+    // Open the View Milestone modal
+  const openViewModal = (milestone) => {
+    setSelectedMilestone(milestone);
+    setIsViewModalOpen(true);
+  };
+
+  // Close the View Milestone modal
+  const closeViewModal = () => setIsViewModalOpen(false);
 
   return (
     <div className="">
@@ -68,12 +81,24 @@ export const MilestoneClient = ({selectedProject}) => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
                   <p className="text-sm text-gray-600">{milestone.details}</p>
+                  <button
+                    onClick={() => openViewModal(milestone)} // Open view modal on button click
+                    className='text-[#4c735c] underline cursor-pointer'
+                  >
+                    View Attachments
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+      {isViewModalOpen && (
+        <MyProjectViewMilestone
+          milestone={selectedMilestone} // Pass selected milestone to the view modal
+          onClose={closeViewModal} // Close the modal on close
+        />
+      )}
     </div>
   );
 };

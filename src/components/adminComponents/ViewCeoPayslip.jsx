@@ -1,20 +1,83 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import Pagination from './Pagination'; // Ensure correct path
+import ConfirmationModal from './ConfirmationModal'; // Ensure correct path for ConfirmationModal
 
 export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
-  console.log('selected payslip:', selectedPayslips.items);
+
+  const userId = localStorage.getItem('userId');
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(selectedPayslips?.length / itemsPerPage); // Check for length of selectedPayslips directly
 
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
+  const [actionType, setActionType] = useState(null); // Action type for Accept/Reject
+  const [remark, setRemark] = useState(""); // To hold the remark for confirmation modal
+  const [ceoRejectionRemarks, setCeoRejectionRemarks] = useState(""); // CEO Rejection Remarks
+
   const getStatusColor = (status) => {
     if (status === "Pending") return "text-yellow-400";
     if (status === "Approved by Finance") return "text-green-400";
     return "text-gray-400";
+  };
+
+  // Open the confirmation modal for accept/reject
+  const openConfirmationModal = (type) => {
+    setActionType(type); // Set action type (Accept/Reject)
+    setRemark(""); // Reset remark
+    setCeoRejectionRemarks(""); // Reset CEO rejection remarks
+    setIsConfirmationModalOpen(true); // Open modal
+  };
+
+  const closeConfirmationModal = () => {
+    setIsConfirmationModalOpen(false); // Close modal
+  };
+
+  // Handle confirmation (Accept or Reject)
+  const handleConfirmation = () => {
+    // Update payslip status when confirmed
+    if (actionType === "Approved") {
+      updatePayslipStatus(selectedPayslips.payslip_id, "Approved by CEO", ceoRejectionRemarks);
+    } else if (actionType === "Rejected") {
+      updatePayslipStatus(selectedPayslips.payslip_id, "Rejected by CEO", ceoRejectionRemarks);
+    }
+    closeConfirmationModal(); // Close the modal after action
+  };
+
+  // Function to update payslip status through API
+  const updatePayslipStatus = async (payslipId, status, ceoRejectionRemarks) => {
+    console.log('payslipId', payslipId)
+    console.log('status', status)
+    console.log('remarks',ceoRejectionRemarks)
+    console.log('userID', userId)
+
+
+    try {
+      const response = await fetch("http://localhost:5000/api/ceo/updatePayslipStatus", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          payslipId: payslipId,
+          status: status,
+          ceoRejectionRemarks: ceoRejectionRemarks,
+          approvedBy: userId
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert(`Payslip has been ${status}`);
+      } else {
+        console.error("Failed to update payslip status by CEO:", data.error);
+      }
+    } catch (error) {
+      console.error("Error updating payslip status by CEO:", error);
+    }
   };
 
   return (
@@ -71,6 +134,22 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
           </Table>
         </CardContent>
 
+        {/* Accept and Reject Buttons */}
+        <div className="flex justify-center gap-4 mt-4">
+          <button
+            onClick={() => openConfirmationModal("Approved")}
+            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+          >
+            Accept
+          </button>
+          <button
+            onClick={() => openConfirmationModal("Rejected")}
+            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
+          >
+            Reject
+          </button>
+        </div>
+
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -78,20 +157,16 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
         />
       </Card>
 
-      {/* Accept and Reject Buttons */}
-      <div className="flex justify-center gap-4 mt-4">
-          <button
-            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-          >
-            Accept
-          </button>
-          <button
-            className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366]"
-          >
-            Reject
-          </button>
-        </div>
+      {/* Confirmation Modal */}
+      {isConfirmationModalOpen && (
+        <ConfirmationModal
+          isOpen={isConfirmationModalOpen}
+          onClose={closeConfirmationModal}
+          onConfirm={handleConfirmation}
+          actionType={actionType} // Pass the action type to display in modal
+          setRemark={setCeoRejectionRemarks} // Set the CEO rejection remarks
+        />
+      )}
     </div>
   );
 };
- 
