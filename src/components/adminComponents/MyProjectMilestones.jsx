@@ -110,7 +110,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 {/* Milestone Dot and Timestamp */}
                 <div className="flex items-center mb-2 sm:mb-0 sm:mr-4">
                   <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full mr-2" />
-                  <p className="text-sm text-gray-600">{milestone.timestamp}</p>
+                  <p className="text-sm text-gray-600">{new Date(milestone.timestamp).toLocaleDateString()}</p>
                 </div>
                 {/* Milestone Status and Details */}
                 <div>

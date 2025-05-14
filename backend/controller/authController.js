@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 //working
@@ -52,37 +53,38 @@ const Login = (req, res) => {
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
-        // If the user has no role_id (i.e., a client), return without permissions
-        if (!user.role_id) {
-            return res.json({
-                message: "Login successful",
-                userId: user.id,
-                userType: "Client",
-                permissions: null
+        // Fetch permissions if the user has a role_id
+        let permissions = null;
+        if (user.role_id) {
+            const permissionQuery = "SELECT * FROM permissions WHERE id = ?";
+            permissions = await new Promise((resolve, reject) => {
+                db.query(permissionQuery, [user.role_id], (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results[0]); // Assuming one set of permissions per role_id
+                });
             });
         }
 
-        // Otherwise fetch permissions for employee
-        const permissionQuery = `
-            SELECT * FROM permissions WHERE id = ?;
-        `;
+        // Create the JWT token, including userType and permissions
+        const payload = {
+            userId: user.id,
+            userType: user.role_id ? "Employee" : "Client",  // Keep userType in the payload
+            permissions: permissions ? permissions : null,  // Include permissions in the payload
+        };
 
-        db.query(permissionQuery, [user.role_id], (err, results) => {
-            if (err) return res.status(500).json({ error: "Failed to fetch permissions" });
+        // Ensure JWT_SECRET is set in your .env file
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
 
-            const permissionData = results[0];
-            delete permissionData.id;
-            delete permissionData.role_name;
-
-            res.json({
-                message: "Login successful",
-                userId: user.id,
-                userType: "Employee",
-                permissions: permissionData
-            });
+        // Send response with token, userType, permissions, and userId
+        res.json({
+            message: "Login successful",
+            userId: user.id,        // Include userId
+            userType: user.role_id ? "Employee" : "Client",  // Include userType
+            permissions: permissions ? permissions : null,  // Include permissions
         });
     });
 };
+
 
 
 module.exports = { registerUser, Login };
