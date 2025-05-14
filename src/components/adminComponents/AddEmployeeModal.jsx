@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "@phosphor-icons/react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"; // Assuming you're using shadcn UI library
 
 export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -110,7 +111,81 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           {/*System Access*/}
-          <div>
+          {/*System Access*/}
+<div>
+  <Tabs defaultValue="department" className="mt-4">
+    <TabsList>
+      <TabsTrigger value="department">Access Per Department</TabsTrigger>
+      <TabsTrigger value="customized">Customized Access</TabsTrigger>
+    </TabsList>
+    
+    <TabsContent value="department">
+      {/* Access Per Department */}
+      <div className="p-4 bg-gray-100 rounded-md">
+        <h3 className="text-md font-semibold text-gray-700">Access Per Department</h3>
+        {/* You can add specific department-based access here */}
+        <select name="departmentAccess" onChange={handleChange} className="w-full px-3 py-2 border rounded-md">
+          <option value="" disabled>Select Department Access</option>
+          {departments.map((dept) => (
+            <option key={dept} value={dept}>{dept}</option>
+          ))}
+        </select>
+      </div>
+    </TabsContent>
+    
+    <TabsContent value="customized">
+      {/* Customized Access */}
+      <div className="p-4 bg-gray-100 rounded-md">
+        <h3 className="text-md font-semibold text-gray-700">Customized Access</h3>
+        <p className="text-sm text-gray-600">Customize the modules this employee can access.</p>
+        {/* Add customization options for specific modules */}
+        <div className="flex flex-col gap-4 mt-2">
+
+          {/* HR */}
+          <div className="bg-[#3b5d47]/40 p-4 rounded-md">
+            <p>HR</p>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="hr-view-access" className="w-5 h-5 cursor-pointer" />
+                <label htmlFor="hr-view-access" className="text-sm text-gray-800">View</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="hr-edit-access" className="w-5 h-5 cursor-pointer" />
+                <label htmlFor="hr-edit-access" className="text-sm text-gray-800">Edit</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="hr-delete-access" className="w-5 h-5 cursor-pointer" />
+                <label htmlFor="hr-delete-access" className="text-sm text-gray-800">Delete</label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="hr-add-access" className="w-5 h-5 cursor-pointer" />
+                <label htmlFor="hr-add-access" className="text-sm text-gray-800">Add</label>
+              </div>
+            </div>
+          </div>
+
+          {/* Finance */}
+          <div className="bg-[#3b5d47]/40 p-4 rounded-md">
+            <p>Finance</p>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="finance--access" className="w-5 h-5 cursor-pointer" />
+                <label htmlFor="inventory-access" className="text-sm text-gray-800">kineme</label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="finance--access" className="w-5 h-5 cursor-pointer" />
+                <label htmlFor="inventory-access" className="text-sm text-gray-800">kineme</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </TabsContent>
+  </Tabs>
+</div>
+
+          {/* <div>
             <h3 className="text-md font-semibold text-gray-700">System Access</h3>
             <div className="bg-[#3b5d47]/40 p-4 rounded-md mt-2 font-semidbold">
               <p>User Permisions</p>
@@ -148,7 +223,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
               </div>
             </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Submit Button */}
           <div className="flex justify-end gap-2 mt-4">
