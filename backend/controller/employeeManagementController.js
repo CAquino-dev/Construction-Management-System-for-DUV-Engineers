@@ -7,66 +7,134 @@ const setStatusInactive = (req, res) => {
     const query = '';
 }
 //working
+
 const addEmployee = (req, res) => {
-    const { username, email, fullname, password, role_id, department_id } = req.body;
-  
-    // Check if required fields are provided
-    if (!username || !password) {
-      return res.status(500).json({ error: "All fields are required" });
+  const {
+    fullname,
+    gender,
+    contactNo,
+    age,
+    birthday,
+    address,
+    role_id,
+    employmentStatus,
+    jobTitle,
+    dateHired,
+    emergencyName,
+    emergencyRelationship,
+    emergencyContact,
+    email,
+    department_id,
+    password,
+    hourly_rate,  // Added hourly_rate to the request body
+  } = req.body;
+
+  // Check if required fields are provided
+  if (!fullname || !gender || !contactNo || !age || !birthday || !address || !role_id || !employmentStatus || !jobTitle || !dateHired || !emergencyName || !emergencyRelationship || !emergencyContact || !email || !department_id || !password || !hourly_rate) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  // Hash the password
+  const saltRounds = 10;
+  bcrypt.hash(password, saltRounds, (err, hashPassword) => {
+    if (err) {
+      return res.status(500).json({ error: "Error hashing password" });
     }
-  
-    // Hash the password
-    const saltRounds = 10;
-    bcrypt.hash(password, saltRounds, (err, hashPassword) => {
+
+    // Step 1: Generate the employee ID
+    const currentYear = new Date().getFullYear(); // Get current year
+    const yearPrefix = currentYear.toString();  // Year part (e.g., '2025')
+
+    // Query to get the highest employee ID for the current year
+    const query = `SELECT employee_id FROM users WHERE employee_id LIKE ? ORDER BY employee_id DESC LIMIT 1`;
+    db.query(query, [`${yearPrefix}-%`], (err, result) => {
       if (err) {
-        return res.status(500).json({ error: "Error hashing password" });
+        return res.status(500).json({ error: "Error fetching last employee ID" });
       }
-  
-      // Step 1: Generate the employee ID
-      const currentYear = new Date().getFullYear(); // Get current year
-      const yearPrefix = currentYear.toString();  // Year part (e.g., '2025')
-  
-      // Query to get the highest employee ID for the current year
-      const query = `SELECT employee_id FROM users WHERE employee_id LIKE ? ORDER BY employee_id DESC LIMIT 1`;
-      db.query(query, [`${yearPrefix}-%`], (err, result) => {
+
+      let newEmployeeNumber = "0001";  // Default number if no employees exist for the year
+
+      if (result.length > 0) {
+        // Get the last employee number and increment it by 1
+        const lastEmployeeID = result[0].employee_id;
+        const lastNumber = parseInt(lastEmployeeID.split('-')[1], 10); // Extract the last number
+        newEmployeeNumber = (lastNumber + 1).toString().padStart(4, '0');  // Increment the number and pad to 4 digits
+      }
+
+      // Generate the new employee ID (e.g., "2025-0001")
+      const newEmployeeID = `${yearPrefix}-${newEmployeeNumber}`;
+
+      // Step 2: Insert the employee data with the generated employee_id
+      const insertQuery = `INSERT INTO users (
+          employee_id, full_name, gender, age, birthday, address, 
+          role_id, department_id, employment_status, job_title, date_hired, emergency_name, 
+          emergency_relationship, emergency_contact, email, password
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+      db.query(insertQuery, [
+        newEmployeeID,        // Generated employee ID
+        fullname,             // Full name
+        gender,               // Gender
+        age,                  // Age
+        birthday,             // Birthday
+        address,              // Address
+        role_id,              // Role ID
+        department_id,        // Department ID
+        employmentStatus,     // Employment status
+        jobTitle,             // Job title
+        dateHired,            // Date hired
+        emergencyName,        // Emergency contact name
+        emergencyRelationship, // Emergency relationship
+        emergencyContact,     // Emergency contact number
+        email,                // Employee's email
+        hashPassword,         // Hashed password
+      ], (err, results) => {
         if (err) {
-          return res.status(500).json({ error: "Error fetching last employee ID" });
-        }
-  
-        let newEmployeeNumber = "0001";  // Default number if no employees exist for the year
-  
-        if (result.length > 0) {
-          // Get the last employee number and increment it by 1
-          const lastEmployeeID = result[0].employee_id;
-          const lastNumber = parseInt(lastEmployeeID.split('-')[1], 10); // Extract the last number
-          newEmployeeNumber = (lastNumber + 1).toString().padStart(4, '0');  // Increment the number and pad to 4 digits
-        }
-  
-        // Generate the new employee ID (e.g., "2025-0001")
-        const newEmployeeID = `${yearPrefix}-${newEmployeeNumber}`;
-  
-        // Step 2: Insert the employee data with the generated employee_id
-        const insertQuery = `INSERT INTO users (employee_id, username, email, full_name, password, role_id, department_id) values (?, ?, ?, ?, ?, ?, ?)`;
-        db.query(insertQuery, [
-          newEmployeeID,  // Generated employee ID
-          username,
-          email,
-          fullname,
-          hashPassword,
-          role_id,
-          department_id
-        ], (err, results) => {
-          if (err) {
-            return res.status(500).json({ error: err.message });
-          } else {
-            res.status(200).json({ meesage: "user registered successfully" })
+          console.log("Error details:", err); // For debugging purposes
+          return res.status(500).json({ error: err.message });
         }
 
+        // Step 3: Retrieve the ID of the newly inserted employee
+        const newEmployeeIDFromDB = results.insertId;  // Get the actual ID from the users table
+
+        // Step 4: Insert the hourly_rate into employee_salary table using the user ID
+        const salaryInsertQuery = `INSERT INTO employee_salary (employee_id, hourly_rate) VALUES (?, ?)`;
+
+        db.query(salaryInsertQuery, [newEmployeeIDFromDB, hourly_rate], (err, result) => {
+          if (err) {
+            console.log("Error details:", err);
+            return res.status(500).json({ error: "Error inserting hourly rate" });
+          }
+
+          res.status(200).json({ message: "User registered successfully" });
         });
       });
     });
-  };
+  });
+};
+
+
+
+
   
+  const getPermissions = (req, res) => {
+    const query = `SELECT id, role_name from permissions`;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+        res.json(results)
+    });
+  };
+
+  const getDepartments = (req, res) => {
+    const query = `SELECT id, name from departments`;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: "Database error" });
+        res.json(results)
+    });
+  };
+
   const checkIn = (req, res) => {
     const { employeeId } = req.body;
 
@@ -158,4 +226,4 @@ const addEmployee = (req, res) => {
     });
   };
 
-module.exports = { addEmployee, checkIn, checkOut };
+module.exports = { addEmployee, checkIn, checkOut, getPermissions, getDepartments };

@@ -209,28 +209,30 @@ const getPayrollRecords = (req, res) => {
     }
 
     const query = `
-        SELECT 
-            e.id AS employee_id,               -- Get employee_id from the users table
-            e.full_name,
-            p.period_start,
-            p.period_end,
-            p.total_hours_worked,
-            p.calculated_salary,
-            p.status,
-            p.generated_by,
-            p.generated_at,
-            p.overtime_pay,
-            p.philhealth_deduction,
-            p.sss_deduction,
-            p.pagibig_deduction,
-            p.total_deductions,
-            p.final_salary,
-            d.name AS department_name            -- Get the department name
-        FROM payroll p
-        JOIN users e ON p.employee_id = e.id   -- Use the id from users table (since payroll's employee_id links to users' id)
-        JOIN departments d on e.department_id = d.id
-        WHERE p.period_start >= ? AND p.period_end <= ?
-        ORDER BY p.period_end DESC;
+SELECT 
+    e.employee_id AS employee_id,               
+    e.full_name,
+    p.period_start,
+    p.period_end,
+    p.total_hours_worked,
+    p.calculated_salary,
+    p.status,
+    p.generated_by,
+    p.generated_at,
+    p.overtime_pay,
+    p.philhealth_deduction,
+    p.sss_deduction,
+    p.pagibig_deduction,
+    p.total_deductions,
+    p.final_salary,
+    d.name AS department_name,          
+    es.hourly_rate                      
+FROM payroll p
+JOIN users e ON p.employee_id = e.id   
+JOIN departments d on e.department_id = d.id
+JOIN employee_salary es ON e.id = es.employee_id 
+WHERE p.period_start >= ? AND p.period_end <= ?
+ORDER BY p.period_end DESC;
     `;
 
     db.query(query, [period_start, period_end], (err, results) => {
