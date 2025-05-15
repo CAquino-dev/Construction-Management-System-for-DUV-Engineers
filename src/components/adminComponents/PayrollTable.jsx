@@ -115,6 +115,7 @@ export const PayrollTable = () => {
           finalSalary: record.final_salary,
           status: record.status,
           generatedAt: record.generated_at,
+          hourlyRate: record.hourly_rate,
         }))
         setFilteredRecords(formatted); // ✅ Update table with API response
       }
@@ -371,7 +372,7 @@ export const PayrollTable = () => {
                 <TableHead className="text-center p-2 text-white">Employee ID</TableHead>
                 <TableHead className="text-center text-white">Full Name</TableHead>
                 <TableHead className="text-center text-white">Department</TableHead>
-                <TableHead className="text-center text-white">Fixed Salary</TableHead>
+                <TableHead className="text-center text-white">Hourly Rate</TableHead>
                 <TableHead className="text-center text-white">Hours Worked</TableHead>
                 <TableHead className="text-center text-white">Calculated Salary</TableHead>
                 <TableHead className="text-center text-white">Actions</TableHead>
@@ -383,8 +384,8 @@ export const PayrollTable = () => {
                   <TableCell className="text-center p-2">{record.employeeId}</TableCell>
                   <TableCell className="text-center p-2">{record.fullName}</TableCell>
                   <TableCell className="text-center p-2">{record.department}</TableCell>
-                  <TableCell className="text-center p-2">₱{record.fixedSalary}</TableCell>
-                  <TableCell className="text-center p-2">{record.hoursWorked}</TableCell>
+                  <TableCell className="text-center p-2">₱{record.hourlyRate}</TableCell>
+                  <TableCell className="text-center p-2">{record.totalHoursWorked}</TableCell>
                   <TableCell className="text-center p-2">₱{record.calculatedSalary}</TableCell>
                   <TableCell className="text-center p-2">
                     <button
