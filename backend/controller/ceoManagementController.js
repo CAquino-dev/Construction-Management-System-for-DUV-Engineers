@@ -4,31 +4,34 @@ require("dotenv").config();
 
 const getFinanceApprovedPayslips = (req, res) => {
   const query = ` 
-    SELECT 
-        un.full_name AS approved_by_name,
-        ps.id AS payslip_id,
-        ps.title,
-        ps.period_start,
-        ps.period_end,
-        ps.created_at AS payslip_created_at,
-        ps.approved_at,  -- Added approved_at
-        creator.full_name AS created_by_name,
-        pi.id AS payslip_item_id,
-        pr.id AS payroll_id,
-        u.full_name AS employee_name,
-        pr.total_hours_worked,
-        pr.calculated_salary,
-        pi.finance_status
-    FROM payslip ps
-    LEFT JOIN users un ON ps.approved_by_id = un.id
-    LEFT JOIN users creator ON ps.created_by = creator.id
-    LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
-    LEFT JOIN payroll pr ON pi.payroll_id = pr.id
-    LEFT JOIN users u ON pr.employee_id = u.id
-    WHERE ps.finance_status = 'Approved by Finance' 
-      AND pi.finance_status = 'Approved by Finance'
-      AND ps.ceo_status != 'Approved by CEO'  -- Exclude payslips approved by CEO
-      AND ps.ceo_status != 'Rejected by CEO'  -- Exclude payslips rejected by CEO
+SELECT 
+    un.full_name AS approved_by_name,
+    ps.id AS payslip_id,
+    ps.title,
+    ps.period_start,
+    ps.period_end,
+    ps.created_at AS payslip_created_at,
+    ps.approved_at,  -- Added approved_at
+    creator.full_name AS created_by_name,
+    pi.id AS payslip_item_id,
+    pr.id AS payroll_id,
+    u.full_name AS employee_name,
+    pr.total_hours_worked,
+    pr.calculated_salary,
+    pi.finance_status
+FROM payslip ps
+LEFT JOIN users un ON ps.approved_by_id = un.id
+LEFT JOIN users creator ON ps.created_by = creator.id
+LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+LEFT JOIN users u ON pr.employee_id = u.id
+WHERE ps.finance_status = 'Approved by Finance' 
+  AND pi.finance_status = 'Approved by Finance'
+  AND ps.ceo_status != 'Approved by CEO'  -- Exclude payslips approved by CEO
+  AND ps.ceo_status != 'Rejected by CEO'  -- Exclude payslips rejected by CEO
+  AND ps.hr_status = 'Approved by HR'   -- Only include payslips approved by HR
+  AND pi.hr_status = 'Approved by HR'  -- Only include payslip items approved by HR
+
   `;
 
   db.query(query, (err, results) => {
