@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
-import PaginationComponent from "./Pagination"; // Assuming you've already created the Pagination component
+import PaginationComponent from "./Pagination";
+import { Eye } from "@phosphor-icons/react";
+import { MyProjectSupplyView } from './MyProjectSupplyView';
 
 const initialProjectSupply = [
   {
@@ -19,22 +21,35 @@ const initialProjectSupply = [
     unit: "bags",
     date_update: "---",
   },
-  // Add more items as necessary
 ];
 
 export const MyprojectSupplyTable = () => {
-  const [supply, setSupply] = useState(initialProjectSupply); // State to store supply data
-  const [currentPage, setCurrentPage] = useState(1); // Track current page
-  const [itemsPerPage] = useState(5); // Number of items per page
+  const [supply, setSupply] = useState(initialProjectSupply);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  // Calculate the total number of pages
   const totalPages = Math.ceil(supply.length / itemsPerPage);
 
-  // Get the current items for the current page
   const currentItems = supply.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const handleOpenModal = (item) => {
+    setSelectedItem(item);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+  };
+
+  const handleSaveChanges = (updatedItem) => {
+    const updatedSupply = supply.map((item) =>
+      item.id === updatedItem.id ? updatedItem : item
+    );
+    setSupply(updatedSupply);
+  };
 
   return (
     <div className="mt-4">
@@ -45,7 +60,8 @@ export const MyprojectSupplyTable = () => {
             <TableHead className="text-center">Item Name</TableHead>
             <TableHead className="text-center">Quantity</TableHead>
             <TableHead className="text-center">Unit</TableHead>
-            <TableHead className="text-center">Date Updated</TableHead>
+            <TableHead className="text-center">Last Date Updated</TableHead>
+            <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -56,17 +72,31 @@ export const MyprojectSupplyTable = () => {
               <TableCell className="text-center">{item.quantity}</TableCell>
               <TableCell className="text-center">{item.unit}</TableCell>
               <TableCell className="text-center">{item.date_update}</TableCell>
+              <TableCell className="text-center">
+                <div className="flex justify-center">
+                  <button onClick={() => handleOpenModal(item)}>
+                    <Eye size={18} className="text-black hover:text-gray-600 cursor-pointer" />
+                  </button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      {/* Pagination component */}
       <PaginationComponent
         currentPage={currentPage}
         totalPages={totalPages}
         setCurrentPage={setCurrentPage}
       />
+
+      {selectedItem && (
+        <MyProjectSupplyView
+          item={selectedItem}
+          onClose={handleCloseModal}
+          onSave={handleSaveChanges}
+        />
+      )}
     </div>
   );
 };
