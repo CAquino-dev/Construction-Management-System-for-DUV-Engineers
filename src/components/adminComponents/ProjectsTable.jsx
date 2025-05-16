@@ -50,7 +50,8 @@ const initialProjectsData = [
   },
 ];
 
-export const ProjectsTable = () => {
+// Accept setSelectedProject as a prop
+export const ProjectsTable = ({ setSelectedProject }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const projects = initialProjectsData; // Use the actual data here
@@ -95,7 +96,10 @@ export const ProjectsTable = () => {
                   <TableCell className="text-center">₱{project.budget}</TableCell>
                   <TableCell className="text-center">{project.progress}%</TableCell>
                   <TableCell className="text-center">
-                    <button className="text-black hover:text-gray-600 cursor-pointer">
+                    <button
+                      onClick={() => setSelectedProject(project)} // Pass the selected project object here
+                      className="text-black hover:text-gray-600 cursor-pointer"
+                    >
                       <Eye size={18} />
                     </button>
                   </TableCell>
