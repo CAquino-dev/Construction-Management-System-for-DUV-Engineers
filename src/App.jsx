@@ -33,6 +33,7 @@ import { MyProject } from './pages/admin/MyProject';
 import { Attendance } from './pages/admin/AttendanceMonitoring';
 import { SendFeedback } from './pages/userPages/SendFeedback';
 import { LoadingSpinner } from './components/userComponents/LoadingSpinner';
+import { PaymentPage } from './pages/userPages/Payment'
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,7 @@ const App = () => {
           <Route index element={<ClientDashboard/>} />  
           <Route path='projects-client' element={<ProjectsClient/>} />
           <Route path='messages' element={<Messages/>} />
+          <Route path='payment' element={<PaymentPage/>} />
         </Route>
 
         {/* Admin Routes */}

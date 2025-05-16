@@ -182,49 +182,86 @@ const createProject = (req, res) => {
 // Create Milestone function
 // Create Milestone function
 const createMilestone = (req, res) => {
-  // Handle file upload and milestone data
-  upload(req, res, (err) => {
+  const { projectId } = req.params;
+  const {
+    status,
+    details,
+    payment_amount,
+    budget_amount,
+    due_date,
+    start_date,
+    completion_date,
+  } = req.body;
+
+  if (!status || !details) {
+    return res.status(400).json({ error: 'Status and details are required' });
+  }
+
+  // Force progress_status to 'For Payment' on creation
+  const progress_status = 'For Payment';
+  const timestamp = new Date().toISOString();
+
+  // Set payment and budget amounts or default to 0
+  const paymentAmount = payment_amount ? parseFloat(payment_amount) : 0.0;
+  const budgetAmount = budget_amount ? parseFloat(budget_amount) : 0.0;
+
+  const query = `
+    INSERT INTO milestones
+    (project_id, timestamp, status, details, progress_status, payment_amount, budget_amount, due_date, start_date, completion_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    query,
+    [
+      projectId,
+      timestamp,
+      status,
+      details,
+      progress_status,
+      paymentAmount,
+      budgetAmount,
+      due_date || null,
+      start_date || null,
+      completion_date || null,
+    ],
+    (err, result) => {
       if (err) {
-          return res.status(400).json({ error: err.message });
+        console.error('Error creating milestone:', err);
+        return res.status(500).json({ error: 'Failed to create milestone' });
       }
 
-      // If file is uploaded, get its path
-      const projectPhoto = req.file ? `/uploads/${req.file.filename}` : null;  // Store relative path in DB
-
-      const { projectId } = req.params;  // Get projectId from request params
-      const { status, details } = req.body;  // Get status and details from request body
-
-      // If status or details are missing, return an error
-      if (!status || !details) {
-          return res.status(400).json({ error: 'Status and details are required' });
-      }
-
-      // Get the current timestamp
-      const timestamp = new Date().toISOString();  // Get the current timestamp in ISO 8601 format
-
-      // SQL query to insert the milestone into the database
-      const query = `
-          INSERT INTO milestones (project_id, timestamp, status, details, project_photo)
-          VALUES (?, ?, ?, ?, ?)
-      `;
-
-      db.query(query, [projectId, timestamp, status, details, projectPhoto], (err, result) => {
-          if (err) {
-              console.error("Error creating milestone:", err);
-              return res.status(500).json({ error: "Failed to create milestone" });
-          }
-
-          // Return success response
-          res.status(201).json({
-              message: "Milestone created successfully",
-              milestoneId: result.insertId
-          });
+      res.status(201).json({
+        message: 'Milestone created successfully',
+        milestoneId: result.insertId,
       });
+    }
+  );
+};
+
+
+const getMilestonesForPaymentByProject = (req, res) => {
+  const projectId = req.params.projectId;
+
+  const query = `
+    SELECT id, status, details, payment_amount, progress_status
+    FROM milestones
+    WHERE project_id = ? AND progress_status = 'For Payment'
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error('Error fetching milestones for payment:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    res.json(results);
   });
 };
+
   
   
 
 
 module.exports = { getEngineers, createProject, getClients, 
-                  getClientProject, getEngineerProjects, createMilestone};
+                  getClientProject, getEngineerProjects, createMilestone,
+                getMilestonesForPaymentByProject };
