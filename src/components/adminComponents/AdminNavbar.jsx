@@ -43,6 +43,9 @@ const AdminNavbar = ({ children }) => {
         // Finance Pages
         if (location.pathname.startsWith("/admin-dashboard/finance/approved-payroll-from-hr")) return "HR Payroll (Approved Records of HR)";
         if (location.pathname.startsWith("/admin-dashboard/finance/approved-payroll-from-ceo")) return "HR Payroll (Approved Records of CEO)";
+
+        //Site Manager Pages
+        if (location.pathname.startsWith("/admin-dashboard/site-manager/projects")) return "Projects";
       
         // Other Admin Pages (Matches Against `menuItems`)
         const matchedPage = menuItems.find((item) => location.pathname === item.href)?.name;
@@ -117,28 +120,11 @@ const AdminNavbar = ({ children }) => {
                                 <ul className="pl-6 mt-2 space-y-2">
                                     <li>
                                         <Link 
-                                            to="/admin-dashboard/engineer/projects" 
+                                            to="/admin-dashboard/site-manager/projects" 
                                             className={`block p-2 rounded-lg cursor-pointer ${
-                                                location.pathname === "/admin-dashboard/engineer/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                                location.pathname === "/admin-dashboard/site-manager/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             Projects
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className={`block p-2 rounded-lg cursor-pointer ${
-                                                location.pathname === "/admin-dashboard/engineer/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
-                                            }`}>
-                                            Your Pending Request
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className={`block p-2 rounded-lg cursor-pointer ${
-                                                location.pathname === "/admin-dashboard/engineer/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
-                                            }`}
-                                        >
-                                            Review Request
                                         </Link>
                                     </li>
                                 </ul>
@@ -193,6 +179,15 @@ const AdminNavbar = ({ children }) => {
                                                 location.pathname === "/admin-dashboard/finance/approved-payroll-from-ceo" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             HR Payroll (Approved Records of CEO) 
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/finance/budget-supply-request" 
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/finance/budget-supply-request" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Budget Supply Request
                                         </Link>
                                     </li>
                                 </ul>
