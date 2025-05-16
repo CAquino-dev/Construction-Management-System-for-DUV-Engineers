@@ -190,6 +190,15 @@ const AdminNavbar = ({ children }) => {
                                             Budget Supply Request
                                         </Link>
                                     </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/finance/financePayment" 
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/finance/financePayment" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Clients Payment
+                                        </Link>
+                                    </li>
                                 </ul>
                             )}
                         </li>

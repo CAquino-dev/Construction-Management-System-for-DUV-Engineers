@@ -87,6 +87,7 @@ const getMilestones = (req, res) => {
       completion_date
     FROM milestones
     WHERE project_id = ?
+    ORDER BY timestamp DESC
   `;
 
   db.query(query, [projectId], (err, results) => {
@@ -97,6 +98,7 @@ const getMilestones = (req, res) => {
     res.json({ milestones: results });
   });
 };
+
 
 
 

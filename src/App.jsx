@@ -34,6 +34,7 @@ import { Attendance } from './pages/admin/AttendanceMonitoring';
 import { SendFeedback } from './pages/userPages/SendFeedback';
 import { LoadingSpinner } from './components/userComponents/LoadingSpinner';
 import { FinanceBudgetSupplyRequest } from './pages/admin/FinanceBudgetSupplyRequest';
+import { FinancePayment } from './pages/admin/FinancePayment';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -89,6 +90,7 @@ const App = () => {
           <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
           <Route path='ceo-dashboard' element={<CeoDashboard/>} />
           <Route path='AttendanceMonitoring' element={<Attendance/>} />
+          <Route path='finance/financePayment' element={<FinancePayment/>} />
       </Route>
       </Routes>
     </Router>

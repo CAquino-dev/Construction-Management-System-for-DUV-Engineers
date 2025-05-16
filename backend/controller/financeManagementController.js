@@ -249,11 +249,97 @@ const getCeoApprovedPayslips = (req, res) => {
   });
 };
 
+const createPayment = (req, res) => {
+  const {
+    milestone_id,
+    payment_date,
+    amount_paid,
+    payment_method,
+    remarks
+  } = req.body;
+
+  if (!milestone_id || !payment_date || !amount_paid) {
+    return res.status(400).json({ error: 'milestone_id, payment_date, and amount_paid are required' });
+  }
+
+  const insertPaymentQuery = `
+    INSERT INTO payments
+    (milestone_id, payment_date, amount_paid, payment_status, payment_method, remarks, created_at, updated_at)
+    VALUES (?, ?, ?, 'Pending', ?, ?, NOW(), NOW())
+  `;
+
+  db.query(insertPaymentQuery, [milestone_id, payment_date, amount_paid, payment_method || null, remarks || null], (err, result) => {
+    if (err) {
+      console.error('Error creating payment:', err);
+      return res.status(500).json({ error: 'Failed to create payment' });
+    }
+
+    // After successful insert, update milestone status
+    const updateMilestoneQuery = `
+      UPDATE milestones
+      SET progress_status = 'Payment Confirmed'
+      WHERE id = ?
+    `;
+
+    db.query(updateMilestoneQuery, [milestone_id], (updateErr, updateResult) => {
+      if (updateErr) {
+        console.error('Error updating milestone status:', updateErr);
+        // You can choose to still return success for payment but notify milestone update failed
+        return res.status(500).json({ error: 'Payment recorded but failed to update milestone status' });
+      }
+
+      res.status(201).json({ message: 'Payment recorded and milestone status updated', paymentId: result.insertId });
+    });
+  });
+};
+
+
+// Get projects with milestones pending payment
+const getProjectsWithPendingPayments = (req, res) => {
+  const query = `
+    SELECT DISTINCT p.id, p.project_name
+    FROM engineer_projects p
+    JOIN milestones m ON m.project_id = p.id
+    WHERE m.progress_status = 'For Payment'
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching projects:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    res.json(results);
+  });
+};
+
+// Get milestones with 'For Payment' status by project ID
+const getMilestonesForPaymentByProject = (req, res) => {
+  const projectId = req.params.projectId;
+
+  const query = `
+    SELECT id, status, details, payment_amount, due_date
+    FROM milestones
+    WHERE project_id = ? AND progress_status = 'For Payment'
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error('Error fetching milestones:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    res.json(results);
+  });
+};
+
+
+
+
 
   
   
 
 
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
-  financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips
+  financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
+  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject
  };
