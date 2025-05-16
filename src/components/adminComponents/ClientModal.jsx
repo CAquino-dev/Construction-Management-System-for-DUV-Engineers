@@ -5,8 +5,8 @@ export const ClientModal = ({ selectedClient, closeModal }) => {
   if (!selectedClient) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-500 bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96 animate-fadeIn">
+    <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-bold text-gray-800">Client Details</h2>
           <button onClick={closeModal} className="text-gray-600 hover:text-red-500 cursor-pointer">
