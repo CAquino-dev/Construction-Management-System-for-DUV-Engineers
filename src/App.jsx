@@ -33,7 +33,7 @@ import { MyProject } from './pages/admin/MyProject';
 import { Attendance } from './pages/admin/AttendanceMonitoring';
 import { SendFeedback } from './pages/userPages/SendFeedback';
 import { LoadingSpinner } from './components/userComponents/LoadingSpinner';
-import { PaymentPage } from './pages/userPages/Payment'
+import { FinanceBudgetSupplyRequest } from './pages/admin/FinanceBudgetSupplyRequest';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,6 @@ const App = () => {
           <Route index element={<ClientDashboard/>} />  
           <Route path='projects-client' element={<ProjectsClient/>} />
           <Route path='messages' element={<Messages/>} />
-          <Route path='payment' element={<PaymentPage/>} />
         </Route>
 
         {/* Admin Routes */}
@@ -81,7 +80,8 @@ const App = () => {
           <Route path='hr/payslip' element={<Payslip/>} />
           <Route path='finance/approved-payroll-from-hr' element={<Finance/>} />
           <Route path='finance/approved-payroll-from-ceo' element={<ApprovedPayrollOfCeo/>} />
-          <Route path='engineer/projects' element={<Projects/>} />
+          <Route path='finance/budget-supply-request' element={<FinanceBudgetSupplyRequest/>} />
+          <Route path='site-manager/projects' element={<Projects/>} />
           <Route path='engineer/my-project' element={<MyProject/>} />
           <Route path='employees' element={<EmployeeManagement/>} />
           <Route path='inventory' element={<Inventory/>} />

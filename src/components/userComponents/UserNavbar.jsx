@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import DUV from "../../assets/DUVLogo.jpg";
+import DUV from "../../assets/DUVLogoWhite.png"; // Adjust the path as necessary
 import { List, X, CaretDown } from "@phosphor-icons/react";
 
 const UserNavbar = () => {

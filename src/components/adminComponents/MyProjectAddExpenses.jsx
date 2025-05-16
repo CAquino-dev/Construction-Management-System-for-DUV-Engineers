@@ -81,9 +81,8 @@ export const MyProjectAddExpenses = ({ closeModal, handleAddExpense }) => { // R
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">Amount (₱)</label>
             <input
-              type="text" // Change type to text for better currency handling
+              type="number" // Change type to text for better currency handling
               className="mt-2 p-2 border border-gray-300 rounded w-full"
-              value={amount} // Bind the amount to state
               onChange={handleAmountChange} // Handle change with formatted value
               placeholder="₱0.00"
             />

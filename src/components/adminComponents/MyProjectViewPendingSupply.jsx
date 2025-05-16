@@ -70,7 +70,7 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
                   <TableCell className="text-center">{item.itemName}</TableCell>
                   <TableCell className="text-center">{item.qty}</TableCell>
                   <TableCell className="text-center">{item.unit}</TableCell>
-                  <TableCell className="text-center">{item.amount}</TableCell>
+                  <TableCell className="text-center">₱{item.amount}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -79,6 +79,11 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
+          <button
+            className="bg-green-500 text-white px-4 py-2 rounded-md"
+          >
+            Approve Request
+          </button>
           <button
             onClick={openConfirmationModal} // Open the confirmation modal
             className="bg-red-500 text-white px-4 py-2 rounded-md"
