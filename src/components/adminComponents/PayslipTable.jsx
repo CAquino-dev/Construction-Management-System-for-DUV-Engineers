@@ -101,7 +101,7 @@ export const PayslipTable = () => {
                   <TableCell className="text-center p-2">{record.created_at}</TableCell>
                   <TableCell className="text-center p-2">{record.created_by}</TableCell>
                   <TableCell className="text-center p-2">
-                    <button onClick={() => openModal(record)} className="text-black hover:text-gray-600 cursor-pointer bg-gray-200 p-1 rounded-md">
+                    <button onClick={() => openModal(record)} className="text-black hover:text-gray-600 cursor-pointer bg-[#4c735c] text-white p-1 rounded-md">
                       <Eye size={18} />
                     </button>
                   </TableCell>

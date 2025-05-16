@@ -77,7 +77,7 @@ export const ClientTable = ({ clients = [] }) => {
       <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
 
       {isModalOpen && selectedClient && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="">
           <ClientModal selectedClient={selectedClient} closeModal={closeModal} />
         </div>
       )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X } from "@phosphor-icons/react";
+import { X, Eye } from "@phosphor-icons/react";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import PaginationComponent from "./Pagination";
 import { DotsThree } from "@phosphor-icons/react";
@@ -215,6 +215,10 @@ export const PayslipModal = ({ closeModal, payslip }) => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
 
+        <div className="my-2">
+          {/*here*/}
+        </div>
+
         {/* Payslip Details */}
         <div className="space-y-3 flex-1 overflow-auto">
           <Table>
@@ -225,7 +229,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                 <TableHead className="text-center text-white">Total Hours</TableHead>
                 <TableHead className="text-center text-white">Salary</TableHead>
                 <TableHead className="text-center text-white">Status</TableHead>
-                <TableHead className="text-center text-white">View</TableHead> {/* View Column */}
+                <TableHead className="text-center text-white">View</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -241,7 +245,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                     </TableCell>
                     <TableCell className="text-center">{emp.employee_name}</TableCell>
                     <TableCell className="text-center">{parseFloat(emp.total_hours_worked).toFixed(2)}</TableCell>
-                    <TableCell className="text-center">₱{parseFloat(emp.calculated_salary).toLocaleString()}</TableCell>
+                    <TableCell className="text-center text-green-800">₱{parseFloat(emp.calculated_salary).toLocaleString()}</TableCell>
                     <TableCell className="text-center p-2">
                       <p className={`text-center text-xs p-2 font-semibold rounded-md ${
                         emp.status === "Approved by HR"
@@ -256,9 +260,9 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                     <TableCell className="text-center">
                       <button
                         onClick={() => openEmployeePayrollModal(emp)} // Open the modal when clicked
-                        className="text-blue-500 hover:text-blue-700"
+                        className="text-black hover:text-gray-600 cursor-pointer bg-[#4c735c] text-white p-1 rounded-md"
                       >
-                        View
+                        <Eye size={18} />
                       </button>
                     </TableCell>
                   </TableRow>
@@ -285,6 +289,10 @@ export const PayslipModal = ({ closeModal, payslip }) => {
           </div>
         )}
 
+        
+
+        <PaginationComponent currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
+
         {/* Accept and Reject Buttons */}
         <div className="flex justify-center gap-4 mt-4">
           <button
@@ -300,8 +308,6 @@ export const PayslipModal = ({ closeModal, payslip }) => {
             Reject
           </button>
         </div>
-
-        <PaginationComponent currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
 
         {/* Confirmation Modal */}
         {isConfirmationModalOpen && (
