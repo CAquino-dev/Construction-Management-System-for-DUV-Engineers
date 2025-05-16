@@ -240,5 +240,33 @@ const getPendingExpenses = (req, res) => {
   });
 };
 
+const updateEngineerApproval = (req, res) => {
+  const { expenseId } = req.params;
+  const { status } = req.body;
 
-module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses };
+  const validStatuses = ['Pending', 'Approved', 'Rejected'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status value' });
+  }
+
+  const query = `
+    UPDATE expenses
+    SET engineer_approval_status = ?, updated_at = NOW()
+    WHERE expense_id = ?
+  `;
+
+  db.query(query, [status, expenseId], (err, result) => {
+    if (err) {
+      console.error('Error updating engineer approval:', err);
+      return res.status(500).json({ error: 'Failed to update engineer approval' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    res.json({ message: 'Engineer approval status updated successfully' });
+  });
+};
+
+
+
+module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses, updateEngineerApproval };

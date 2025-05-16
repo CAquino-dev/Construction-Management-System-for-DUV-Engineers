@@ -9,7 +9,6 @@ import { MyProjectExpenses } from './MyProjectExpenses';
 import { MyprojectSupply } from './MyprojectSupply';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
-    console.log(selectedProject);
     const [activeTab, setActiveTab] = useState('projectDetails');
     const startDate = new Date(selectedProject.start_date).toLocaleDateString();
     const endDate = new Date(selectedProject.end_date).toLocaleDateString();

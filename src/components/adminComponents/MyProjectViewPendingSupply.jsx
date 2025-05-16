@@ -3,11 +3,14 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from ".
 import ConfirmationModal from "./ConfirmationModal"; // Import ConfirmationModal
 
 export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelRequest }) => {
+  console.log(data);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false); // State for confirmation modal
   const [remark, setRemark] = useState(""); // State for the remark input
+  const [actionType, setActionType] = useState(null);
 
   // Open the confirmation modal
-  const openConfirmationModal = () => {
+  const openConfirmationModal = (type) => {
+    setActionType(type)
     setIsConfirmationModalOpen(true); // Open modal
   };
 
@@ -17,10 +20,29 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
   };
 
   // Handle the cancellation confirmation
-  const handleCancelConfirmation = () => {
-    handleCancelRequest(); // Call the cancel request function passed from parent
-    closeConfirmationModal(); // Close the confirmation modal
-  };
+const handleConfirmation = async () => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/project/project/expenses/${data.expense_id}/engineer-approval`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: actionType }),  // No remarks yet
+    });
+
+    if (res.ok) {
+      alert('Approval status updated successfully');
+      closeConfirmationModal();
+      closeModal();
+      // Optionally refresh list or trigger parent update here
+    } else {
+      const errorData = await res.json();
+      alert('Failed to update status: ' + (errorData.error || 'Unknown error'));
+    }
+  } catch (error) {
+    alert('Network error: ' + error.message);
+  }
+};
+
+
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
@@ -38,13 +60,10 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700">Date: {data.date}</p>
             <p className="text-gray-700">
-              Title: <strong>{data.title}</strong>
+              Title: <strong>{data.description}</strong>
             </p>
             <p className="text-gray-700">
-              Budget Needed: <strong>{data.total_budget}</strong>
-            </p>
-            <p className="text-gray-700">
-              Date Needed: <strong>{data.date_needed}</strong>
+              Budget Needed: <strong>{data.amount}</strong>
             </p>
             <p className="text-gray-700">
               Status: <strong className="text-yellow-600">{data.status}</strong>
@@ -52,40 +71,16 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
           </div>
         </div>
 
-        {/* Items Table Section */}
-        <div className="mb-4 max-h-[300px] overflow-y-auto">
-          <h3 className="text-lg font-semibold">Items</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center">Item Name</TableHead>
-                <TableHead className="text-center">Quantity</TableHead>
-                <TableHead className="text-center">Unit</TableHead>
-                <TableHead className="text-center">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell className="text-center">{item.itemName}</TableCell>
-                  <TableCell className="text-center">{item.qty}</TableCell>
-                  <TableCell className="text-center">{item.unit}</TableCell>
-                  <TableCell className="text-center">₱{item.amount}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
           <button
+            onClick={() => openConfirmationModal("Approved")} // Open the confirmation modal
             className="bg-green-500 text-white px-4 py-2 rounded-md"
           >
             Approve Request
           </button>
           <button
-            onClick={openConfirmationModal} // Open the confirmation modal
+            onClick={() => openConfirmationModal("Rejected")} // Open the confirmation modal
             className="bg-red-500 text-white px-4 py-2 rounded-md"
           >
             Cancel Request
@@ -105,8 +100,9 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
         <ConfirmationModal
           isOpen={isConfirmationModalOpen}
           onClose={closeConfirmationModal}
-          onConfirm={handleCancelConfirmation} // Handle the cancel confirmation
-          actionType="Cancel Request"
+          onConfirm={handleConfirmation}
+          actionType={actionType}
+          setRemark={setRemark}   // pass setRemark here
         />
       )}
     </div>
