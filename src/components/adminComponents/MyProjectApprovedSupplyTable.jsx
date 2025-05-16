@@ -85,7 +85,7 @@ export const MyProjectApprovedSupplyTable = () => {
             <TableRow key={item.id}>
               <TableCell className="text-center">{item.date}</TableCell>
               <TableCell className="text-center">{item.title}</TableCell>
-              <TableCell className="text-center">{item.total_budget}</TableCell>
+              <TableCell className="text-center">₱{item.total_budget}</TableCell>
               <TableCell className="text-center">{item.date_needed}</TableCell>
               <TableCell className="text-center text-green-600">{item.status}</TableCell>
               <TableCell className="text-center">{item.date_approved}</TableCell>

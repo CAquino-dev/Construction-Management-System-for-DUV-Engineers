@@ -9,7 +9,8 @@ const initialPendingSupply = [
   {
     id: 1,
     date: "2023-09-01",
-    title: "For Tiling",  
+    title: "For Tiling",
+    description: "Description A",
     items: [
       { itemName: "Concrete Nails", qty: 100, unit: "pcs", amount: 1000 },  
       { itemName: "Cement", qty: 50, unit: "bags", amount: 5000 },  
@@ -22,6 +23,7 @@ const initialPendingSupply = [
     id: 2,
     date: "2023-09-02",
     title: "For Tiling", 
+    description: "Description A",
     items: [
       { itemName: "Concrete Nails", qty: 100, unit: "pcs", amount: 1000 },  
       { itemName: "Cement", qty: 50, unit: "bags", amount: 5000 },  
@@ -109,7 +111,7 @@ export const MyProjectPendingSupplyTable = () => {
             <TableRow key={item.id}>
               <TableCell className="text-center">{item.date}</TableCell>
               <TableCell className="text-center">{item.title}</TableCell> {/* Changed to itemName */}
-              <TableCell className="text-center">{item.total_budget}</TableCell>
+              <TableCell className="text-center">₱{item.total_budget}</TableCell>
               <TableCell className="text-center">{item.date_needed}</TableCell>
               <TableCell className="text-center text-yellow-600">{item.status}</TableCell>
               <TableCell className="text-center">
