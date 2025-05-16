@@ -10,6 +10,7 @@ import {
 import { DotsThree, CalendarBlank } from "@phosphor-icons/react";
 import { DateRangePicker } from "../../components/ui/calendar";
 import { EmployeePayrollModal } from "./EmployeePayrollModal";
+import { Eye } from "@phosphor-icons/react";
 
 const initialPayrollRecords = [
   {
@@ -307,7 +308,7 @@ export const PayrollTable = () => {
             Create Payslip
           </button>
           {isPayslipModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-md shadow-md w-full max-w-md">
             <h2 className="text-lg font-semibold mb-4">Create Payslip</h2>
             <input
@@ -387,13 +388,13 @@ export const PayrollTable = () => {
                   <TableCell className="text-center p-2">{record.department}</TableCell>
                   <TableCell className="text-center p-2">₱{record.hourlyRate}</TableCell>
                   <TableCell className="text-center p-2">{record.totalHoursWorked}</TableCell>
-                  <TableCell className="text-center p-2">₱{record.calculatedSalary}</TableCell>
+                  <TableCell className="text-center p-2 text-green-800">₱{record.calculatedSalary}</TableCell>
                   <TableCell className="text-center p-2">
                     <button
                       onClick={() => setSelectedEmployee(record)}
-                      className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                      className="text-black hover:text-gray-600 cursor-pointer bg-[#4c735c] text-white p-1 rounded-md"
                     >
-                      View
+                      <Eye size={18} />
                     </button>
                   </TableCell>
                 </TableRow>
