@@ -331,15 +331,73 @@ const getMilestonesForPaymentByProject = (req, res) => {
   });
 };
 
+const getAllExpensesApprovedByEngineer = (req, res) => {
+  const query = `
+    SELECT
+      expense_id,
+      milestone_id,
+      expense_type,
+      date,
+      date_from,
+      date_to,
+      description,
+      quantity,
+      unit,
+      price_per_qty,
+      amount,
+      status,
+      approved_by,
+      approval_date,
+      engineer_approval_status,
+      finance_approval_status,
+      remarks
+    FROM expenses
+    WHERE engineer_approval_status = 'Approved'
+      AND finance_approval_status = 'Pending'
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching approved expenses:', err);
+      return res.status(500).json({ error: 'Failed to fetch approved expenses' });
+    }
+    res.json({ expenses: results });
+  });
+};
 
 
+// PATCH /api/project/expenses/:id/finance-approval
+const updateFinanceApprovalStatus = (req, res) => {
+  const expenseId = req.params.id;
+  const { status } = req.body;
+
+  if (!status || !['Pending', 'Approved', 'Rejected'].includes(status)) {
+    return res.status(400).json({ error: "Invalid or missing status" });
+  }
+
+  const query = `
+    UPDATE expenses
+    SET finance_approval_status = ?
+    WHERE expense_id = ?
+  `;
+
+  db.query(query, [status, expenseId], (err, result) => {
+    if (err) {
+      console.error("Error updating finance approval status:", err);
+      return res.status(500).json({ error: "Failed to update finance approval status" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Expense not found" });
+    }
+    res.json({ message: "Finance approval status updated successfully" });
+  });
+};
 
 
-  
-  
+ 
 
 
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
-  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject
+  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject, getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus
  };
