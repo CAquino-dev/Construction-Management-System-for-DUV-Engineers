@@ -3,7 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"; // Assumi
 import { MyProjectSupplyExpenses } from './MyProjectSupplyExpenses';
 import { MyProjectLaborExpenses } from './MyProjectLaborExpenses';
 
-export const MyProjectExpenses = () => {
+export const MyProjectExpenses = ({milestoneId}) => {
   const [activeTab, setActiveTab] = useState('supply'); // Track the active tab
   
   return (
@@ -18,12 +18,12 @@ export const MyProjectExpenses = () => {
         {/* Tab Contents */}
         <TabsContent value="supply">
           <div>
-            <MyProjectSupplyExpenses />
+            <MyProjectSupplyExpenses milestoneId={milestoneId}/>
           </div>
         </TabsContent>
         <TabsContent value="labor">
           <div>
-            <MyProjectLaborExpenses />
+            <MyProjectLaborExpenses milestoneId={milestoneId}/>
           </div>
         </TabsContent>
       </Tabs>

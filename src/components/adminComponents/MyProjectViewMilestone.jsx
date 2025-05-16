@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X } from '@phosphor-icons/react';
 
-export const MyProjectViewMilestone = ({ milestone, onClose }) => {
+export const MyProjectViewMilestone = ({ milestone, onClose, onManageExpenses }) => {
   console.log('mileee', milestone)
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -110,6 +110,18 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
             </div>
           </div>
         )}
+        <button
+            onClick={() => {
+              // Trigger a callback to parent to show expenses for this milestone
+              if (typeof onManageExpenses === 'function') {
+                onManageExpenses(milestone.id);
+              }
+            }}
+            className="mt-4 px-4 py-2 bg-[#4c735c] text-white rounded"
+          >
+            Manage Expenses
+          </button>
+
       </div>
     </div>
   );
