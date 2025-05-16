@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { List,UserCircleCheck, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown, HardHat } from "@phosphor-icons/react";
+import { List,UserCircleCheck,UserCircleGear, X, UserCheck, Package, House, ListChecks, Bank, UsersThree, Calendar, SignOut, User, CaretDown, HardHat } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
@@ -13,6 +13,7 @@ const AdminNavbar = ({ children }) => {
     const [isFinanceOpen, setIsFinanceOpen] = useState(false); // Finance dropdown state
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
     const [isEngineerOpen, setIsEngineerOpen] = useState(false); // Engineer dropdown state
+    const [isSiteManagerOpen, setIsSiteManagerOpen] = useState(false); // Site Manager dropdown state
     const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
     const location = useLocation();
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ const AdminNavbar = ({ children }) => {
     const toggleHrDropdown = () => setIsHrOpen(!isHrOpen);
     const toggleFinanceDropdown = () => setIsFinanceOpen(!isFinanceOpen);
     const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
+    const toggleSiteManagerDropdown = () => setIsSiteManagerOpen(!isSiteManagerOpen);
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
@@ -41,6 +43,9 @@ const AdminNavbar = ({ children }) => {
         // Finance Pages
         if (location.pathname.startsWith("/admin-dashboard/finance/approved-payroll-from-hr")) return "HR Payroll (Approved Records of HR)";
         if (location.pathname.startsWith("/admin-dashboard/finance/approved-payroll-from-ceo")) return "HR Payroll (Approved Records of CEO)";
+
+        //Site Manager Pages
+        if (location.pathname.startsWith("/admin-dashboard/site-manager/projects")) return "Projects";
       
         // Other Admin Pages (Matches Against `menuItems`)
         const matchedPage = menuItems.find((item) => location.pathname === item.href)?.name;
@@ -103,6 +108,28 @@ const AdminNavbar = ({ children }) => {
                                 </Link>
                             </li>
                         ))}
+                        {/* Collapsible Site manager Section */}
+                        <li>
+                            {<button onClick={toggleSiteManagerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
+                            <span className="flex items-center gap-3 font-semibold">
+                                <UserCircleGear size={20}/> Site Manager
+                            </span>
+                            <CaretDown size={20} className={`transform transition-all ${isSiteManagerOpen ? "rotate-180" : ""}`} />
+                            </button>}
+                            {isSiteManagerOpen && (
+                                <ul className="pl-6 mt-2 space-y-2">
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/site-manager/projects" 
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/site-manager/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Projects
+                                        </Link>
+                                    </li>
+                                </ul>
+                            )}
+                        </li>
 
                         {/* Collapsible Engineering Section */}
                         <li>
@@ -114,15 +141,6 @@ const AdminNavbar = ({ children }) => {
                             </button>}
                             {isEngineerOpen && (
                                 <ul className="pl-6 mt-2 space-y-2">
-                                    <li>
-                                        <Link 
-                                            to="/admin-dashboard/engineer/projects" 
-                                            className={`block p-2 rounded-lg cursor-pointer ${
-                                                location.pathname === "/admin-dashboard/engineer/projects" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
-                                            }`}>
-                                            Projects
-                                        </Link>
-                                    </li>
                                     <li>
                                         <Link
                                             to="/admin-dashboard/engineer/my-project"
@@ -161,6 +179,15 @@ const AdminNavbar = ({ children }) => {
                                                 location.pathname === "/admin-dashboard/finance/approved-payroll-from-ceo" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             HR Payroll (Approved Records of CEO) 
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/finance/budget-supply-request" 
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/finance/budget-supply-request" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Budget Supply Request
                                         </Link>
                                     </li>
                                 </ul>
