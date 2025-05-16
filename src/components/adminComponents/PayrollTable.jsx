@@ -8,7 +8,7 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import { DotsThree, CalendarBlank } from "@phosphor-icons/react";
-import { Calendar } from "../../components/ui/calendar";
+import { DateRangePicker } from "../../components/ui/calendar";
 import { EmployeePayrollModal } from "./EmployeePayrollModal";
 
 const initialPayrollRecords = [
@@ -350,10 +350,11 @@ export const PayrollTable = () => {
 
       {/* Calendar Dropdown */}
       {isCalendarOpen && (
-        <div className="absolute bg-white p-4 border rounded-md shadow-md z-150">
-          <Calendar mode="range" selected={dateRange} onSelect={handleDateSelect} />
-        </div>
-      )}
+  <div className="absolute bg-white p-4 border rounded-md shadow-md z-150">
+    <DateRangePicker onDateRangeChange={handleDateSelect} />
+  </div>
+)}
+
 
       {/* Payroll Table or Message */}
       <div className="overflow-x-auto">
