@@ -28,10 +28,10 @@ export const EmployeePayrollModal = ({ closeModal, employee }) => {
 
           {/* Right Section - Payroll Info */}
           <div className="flex flex-col flex-[2] relative">
-            <p className="border-b border-gray-200 pb-2 mb-4 text-lg font-semibold">Fixed Salary: ₱{employee?.calculatedSalary || "N/A"}</p>
+            <p className="border-b border-gray-200 pb-2 mb-4 text-lg font-semibold text-green-800"><span className="text-gray-600">Worked hours Salary: </span>₱{employee?.calculatedSalary || "N/A"}</p>
 
             {/* Payroll Breakdown */}
-            <div className="mt-4 border-t pt-4 text-gray-800">
+            <div className="mt-4 pt-4 text-gray-800">
               {/* Payroll Breakdown in Grid Format */}
               <div className="grid grid-cols-2 gap-4 text-lg">
                 <p className="text-gray-600 italic">Total Worked Hours:</p>
@@ -41,13 +41,13 @@ export const EmployeePayrollModal = ({ closeModal, employee }) => {
                 <p className="text-right">₱{employee?.overtimePay || "0.00"}</p>
 
                 <p className="text-gray-600 italic">PhilHealth Deduction:</p>
-                <p className="text-right">₱{employee?.philhealthDeduction || "0.00"}</p>
+                <p className="text-right text-red-500">₱-{employee?.philhealthDeduction || "0.00"}</p>
 
                 <p className="text-gray-600 italic">SSS Deduction:</p>
-                <p className="text-right">₱{employee?.sssDeduction || "0.00"}</p>
+                <p className="text-right text-red-500">₱-{employee?.sssDeduction || "0.00"}</p>
 
                 <p className="text-gray-600 italic">Pag-IBIG Deduction:</p>
-                <p className="text-right">₱{employee?.pagibigDeduction || "0.00"}</p>
+                <p className="text-right text-red-500">₱-{employee?.pagibigDeduction || "0.00"}</p>
               </div>
 
               {/* Divider Line & Calculated Salary */}
@@ -60,7 +60,7 @@ export const EmployeePayrollModal = ({ closeModal, employee }) => {
 
               <div className="flex justify-between text-xl mt-2">
                 <p className="text-gray-600 italic">Final Salary:</p>
-                <p className="font-bold text-gray-800">₱{employee?.finalSalary || "N/A"}</p>
+                <p className="font-bold text-green-800">₱{employee?.finalSalary || "N/A"}</p>
               </div>
 
             </div>

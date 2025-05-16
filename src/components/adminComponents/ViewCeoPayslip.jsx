@@ -18,6 +18,9 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
   const [remark, setRemark] = useState(""); // To hold the remark for confirmation modal
   const [ceoRejectionRemarks, setCeoRejectionRemarks] = useState(""); // CEO Rejection Remarks
 
+  const startDate = new Date(selectedPayslips?.period_start).toLocaleDateString();
+  const endDate = new Date(selectedPayslips?.period_end).toLocaleDateString();
+
   const getStatusColor = (status) => {
     if (status === "Pending") return "text-yellow-400";
     if (status === "Approved by Finance") return "text-green-400";
@@ -97,7 +100,7 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
           </div>
           <div className="flex items-center space-x-2">
             <h2 className="text-lg text-gray-500">Period:</h2>
-            <p className="font-bold">{selectedPayslips?.period_start} <span className="text-gray-500">to</span> {selectedPayslips?.period_end}</p>
+            <p className="font-bold">{startDate} <span className="text-gray-500">to</span> {endDate}</p>
           </div>
         </CardHeader>
         <CardContent>
