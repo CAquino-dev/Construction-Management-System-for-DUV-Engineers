@@ -7,6 +7,7 @@ import { ExpensesClient } from './ExpensesClient';
 import { SupplyClient } from './SupplyClient';
 import duvLogo from '../../assets/duvLogo.jpg'
 import { ClientLegals } from './ClientLegals';
+import { ChatClient } from './ChatClient';
 
 
 export const ViewProjectClient = ({ selectedProject, onBack }) => {
@@ -109,6 +110,17 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
         >
           Supply
         </button>
+
+        <button
+          onClick={() => handleTabClick('chat')}
+          className={`text-lg font-medium cursor-pointer p-2 ${
+            activeTab === 'chat'
+              ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+              : 'text-gray-500'
+          }`}
+        >
+          Chat
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -146,6 +158,13 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Supply</h4>
               <SupplyClient selectedProject={selectedProject} />
+            </div>
+          )}
+
+          {activeTab === 'chat' && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold">Chat</h4>
+              <ChatClient selectedProject={selectedProject} />
             </div>
           )}
         </CardContent>
