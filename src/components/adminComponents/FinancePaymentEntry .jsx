@@ -13,7 +13,7 @@ export const FinancePaymentEntry = () => {
 
   // Fetch projects with pending payments on mount
   useEffect(() => {
-    fetch('http://localhost:5000/api/finance/projects/with-pending-payments')
+    fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/projects/with-pending-payments')
       .then(res => res.json())
       .then(data => setProjects(data))
       .catch(console.error);
@@ -28,7 +28,7 @@ export const FinancePaymentEntry = () => {
       return;
     }
 
-    fetch(`http://localhost:5000/api/finance/projects/${selectedProjectId}/milestones/for-payment`)
+    fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/projects/${selectedProjectId}/milestones/for-payment`)
       .then(res => res.json())
       .then(data => setMilestones(data))
       .catch(console.error);
@@ -56,7 +56,7 @@ export const FinancePaymentEntry = () => {
       remarks,
     };
 
-    const res = await fetch('http://localhost:5000/api/finance/payments', {
+    const res = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

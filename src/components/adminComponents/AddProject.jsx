@@ -33,7 +33,7 @@ export const AddProject = () => {
   useEffect(() => {
     const getEngineers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/engr/getEngineers');
+        const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineers');
         const data = await response.json();
         if (response.ok) {
           setEngineers(data);
@@ -45,7 +45,7 @@ export const AddProject = () => {
 
     const getClients = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/engr/getClients');
+        const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getClients');
         const data = await response.json();
         if (response.ok) {
           setClients(data);
@@ -104,7 +104,7 @@ export const AddProject = () => {
     }
   
     try {
-      const response = await fetch('http://localhost:5000/api/engr/createProject', {
+      const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/createProject', {
         method: 'POST',
         body: formData,  // Send the FormData (multipart/form-data)
       });

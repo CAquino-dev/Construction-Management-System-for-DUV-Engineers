@@ -22,7 +22,7 @@ export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelReque
   // Handle the cancellation confirmation
 const handleConfirmation = async () => {
   try {
-    const res = await fetch(`http://localhost:5000/api/project/project/expenses/${data.expense_id}/engineer-approval`, {
+    const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses/${data.expense_id}/engineer-approval`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: actionType }),  // No remarks yet

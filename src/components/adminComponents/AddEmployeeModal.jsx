@@ -31,7 +31,7 @@ const [formData, setFormData] = useState({
   useEffect(() => {
  const fetchPermissions = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/employees/getPermissions");
+        const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/getPermissions");
         const data = await response.json();
         console.log(data);
         setPermissions(data); // Set the permissions data to the state
@@ -41,7 +41,7 @@ const [formData, setFormData] = useState({
     };
   const fetchDepartments = async () => {
   try {
-    const response = await fetch("http://localhost:5000/api/employees/getDepartments");
+    const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/getDepartments");
     const data = await response.json();
     console.log(data);
     setDepartments(data); // Set the permissions data to the state
@@ -68,7 +68,7 @@ const [formData, setFormData] = useState({
 
      try {
     // Send the form data to the backend
-    const response = await fetch("http://localhost:5000/api/employees/addEmployee", {
+    const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/addEmployee", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

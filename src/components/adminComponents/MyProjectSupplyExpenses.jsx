@@ -14,7 +14,7 @@ export const MyProjectSupplyExpenses = ({ milestoneId }) => {
 
     const fetchExpenses = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/project/project/expenses?milestone_id=${milestoneId}&type=Supply`);
+        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses?milestone_id=${milestoneId}&type=Supply`);
         if (!res.ok) throw new Error('Failed to fetch supply expenses');
         const data = await res.json();
 

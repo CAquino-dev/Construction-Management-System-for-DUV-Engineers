@@ -81,7 +81,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose, onManageExpenses })
           <div className="flex overflow-x-auto space-x-2 py-2">
             {milestone.project_photo ? (
               <img
-                src={`http://localhost:5000${milestone.project_photo}`}
+                src={`${import.meta.env.VITE_REACT_APP_API_URL}${milestone.project_photo}`}
                 alt="Milestone"
                 className="w-24 h-24 object-cover rounded-md cursor-pointer"
                 onClick={() => openFullscreen(milestone.project_photo)}
@@ -97,7 +97,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose, onManageExpenses })
           <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
             <div className="relative bg-white p-4 rounded-lg max-w-[90%] sm:max-w-[800px]">
               <img
-                src={`http://localhost:5000${fullscreenImage}`}
+                src={`${import.meta.env.VITE_REACT_APP_API_URL}${fullscreenImage}`}
                 alt="Fullscreen"
                 className="w-full h-auto object-contain"
               />

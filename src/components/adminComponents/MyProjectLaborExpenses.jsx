@@ -10,7 +10,7 @@ export const MyProjectLaborExpenses = ({ milestoneId }) => {
   // Fetch labor expenses for milestoneId
   useEffect(() => {
     if (!milestoneId) return;
-    fetch(`http://localhost:5000/api/project/project/expenses?milestone_id=${milestoneId}&type=Labor`)
+    fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses?milestone_id=${milestoneId}&type=Labor`)
       .then(res => res.json())
       .then(data => setExpenses(data.expenses || []))
       .catch(console.error);
@@ -22,7 +22,7 @@ export const MyProjectLaborExpenses = ({ milestoneId }) => {
   // Add expense to backend and refresh list
   const handleAddExpense = async (newExpense) => {
     try {
-      const res = await fetch('http://localhost:5000/api/project/expenses', {
+      const res = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/project/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -40,7 +40,7 @@ export const MyProjectLaborExpenses = ({ milestoneId }) => {
         // Refresh expenses list
         const data = await res.json();
         // Option 1: Re-fetch from backend
-        const refreshed = await fetch(`http://localhost:5000/api/project/project/expenses?milestone_id=${milestoneId}&type=Labor`).then(r => r.json());
+        const refreshed = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses?milestone_id=${milestoneId}&type=Labor`).then(r => r.json());
         setExpenses(refreshed.expenses || []);
         setIsModalOpen(false);
       } else {

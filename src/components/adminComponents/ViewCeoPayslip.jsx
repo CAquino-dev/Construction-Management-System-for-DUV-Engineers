@@ -59,7 +59,7 @@ export const ViewCeoPayslip = ({ selectedPayslips, onBack }) => {
 
 
     try {
-      const response = await fetch("http://localhost:5000/api/ceo/updatePayslipStatus", {
+      const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/ceo/updatePayslipStatus", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

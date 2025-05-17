@@ -26,7 +26,7 @@ export const Attendance = () => {
   }, [intervalId]);
 
   const handleCheckIn = async () => {
-    const response = await fetch('http://localhost:5000/api/employees/checkIn', {
+    const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/checkIn', {
       method: 'POST',
       body: JSON.stringify({ employeeId }),
       headers: {
@@ -47,7 +47,7 @@ export const Attendance = () => {
   
 
   const handleCheckOut = async () => {
-    const response = await fetch('http://localhost:5000/api/employees/checkOut', {
+    const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/checkOut', {
       method: 'POST',
       body: JSON.stringify({ employeeId }),
       headers: {

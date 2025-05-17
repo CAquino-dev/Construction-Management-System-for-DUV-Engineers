@@ -14,7 +14,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   const updateFinanceApproval = async (newStatus) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/finance/expenses/${data.id}/finance-approval`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/expenses/${data.id}/finance-approval`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

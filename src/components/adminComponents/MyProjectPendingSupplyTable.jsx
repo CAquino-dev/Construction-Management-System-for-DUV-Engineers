@@ -15,7 +15,7 @@ export const MyProjectPendingSupplyTable = () => {
   useEffect(() => {
     const fetchPendingExpenses = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/project/project/expenses/pending-engineer');
+        const res = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses/pending-engineer');
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setPendingSupply(data.expenses);

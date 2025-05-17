@@ -7,7 +7,7 @@ export const MyprojectLegals = ({selectedProject}) => {
     <div>
       <h2 className='' >Contract</h2>
       <div className="flex overflow-x-auto space-x-2 py-2">
-        <img src={`http://localhost:5000${selectedProject.project_photo}`} 
+        <img src={`${import.meta.env.VITE_REACT_APP_API_URL}${selectedProject.project_photo}`} 
         alt="Contract" />
 
       </div>      

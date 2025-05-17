@@ -10,7 +10,7 @@ export const ClientDashboard = () => {
   useEffect(() => {
     const fetchClientProjects = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/engr/getClientProject/${userId}`)
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getClientProject/${userId}`)
         if(response.ok){
           const data = await response.json();
           setProjects(data.projects);

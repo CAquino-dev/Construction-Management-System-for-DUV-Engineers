@@ -16,7 +16,7 @@ export const FinanceBudgetSupplyRequestTable = () => {
 
   // Fetch approved expenses by engineers on mount
   useEffect(() => {
-    fetch("http://localhost:5000/api/finance/project/expenses/approved-by-engineer")
+    fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/project/expenses/approved-by-engineer")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch data");
         return res.json();

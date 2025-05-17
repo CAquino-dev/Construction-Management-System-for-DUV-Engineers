@@ -37,7 +37,7 @@ export const MyProjectAddSupplyExpenses = ({ closeModal, handleAddExpense, miles
     console.log('data', newExpense)
 
     try {
-      const res = await fetch('http://localhost:5000/api/project/expenses', {
+      const res = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/project/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newExpense),

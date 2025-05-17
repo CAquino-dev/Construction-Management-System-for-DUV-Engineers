@@ -69,7 +69,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   useEffect(() => {
     const fetchPayslipDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/hr/payslips/${payslip.id}`);
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/payslips/${payslip.id}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -98,7 +98,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   // Update single payslip item status
   const updatePayslipStatus = async (status, remark) => {
     try {
-      const response = await fetch("http://localhost:5000/api/hr/updatePayslipStatus", {
+      const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/updatePayslipStatus", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -125,7 +125,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   // Bulk update payslip items status
   const updatePayslipItemStatus = async (selectedItemIds, status, remark) => {
     try {
-      const response = await fetch("http://localhost:5000/api/hr/updatePayslipItemStatus", {
+      const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/updatePayslipItemStatus", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

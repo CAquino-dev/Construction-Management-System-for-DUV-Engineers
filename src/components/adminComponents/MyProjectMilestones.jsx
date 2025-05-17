@@ -36,7 +36,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
 
   useEffect(() => {
     const getMilestones = async () => {
-      const response = await fetch(`http://localhost:5000/api/project/getMilestones/${selectedProject.id}`);
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestones/${selectedProject.id}`);
       if (response.ok) {
         const data = await response.json();
         setMilestonesList(data.milestones);
