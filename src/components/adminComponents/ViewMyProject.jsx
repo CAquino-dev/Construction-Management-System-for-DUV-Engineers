@@ -7,6 +7,7 @@ import { MyprojectLegals } from './MyprojectLegals';
 import duvLogo from '../../assets/duvLogo.jpg';
 import { MyProjectExpenses } from './MyProjectExpenses';
 import { MyprojectSupply } from './MyprojectSupply';
+import { MyProjectChat } from './MyProjectChat';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
     const [activeTab, setActiveTab] = useState('projectDetails');
@@ -106,6 +107,17 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
             >
                 Supply
             </button>
+
+            <button
+                onClick={() => handleTabClick('chat')}
+                className={`text-lg font-medium cursor-pointer p-2 ${
+                    activeTab === 'chat'
+                        ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+                        : 'text-gray-500 hover:text-[#4c735c]'
+                }`}
+            >
+                Chat
+            </button>
         </div>
 
         {/* Tab Content */}
@@ -140,6 +152,12 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                     <div className='p-4'>
                         <h4 className='text-lg font-semibold'>Supply</h4>
                         <MyprojectSupply selectedProject={selectedProject} />
+                    </div>
+                )}
+
+                {activeTab === 'chat' && (
+                    <div className='p-4'>
+                        <MyProjectChat selectedProject={selectedProject} className='flex-1' />
                     </div>
                 )}
             </CardContent>
