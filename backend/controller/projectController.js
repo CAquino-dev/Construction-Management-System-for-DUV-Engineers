@@ -196,7 +196,6 @@ const getExpenses = (req, res) => {
       remarks
     FROM expenses
     WHERE milestone_id = ?
-      AND engineer_approval_status = 'Approved'
       AND finance_approval_status = 'Approved'
   `;
 

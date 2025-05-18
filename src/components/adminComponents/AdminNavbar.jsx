@@ -111,7 +111,7 @@ const AdminNavbar = ({ children }) => {
                         ))}
                         {/* Collapsible Site manager Section */}
                         <li>
-                            {<button onClick={toggleSiteManagerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
+                            {permissions.can_view_sitemanager === 'Y' && <button onClick={toggleSiteManagerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                             <span className="flex items-center gap-3 font-semibold">
                                 <UserCircleGear size={20}/> Site Manager
                             </span>

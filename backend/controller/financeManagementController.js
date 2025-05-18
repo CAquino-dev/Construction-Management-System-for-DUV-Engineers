@@ -352,8 +352,7 @@ const getAllExpensesApprovedByEngineer = (req, res) => {
       finance_approval_status,
       remarks
     FROM expenses
-    WHERE engineer_approval_status = 'Approved'
-      AND finance_approval_status = 'Pending'
+    WHERE finance_approval_status = 'Pending'
   `;
 
   db.query(query, (err, results) => {
