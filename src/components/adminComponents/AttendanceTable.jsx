@@ -19,7 +19,7 @@ export const AttendanceTable = () => {
     
     const fetchUserAttendance = async () => {
       try {
-        const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/employeeAttendance');
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/employeeAttendance`);
         const data = await response.json();
         console.log(data);
         if(response.ok){

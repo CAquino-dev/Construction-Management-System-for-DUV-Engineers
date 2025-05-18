@@ -57,7 +57,7 @@ const handleConfirm = async () => {
 
   try {
     // Construct the payload to send to the backend
-    const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/updatePaymentStatus", {
+    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/updatePaymentStatus`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

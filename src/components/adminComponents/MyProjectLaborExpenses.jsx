@@ -22,7 +22,7 @@ export const MyProjectLaborExpenses = ({ milestoneId }) => {
   // Add expense to backend and refresh list
   const handleAddExpense = async (newExpense) => {
     try {
-      const res = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/project/expenses', {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

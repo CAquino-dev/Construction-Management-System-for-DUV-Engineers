@@ -98,7 +98,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   // Update single payslip item status
   const updatePayslipStatus = async (status, remark) => {
     try {
-      const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/updatePayslipStatus", {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/updatePayslipStatus`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -125,7 +125,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
   // Bulk update payslip items status
   const updatePayslipItemStatus = async (selectedItemIds, status, remark) => {
     try {
-      const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/updatePayslipItemStatus", {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/updatePayslipItemStatus`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
