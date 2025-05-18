@@ -137,7 +137,7 @@ export const PayrollTable = () => {
     }
 
     try {
-      const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/payslip/create", {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/payslip/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -193,7 +193,7 @@ export const PayrollTable = () => {
     });
 
     try {
-      const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/calculateSalary', {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/calculateSalary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -236,7 +236,7 @@ export const PayrollTable = () => {
     setFilteredRecords(filtered);
 
     try {
-      const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/calculateSalary', {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/calculateSalary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

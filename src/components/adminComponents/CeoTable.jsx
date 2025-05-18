@@ -55,7 +55,7 @@ export const CeoTable = ({ setSelectedPayslips }) => {
   useEffect(() => {
     const fetchApprovedPayslips = async () => {
       try {
-        const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/ceo/getFinanceApprovedPayslips');
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/ceo/getFinanceApprovedPayslips`);
         if(response.ok){
           const data = await response.json();
           setPayslips(data.data);

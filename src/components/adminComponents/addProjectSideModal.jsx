@@ -25,7 +25,7 @@ const AddProjectSideModal = ({ isOpen, closeModal }) => {
   useEffect(() => {
     const getEngineers = async () => {
       try {
-        const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineers');
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineers`);
         const data = await response.json();
         if(response.ok){
           setEngineers(data)
