@@ -204,12 +204,6 @@ const getStatusDotColor = (progress_status) => {
                 </div>
               </div>
             ))}
-
-
-
-
-
-
         </div>
       </div>
 

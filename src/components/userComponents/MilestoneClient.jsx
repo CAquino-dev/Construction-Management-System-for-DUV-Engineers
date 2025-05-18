@@ -28,6 +28,23 @@ export const MilestoneClient = ({ selectedProject }) => {
     getMilestones();
   }, [selectedProject.id]);
 
+  const getStatusDotColor = (progress_status) => {
+  switch (progress_status) {
+    case "For Payment":
+      return "bg-yellow-400";
+    case "Payment Confirmed":
+      return "bg-green-500";
+    case "In Progress":
+      return "bg-blue-500";
+    case "Completed":
+      return "bg-emerald-700";
+    case "Cancelled":
+      return "bg-red-500";
+    default:
+      return "bg-[#4c735c]/70"; // fallback color
+  }
+};
+
   const openExpensesModal = (milestone) => {
     setSelectedExpenses(milestone.expense || []);
     setIsExpensesModalOpen(true);
@@ -51,6 +68,30 @@ export const MilestoneClient = ({ selectedProject }) => {
 
   return (
     <div>
+      <div>
+        <div className='flex gap-4 mb-4'>
+          <div className='flex flex-row items-center'>
+            <div className='w-3 h-3 rounded-full mr-2 bg-yellow-400'></div>
+            <p className='font-semibold'>For Payment</p>
+          </div>
+          <div className='flex flex-row items-center'>
+            <div className='w-3 h-3 rounded-full mr-2 bg-green-500'></div>
+            <p className='font-semibold'>Payment Confirmed</p>
+          </div>
+          <div className='flex flex-row items-center'>
+            <div className='w-3 h-3 rounded-full mr-2 bg-blue-500'></div>
+            <p className='font-semibold'>In Progress</p>
+          </div>
+          <div className='flex flex-row items-center'>
+            <div className='w-3 h-3 rounded-full mr-2 bg-emerald-700'></div>
+            <p className='font-semibold'>Completed</p>
+          </div>
+          <div className='flex flex-row items-center'>
+            <div className='w-3 h-3 rounded-full mr-2 bg-red-500'></div>
+            <p className='font-semibold'>Canceled</p>
+          </div>
+        </div>
+      </div>
       {/* Toggle Buttons */}
       <div className="mb-4 flex space-x-4">
         <button
@@ -80,7 +121,9 @@ export const MilestoneClient = ({ selectedProject }) => {
             <div key={index} className="mb-6">
               <div className="flex flex-col">
                 <div className="flex items-center mb-2 sm:mb-0 sm:mr-4 gap-2">
-                  <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full " />
+                  <div
+                      className={`w-3 h-3 rounded-full mr-2 ${getStatusDotColor(milestone.progress_status)}`}
+                    />
                   <p className="text-sm text-gray-600">
                     {new Date(milestone.timestamp).toLocaleDateString()}
                   </p>
