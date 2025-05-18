@@ -281,10 +281,56 @@ const getMilestonesForPaymentByProject = (req, res) => {
   });
 };
 
-  
+const completeMilestone = (req, res) => {
+  // Use your existing 'upload' middleware for file upload with field name 'project_photo'
+  upload(req, res, (err) => {
+    if (err) {
+      console.error('Upload error:', err);
+      return res.status(400).json({ error: err.message });
+    }
+
+    const milestoneId = req.params.id;
+    if (!milestoneId) {
+      return res.status(400).json({ error: 'Milestone ID is required' });
+    }
+
+    // Build the path for uploaded photo if any
+    const projectPhotoPath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // We will update:
+    // - progress_status = 'Completed'
+    // - completion_date = current date (if you want to set)
+    // - project_photo = photo path (optional)
+    const query = `
+      UPDATE milestones
+      SET progress_status = 'Completed',
+          completion_date = NOW(),
+          project_photo = ?
+      WHERE id = ?
+    `;
+
+    db.query(query, [projectPhotoPath, milestoneId], (err, result) => {
+      if (err) {
+        console.error('Error updating milestone:', err);
+        return res.status(500).json({ error: 'Failed to update milestone' });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Milestone not found' });
+      }
+
+      res.json({
+        message: 'Milestone marked as completed',
+        completionPhoto: projectPhotoPath,
+      });
+    });
+  });
+};
+
+
   
 
 
 module.exports = { getEngineers, createProject, getClients, 
                   getClientProject, getEngineerProjects, createMilestone,
-                getMilestonesForPaymentByProject };
+                getMilestonesForPaymentByProject, completeMilestone };
