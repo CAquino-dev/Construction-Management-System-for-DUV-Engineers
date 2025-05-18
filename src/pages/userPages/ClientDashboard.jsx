@@ -31,12 +31,12 @@ export const ClientDashboard = () => {
 
   return (
     <div className="p-6 mt-15 ">
-        <p className="text-2xl font-bold">Welcome, Username</p>
-        <div className="p-4">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Client's Projects</h2>
+        <p className="text-2xl font-bold">Welcome to the Client Dashboard</p>
+      <div className="p-4">
+      {/* <h2 className="text-xl font-bold text-gray-800 mb-4">Client's Projects</h2> */}
 
       {/* Project Table */}
-      <div className="overflow-x-auto">
+      {/* <div className="overflow-x-auto">
         <table className="min-w-full table-auto">
           <thead>
             <tr className="bg-gray-200 text-gray-700">
@@ -81,7 +81,7 @@ export const ClientDashboard = () => {
             </div>
           ))}
 
-      </div>
+      </div> */}
     </div>
     </div>
     

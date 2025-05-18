@@ -89,7 +89,7 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
         >
           Legals
         </button>
-        <button
+        {/* <button
           onClick={() => handleTabClick('expenses')}
           className={`text-lg font-medium cursor-pointer p-2 ${
             activeTab === 'expenses'
@@ -98,8 +98,8 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
           }`}
         >
           Expenses Tracking
-        </button>
-
+        </button> */}
+{/* 
         <button
           onClick={() => handleTabClick('supply')}
           className={`text-lg font-medium cursor-pointer p-2 ${
@@ -109,7 +109,7 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
           }`}
         >
           Supply
-        </button>
+        </button> */}
 
         <button
           onClick={() => handleTabClick('chat')}
@@ -147,7 +147,7 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
               </div>
           )}
 
-          {activeTab === 'expenses' && (
+          {/* {activeTab === 'expenses' && (
             <div className="space-y-4">
               <h4 className="text-lg font-semibold">Expenses</h4>
               <ExpensesClient selectedProject={selectedProject} />
@@ -159,7 +159,7 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
               <h4 className="text-lg font-semibold">Supply</h4>
               <SupplyClient selectedProject={selectedProject} />
             </div>
-          )}
+          )} */}
 
           {activeTab === 'chat' && (
             <div className="space-y-4">
