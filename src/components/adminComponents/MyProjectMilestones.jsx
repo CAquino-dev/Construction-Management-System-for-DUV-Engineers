@@ -4,6 +4,7 @@ import { MyProjectViewMilestone } from './MyProjectViewMilestone';
 import { MyProjectSupplyExpenses } from './MyProjectSupplyExpenses';
 import { MyProjectExpenses } from './MyProjectExpenses';
 import { MyProjectMilestoneExpenses } from './MyProjectMilestoneExpenses';
+import { MyProjectMilestoneUpdateStatus } from './MyProjectMilestoneUpdateStatus';
 
 const milestones = [
   {
@@ -30,6 +31,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [milestonesList, setMilestonesList] = useState(milestones);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
+  const [isUpdateStatusModalOpen, setIsUpdateStatusModalOpen] = useState(false);
+  const [selectedMilestoneForUpdate, setSelectedMilestoneForUpdate] = useState(null);
+
 
   // New states for managing expenses
   const [selectedMilestoneIdForExpenses, setSelectedMilestoneIdForExpenses] = useState(null);
@@ -59,10 +63,27 @@ const getStatusDotColor = (progress_status) => {
       return "bg-yellow-400";
     case "Payment Confirmed":
       return "bg-green-500";
+    case "In Progress":
+      return "bg-blue-500";
+    case "Completed":
+      return "bg-emerald-700";
+    case "Cancelled":
+      return "bg-red-500";
     default:
       return "bg-[#4c735c]/70"; // fallback color
   }
 };
+
+  const openUpdateStatusModal = (milestone) => {
+    setSelectedMilestoneForUpdate(milestone);
+    setIsUpdateStatusModalOpen(true);
+  };
+
+  const closeUpdateStatusModal = () => {
+    setSelectedMilestoneForUpdate(null);
+    setIsUpdateStatusModalOpen(false);
+  };
+
 
 
 
@@ -102,12 +123,12 @@ const getStatusDotColor = (progress_status) => {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
         <h4 className="text-lg font-semibold">Milestones</h4>
-        <button
+          <button
           onClick={openModal}
           className="bg-[#4c735c] text-white px-6 py-3 text-sm sm:px-4 sm:py-2 rounded-md mt-4 sm:mt-0"
-        >
+          >
           Add Milestone
-        </button>
+          </button>
       </div>
       <div className='flex gap-4 mb-4'>
         <div className='flex flex-row items-center'>
@@ -117,6 +138,18 @@ const getStatusDotColor = (progress_status) => {
         <div className='flex flex-row items-center'>
           <div className='w-3 h-3 rounded-full mr-2 bg-green-500'></div>
           <p className='font-semibold'>Payment Confirmed</p>
+        </div>
+        <div className='flex flex-row items-center'>
+          <div className='w-3 h-3 rounded-full mr-2 bg-blue-500'></div>
+          <p className='font-semibold'>In Progress</p>
+        </div>
+        <div className='flex flex-row items-center'>
+          <div className='w-3 h-3 rounded-full mr-2 bg-emerald-700'></div>
+          <p className='font-semibold'>Completed</p>
+        </div>
+        <div className='flex flex-row items-center'>
+          <div className='w-3 h-3 rounded-full mr-2 bg-red-500'></div>
+          <p className='font-semibold'>Canceled</p>
         </div>
       </div>
       <div>
@@ -133,12 +166,30 @@ const getStatusDotColor = (progress_status) => {
                       className={`w-3 h-3 rounded-full mr-2 ${getStatusDotColor(milestone.progress_status)}`}
                     />
                     <p className="text-sm text-gray-600 mr-2">{new Date(milestone.timestamp).toLocaleDateString()}</p>
-                    <button
-                      onClick={() => handleManageExpenses(milestone.id)}
-                      className="text-white rounded text-sm px-2 py-1 bg-[#4c735c] hover:bg-[#4c735c] cursor-pointer"
-                    >
-                      Add Expenses
-                    </button>
+                    {milestone.progress_status !== "For Payment" && (
+                      <>
+                      <button
+                        onClick={() => openUpdateStatusModal(milestone)}
+                        className="text-[#4c735c] rounded text-sm px-2 py-1 border border-[#4c735c] cursor-pointer mr-2"
+                      >
+                        Update Status
+                      </button>
+
+                      {isUpdateStatusModalOpen && selectedMilestoneForUpdate && (
+                        <MyProjectMilestoneUpdateStatus 
+                          milestone={selectedMilestoneForUpdate} 
+                          onClose={closeUpdateStatusModal} 
+                        />
+                      )}
+
+                      <button
+                        onClick={() => handleManageExpenses(milestone.id)}
+                        className="text-white rounded text-sm px-2 py-1 bg-[#4c735c] hover:bg-[#4c735c] cursor-pointer"
+                      >
+                        Add Expenses
+                      </button>
+                      </>
+                    )}
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
@@ -153,6 +204,11 @@ const getStatusDotColor = (progress_status) => {
                 </div>
               </div>
             ))}
+
+
+
+
+
 
         </div>
       </div>
