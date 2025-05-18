@@ -38,10 +38,10 @@ const Homepage = () => {
             <p className="mt-4 text-sm md:text-base">
               Lorem ipsum dolor sit amet. Eum velit omnis ut cupiditate nihil ea tenetur quam ut repellat velit in perspiciatis rerum? Et adipisci ipsam ut voluptatem nulla ad nihil quas ex reiciendis explicabo.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 mt-10">
+            {/* <div className="flex flex-col sm:flex-row gap-4 mt-10">
               <button className="bg-[#4c735c] text-black px-6 py-2 rounded-md">Contact Us</button>
               <button className="border text-[#4c735c] px-6 py-2 rounded-md">Free Consultation</button>
-            </div>
+            </div> */}
           </div>
           <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg md:w-1/2">
             <div className="absolute -top-4 -left-4 w-full h-full bg-[#4c735c] rounded-lg -z-10"></div>

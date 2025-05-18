@@ -87,7 +87,7 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
             >
                 Legals
             </button>
-            <button
+            {/* <button
                 onClick={() => handleTabClick('expenses')}
                 className={`text-lg font-medium cursor-pointer p-2 ${
                     activeTab === 'expenses'
@@ -96,8 +96,8 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                 }`}
             >
                 Expenses Tracking
-            </button>
-            <button
+            </button> */}
+            {/* <button
                 onClick={() => handleTabClick('supply')}
                 className={`text-lg font-medium cursor-pointer p-2 ${
                     activeTab === 'supply'
@@ -106,7 +106,7 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                 }`}
             >
                 Supply
-            </button>
+            </button> */}
 
             <button
                 onClick={() => handleTabClick('chat')}
@@ -141,19 +141,19 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                         <MyprojectLegals selectedProject={selectedProject} />
                     </div>
                 )}
-                {activeTab === 'expenses' && (
+                {/* {activeTab === 'expenses' && (
                     <div className='p-4'>
                         <h4 className='text-lg font-semibold'>Expenses Tracking</h4>
                         <MyProjectExpenses selectedProject={selectedProject} />
                     </div>
-                )}
+                )} */}
 
-                {activeTab === 'supply' && (
+                {/* {activeTab === 'supply' && (
                     <div className='p-4'>
                         <h4 className='text-lg font-semibold'>Supply</h4>
                         <MyprojectSupply selectedProject={selectedProject} />
                     </div>
-                )}
+                )} */}
 
                 {activeTab === 'chat' && (
                     <div className='p-4'>

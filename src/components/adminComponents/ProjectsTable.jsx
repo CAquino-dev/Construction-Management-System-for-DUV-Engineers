@@ -70,7 +70,6 @@ export const ProjectsTable = ({ setSelectedProject }) => {
               <TableHead className="text-center text-white">Client</TableHead>
               <TableHead className="text-center text-white">Status</TableHead>
               <TableHead className="text-center text-white">Budget</TableHead>
-              <TableHead className="text-center text-white">Progress</TableHead>
               <TableHead className="text-center text-white">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -82,17 +81,6 @@ export const ProjectsTable = ({ setSelectedProject }) => {
                   <TableCell className="text-center">{project.projectName}</TableCell>
                   <TableCell className="text-center">{project.projectType}</TableCell>
                   <TableCell className="text-center">{project.client}</TableCell>
-                  <TableCell
-                    className={`text-center font-semibold ${
-                      project.status === "Completed"
-                        ? "text-green-600"
-                        : project.status === "In Progress"
-                        ? "text-yellow-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {project.status}
-                  </TableCell>
                   <TableCell className="text-center">₱{project.budget}</TableCell>
                   <TableCell className="text-center">{project.progress}%</TableCell>
                   <TableCell className="text-center">

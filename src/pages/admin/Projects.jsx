@@ -19,7 +19,9 @@ export const Projects = () => {
   return (
     <div className="p-6 mt-15 bg-white rounded-lg shadow-sm">
       {selectedProject === 'add' ? (
-        <AddProject />
+        <AddProject 
+          onBack={handleBack}
+        />
       ) : selectedProject ? (
         // selectedProject is an object here, show project details
         <ViewMyProject selectedProject={selectedProject} onBack={handleBack} />
