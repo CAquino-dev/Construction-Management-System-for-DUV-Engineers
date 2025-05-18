@@ -175,7 +175,7 @@ export const AppointmentRequestPage = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700 transition"
+            className="w-full bg-[#4c735c] text-white py-3 rounded transition"
           >
             Submit Request
           </button>

@@ -36,12 +36,6 @@ export const MyProjectDetails = ({ selectedProject }) => {
         <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-semibold">Project Details</h4>
 
-            <button
-                onClick={isEditing ? handleSaveClick : handleEditClick}
-                className='bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#3b5a4a] transition duration-200'
-            >
-                {isEditing ? 'Save' : 'Edit'}
-            </button>
         </div>
       {/* Button to Edit or Save */}
 

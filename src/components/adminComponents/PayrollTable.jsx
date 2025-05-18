@@ -298,9 +298,6 @@ export const PayrollTable = () => {
 
         {/* Action Buttons - Wrapped for Mobile Layout */}
         <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-center sm:justify-start">
-          <button className="bg-[#4c735c] text-white px-4 py-2 rounded-md hover:bg-[#5A8366] w-full sm:w-auto cursor-pointer">
-            Export Payroll
-          </button>
           <button
             className="bg-none text-[#4c735c] px-4 py-2 rounded-md border border-[#4c735c] hover:bg-[#4c735c] hover:text-white w-full sm:w-auto cursor-pointer"
             onClick={() => setIsPayslipModalOpen(true)}
