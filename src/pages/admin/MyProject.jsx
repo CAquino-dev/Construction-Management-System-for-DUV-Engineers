@@ -7,11 +7,13 @@ export const MyProject = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
 
+    const userId = localStorage.getItem('userId');
+
   useEffect(() => {
     const fetchEngineerProjects = async () => {
       try {
         
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/10`);
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/${userId}`);
       if(response.ok){
       const data = await response.json();
       setProjects(data.projects)
