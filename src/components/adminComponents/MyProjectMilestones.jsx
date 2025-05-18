@@ -24,8 +24,8 @@ const milestones = [
   },
   // ... more milestones ...
 ];
-
 export const MyProjectMilestones = ({ selectedProject }) => {
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [milestonesList, setMilestonesList] = useState(milestones);
@@ -46,6 +46,25 @@ export const MyProjectMilestones = ({ selectedProject }) => {
 
     getMilestones();
   }, [selectedProject]);
+
+  useEffect(() => {
+    console.log('milestonesList', milestonesList)
+  }, [milestonesList]);
+
+
+  // Inside your component
+const getStatusDotColor = (progress_status) => {
+  switch (progress_status) {
+    case "For Payment":
+      return "bg-yellow-400";
+    case "Payment Confirmed":
+      return "bg-green-500";
+    default:
+      return "bg-[#4c735c]/70"; // fallback color
+  }
+};
+
+
 
   // Open the Add Milestone modal
   const openModal = () => setIsModalOpen(true);
@@ -90,35 +109,51 @@ export const MyProjectMilestones = ({ selectedProject }) => {
           Add Milestone
         </button>
       </div>
+      <div className='flex gap-4 mb-4'>
+        <div className='flex flex-row items-center'>
+          <div className='w-3 h-3 rounded-full mr-2 bg-yellow-400'></div>
+          <p className='font-semibold'>For Payment</p>
+        </div>
+        <div className='flex flex-row items-center'>
+          <div className='w-3 h-3 rounded-full mr-2 bg-green-500'></div>
+          <p className='font-semibold'>Payment Confirmed</p>
+        </div>
+      </div>
+      <div>
+
+      </div>
 
       <div className="relative">
         <div className="border-l-2 border-gray-300 pl-6">
           {milestonesList.map((milestone, index) => (
-            <div key={milestone.id || index} className="mb-6">
-              <div className="flex flex-col">
-                <div className="flex items-center mb-2 sm:mb-0 sm:mr-4">
-                  <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full mr-2" />
-                  <p className="text-sm text-gray-600 mr-2">{new Date(milestone.timestamp).toLocaleDateString()}</p>
-                  <button
-                    onClick={() => handleManageExpenses(milestone.id)}
-                    className="text-white rounded text-sm px-2 py-1 bg-[#4c735c] hover:bg-[#4c735c] cursor-pointer"
-                  >
-                    Add Expenses
-                  </button>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
-                  <p className="text-sm text-gray-600">{milestone.details}</p>
-                  <button
-                    onClick={() => openViewModal(milestone)}
-                    className="text-[#4c735c] underline cursor-pointer mr-4"
-                  >
-                    View Attachments
-                  </button>
+              <div key={milestone.id || index} className="mb-6">
+                <div className="flex flex-col">
+                  <div className="flex items-center mb-2 sm:mb-0 sm:mr-4">
+                    <div
+                      className={`w-3 h-3 rounded-full mr-2 ${getStatusDotColor(milestone.progress_status)}`}
+                    />
+                    <p className="text-sm text-gray-600 mr-2">{new Date(milestone.timestamp).toLocaleDateString()}</p>
+                    <button
+                      onClick={() => handleManageExpenses(milestone.id)}
+                      className="text-white rounded text-sm px-2 py-1 bg-[#4c735c] hover:bg-[#4c735c] cursor-pointer"
+                    >
+                      Add Expenses
+                    </button>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
+                    <p className="text-sm text-gray-600">{milestone.details}</p>
+                    <button
+                      onClick={() => openViewModal(milestone)}
+                      className="text-[#4c735c] underline cursor-pointer mr-4"
+                    >
+                      View Attachments
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+
         </div>
       </div>
 
