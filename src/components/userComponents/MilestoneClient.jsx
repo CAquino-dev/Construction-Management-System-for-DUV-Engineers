@@ -119,6 +119,7 @@ export const MilestoneClient = ({ selectedProject }) => {
 
       {isExpensesModalOpen && (
         <ViewSupplyExpenses
+          selectedProject={selectedProject}
           expenses={selectedExpenses}
           milestoneName={selectedMilestone?.milestone || selectedMilestone?.status || "Milestone"}
           onClose={closeExpensesModal}
