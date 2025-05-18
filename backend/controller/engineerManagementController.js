@@ -21,6 +21,19 @@ const storage = multer.diskStorage({
       cb(null, fileName);  // Save the file with a unique name
     }
   });
+
+  const uploadMilestonePdf = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max file size
+  fileFilter: (req, file, cb) => {
+    // Only accept PDFs
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  }
+}).single('estimated_cost_pdf'); // <-- input field name from frontend
   
 
 // File upload middleware for handling project photo
@@ -180,63 +193,73 @@ const createProject = (req, res) => {
 };
 
 // Create Milestone function
-// Create Milestone function
 const createMilestone = (req, res) => {
-  const { projectId } = req.params;
-  const {
-    status,
-    details,
-    payment_amount,
-    budget_amount,
-    due_date,
-    start_date,
-    completion_date,
-  } = req.body;
+  uploadMilestonePdf(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ error: err.message });
+    }
 
-  if (!status || !details) {
-    return res.status(400).json({ error: 'Status and details are required' });
-  }
-
-  // Force progress_status to 'For Payment' on creation
-  const progress_status = 'For Payment';
-  const timestamp = new Date().toISOString();
-
-  // Set payment and budget amounts or default to 0
-  const paymentAmount = payment_amount ? parseFloat(payment_amount) : 0.0;
-  const budgetAmount = budget_amount ? parseFloat(budget_amount) : 0.0;
-
-  const query = `
-    INSERT INTO milestones
-    (project_id, timestamp, status, details, progress_status, payment_amount, budget_amount, due_date, start_date, completion_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.query(
-    query,
-    [
-      projectId,
-      timestamp,
+    const { projectId } = req.params;
+    const {
       status,
       details,
-      progress_status,
-      paymentAmount,
-      budgetAmount,
-      due_date || null,
-      start_date || null,
-      completion_date || null,
-    ],
-    (err, result) => {
-      if (err) {
-        console.error('Error creating milestone:', err);
-        return res.status(500).json({ error: 'Failed to create milestone' });
-      }
+      payment_amount,
+      budget_amount,
+      due_date,
+      start_date,
+      completion_date,
+    } = req.body;
 
-      res.status(201).json({
-        message: 'Milestone created successfully',
-        milestoneId: result.insertId,
-      });
+    if (!status || !details) {
+      return res.status(400).json({ error: 'Status and details are required' });
     }
-  );
+
+    // progress_status fixed to 'For Payment'
+    const progress_status = 'For Payment';
+    const timestamp = new Date().toISOString();
+
+    const paymentAmount = payment_amount ? parseFloat(payment_amount) : 0.0;
+    const budgetAmount = budget_amount ? parseFloat(budget_amount) : 0.0;
+
+    // If file was uploaded, get relative path for DB
+    const estimatedCostPdfPath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO milestones
+      (project_id, timestamp, status, details, progress_status, payment_amount, budget_amount, due_date, start_date, completion_date, estimated_cost_pdf)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      query,
+      [
+        projectId,
+        timestamp,
+        status,
+        details,
+        progress_status,
+        paymentAmount,
+        budgetAmount,
+        due_date || null,
+        start_date || null,
+        completion_date || null,
+        estimatedCostPdfPath,
+      ],
+      (err, result) => {
+        if (err) {
+          console.error('Error creating milestone:', err);
+          return res.status(500).json({ error: 'Failed to create milestone' });
+        }
+
+        res.status(201).json({
+          message: 'Milestone created successfully',
+          milestoneId: result.insertId,
+          estimated_cost_pdf: estimatedCostPdfPath,
+        });
+      }
+    );
+  });
 };
 
 

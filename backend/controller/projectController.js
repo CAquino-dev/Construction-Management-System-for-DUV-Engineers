@@ -84,7 +84,8 @@ const getMilestones = (req, res) => {
       budget_amount,
       due_date,
       start_date,
-      completion_date
+      completion_date,
+      estimated_cost_pdf   -- <-- add this field
     FROM milestones
     WHERE project_id = ?
     ORDER BY timestamp DESC
@@ -95,9 +96,22 @@ const getMilestones = (req, res) => {
       console.error("Error fetching milestones:", err);
       return res.status(500).json({ error: "Failed to fetch milestones" });
     }
-    res.json({ milestones: results });
+
+    // Optional: Convert relative path to full URL for frontend use
+    const host = req.get('host'); // e.g. 'localhost:5000'
+    const protocol = req.protocol; // 'http' or 'https'
+
+    const updatedResults = results.map(milestone => {
+      if (milestone.estimated_cost_pdf) {
+        milestone.estimated_cost_pdf = `${protocol}://${host}${milestone.estimated_cost_pdf}`;
+      }
+      return milestone;
+    });
+
+    res.json({ milestones: updatedResults });
   });
 };
+
 
 const createExpense = (req, res) => {
   const {
