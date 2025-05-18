@@ -128,6 +128,16 @@ const AdminNavbar = ({ children }) => {
                                             Projects
                                         </Link>
                                     </li>
+                                    <li>
+                                        <Link
+                                            to="/admin-dashboard/site-manager/add-client"
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/site-manager/add-client" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}
+                                        >
+                                            Add Client
+                                        </Link>
+                                    </li>
                                 </ul>
                             )}
                         </li>
