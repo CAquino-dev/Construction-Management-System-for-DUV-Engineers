@@ -31,6 +31,7 @@ const AdminNavbar = ({ children }) => {
         // { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard", permission: "can_access_ceo_dashboard"},
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
+        { name: "Appointment Requests", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/appointment",},
     ];
 
     const currentPage = (() => {
