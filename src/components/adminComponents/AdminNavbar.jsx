@@ -27,7 +27,7 @@ const AdminNavbar = ({ children }) => {
 
     const menuItems = [
         { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
-        { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
+        // { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
         // { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard", permission: "can_access_ceo_dashboard"},
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
@@ -267,7 +267,7 @@ const AdminNavbar = ({ children }) => {
                             )}
                         </li>
                         {/* Feedback Dropdown */}
-                        <li>
+                        {/* <li>
                             <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                                 <span className="flex items-center gap-3 font-semibold">
                                     <ListChecks size={20} /> Feedbacks
@@ -296,7 +296,7 @@ const AdminNavbar = ({ children }) => {
                                     </li>
                                 </ul>
                             )}
-                        </li>
+                        </li> */}
                     </ul>
                 </div>
                 <div>
@@ -385,7 +385,7 @@ const AdminNavbar = ({ children }) => {
                             )}
                         </li>
                         {/* Feedback Section in Mobile Sidebar */}
-                        <li>
+                        {/* <li>
                             <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
                                 <span className="flex items-center gap-3">
                                     <ListChecks size={20} /> Feedbacks
@@ -402,7 +402,7 @@ const AdminNavbar = ({ children }) => {
                                     </li>
                                 </ul>
                             )}
-                        </li>
+                        </li> */}
                     </ul>
                 </div>
             )}

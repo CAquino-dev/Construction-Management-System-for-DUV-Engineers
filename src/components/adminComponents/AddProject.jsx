@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { Button } from '../ui/button';
 
-export const AddProject = () => {
+export const AddProject = ({ onBack }) => {
   const [projectData, setProjectData] = useState({
     projectCode: "",
     projectName: "",
@@ -123,6 +124,9 @@ export const AddProject = () => {
 
   return (
     <div className="p-6">
+      <Button variant="link" onClick={onBack} className="mb-6 text-[#4c735c]">
+        ← Back
+      </Button>
       <h2 className="text-xl font-bold text-gray-800 mb-4">Add a New Project</h2>
       <div className="space-y-4">
         {/* Project Code Input */}

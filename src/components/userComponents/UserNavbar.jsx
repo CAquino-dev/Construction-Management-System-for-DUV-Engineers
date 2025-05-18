@@ -21,14 +21,14 @@ const UserNavbar = () => {
 
         {/* Desktop Navbar */}
         <div className="hidden md:flex items-center gap-10 text-white font-bold">
-          <Link to="/projects" className="hover:text-gray-400 transition">Projects</Link>
           <Link to="/our-team" className="hover:text-gray-400 transition">Our Team</Link>
           <Link to="/aboutus" className="hover:text-gray-400 transition">About Us</Link>
           <Link to="/chatbot" className="hover:text-gray-400 transition">ChatBot</Link>
           <Link to="/login" className="hover:text-gray-400 transition">Login</Link>
+          <Link to="/appointment">Book Appointment</Link>
 
           {/* Support Desk Dropdown */}
-          <div className="relative">
+          {/* <div className="relative">
             <button className="flex items-center gap-2 cursor-pointer" onClick={() => setSupportOpen(!supportOpen)}>
               Support Desk <CaretDown size={18} />
             </button>
@@ -39,7 +39,7 @@ const UserNavbar = () => {
                 <Link to="/send-feedback" className="block px-4 py-2 hover:bg-gray-200 text-black font-semibold">Send Feedback</Link>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Mobile Menu Button */}

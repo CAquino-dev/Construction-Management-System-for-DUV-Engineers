@@ -206,14 +206,14 @@ export const PayslipModal = ({ closeModal, payslip }) => {
           </button>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar
         <input
           type="text"
           placeholder="Search Employee..."
           className="w-full p-2 border rounded-md mb-4"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        /> */}
 
         <div className="my-2">
           {/*here*/}

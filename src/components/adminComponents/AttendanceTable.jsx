@@ -111,7 +111,7 @@
           </div>
 
           {/* Export & Import Buttons */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          {/* <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <button className="bg-[#4c735c] text-white px-6 py-2 rounded-md w-full md:w-48 lg:w-56 sm:w-auto">
               Export Attendance
             </button>
@@ -121,7 +121,7 @@
             >
               Import Attendance
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Display Selected Date in Readable Format */}
