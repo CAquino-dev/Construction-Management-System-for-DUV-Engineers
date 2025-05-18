@@ -54,7 +54,7 @@ export const MyProjectPendingSupplyTable = () => {
 
   return (
     <div className="mt-4">
-      <div className="flex justify-end mb-4">
+      {/* <div className="flex justify-end mb-4">
         <button
           className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer"
           onClick={() => setIsModalOpen(true)}
@@ -68,7 +68,7 @@ export const MyProjectPendingSupplyTable = () => {
           closeModal={handleCloseModal}
           handleAddNewRequest={handleAddNewRequest}
         />
-      )}
+      )} */}
 
       {viewData && (
         <MyProjectViewPendingSupply

@@ -58,12 +58,14 @@ export const MyProjectLaborExpenses = ({ milestoneId }) => {
   return (
     <div>
       <div className="flex justify-end mb-4">
+        {milestoneId ? (
         <button
           className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer"
           onClick={handleOpenModal}
         >
           Add Expense
         </button>
+        ) : null}
       </div>
 
       {isModalOpen && (
