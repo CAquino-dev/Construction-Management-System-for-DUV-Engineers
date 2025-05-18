@@ -10,6 +10,8 @@ const engineerRoute = require('./routes/engineerRoute');
 const ceoRoutes = require('./routes/ceoRoutes');
 const projectRoutes = require('./routes/projectRoute');
 const appointmentRoutes = require('./routes/appointmentRoute');
+const messageRoutes = require('./routes/messagesRoute');
+const paymentRoutes = require('./routes/paymentRoute')
  
 require("./config/db"); // Ensure database connects
 
@@ -27,6 +29,8 @@ app.use("/api/engr", engineerRoute);
 app.use("/api/ceo", ceoRoutes);
 app.use("/api/project", projectRoutes);
 app.use("/api", appointmentRoutes);
+app.use("/api", messageRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.get("/", (req, res) => {
     res.send("API is running!");

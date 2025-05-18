@@ -196,7 +196,6 @@ const getExpenses = (req, res) => {
       remarks
     FROM expenses
     WHERE milestone_id = ?
-      AND engineer_approval_status = 'Approved'
       AND finance_approval_status = 'Approved'
   `;
 
@@ -281,6 +280,34 @@ const updateEngineerApproval = (req, res) => {
   });
 };
 
+const updateMilestoneStatus = (req, res) => {
+  const milestoneId = req.params.id;
+  const { newStatus } = req.body;
+
+  const validStatuses = ['For Payment', 'Payment Confirmed', 'In Progress', 'Completed', 'Cancelled'];
+
+  if (!validStatuses.includes(newStatus)) {
+    return res.status(400).json({ error: 'Invalid status value' });
+  }
+
+  const query = `
+    UPDATE milestones
+    SET progress_status = ?, updated_at = NOW()
+    WHERE id = ?
+  `;
+
+  db.query(query, [newStatus, milestoneId], (err, result) => {
+    if (err) {
+      console.error('Error updating milestone status:', err);
+      return res.status(500).json({ error: 'Failed to update milestone status' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Milestone not found' });
+    }
+    res.json({ message: `Milestone status updated to ${newStatus}` });
+  });
+};
 
 
-module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses, updateEngineerApproval };
+
+module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses, updateEngineerApproval, updateMilestoneStatus };

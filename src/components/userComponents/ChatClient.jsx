@@ -1,34 +1,89 @@
-import React,{ useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect } from 'react';
 
-export const ChatClient = () => {
-    const [messages, setMessages] = useState([
-        { id: 1, sender: 'bot', text: 'Welcome to MyProjectChat!' }
-      ]);
-      const [input, setInput] = useState('');
-      const messagesEndRef = useRef(null);
-    
-      useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, [messages]);
-    
-      const handleSend = () => {
-        if (!input.trim()) return;
-    
-        setMessages(prev => [
-          ...prev,
-          { id: prev.length + 1, sender: 'user', text: input.trim() }
+export const ChatClient = ({ selectedProject, clientUserId }) => {
+  const user = localStorage.getItem("userId");
+  const [messages, setMessages] = useState([
+    { id: 1, sender: 'bot', text: 'Welcome to MyProjectChat!' }
+  ]);
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef(null);
+
+  // Auto-scroll on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Fetch messages when selectedProject changes
+  useEffect(() => {
+    if (!selectedProject) return;
+
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/chat/${selectedProject.id}`);
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data = await res.json();
+
+        const apiMessages = data.map(msg => ({
+          id: msg.id,
+          sender: msg.user_id === user ? 'user' : 'bot',
+          text: msg.message
+        }));
+
+        setMessages(apiMessages.length ? apiMessages : [
+          { id: 1, sender: 'bot', text: 'No messages yet.' }
         ]);
-        setInput('');
-      };
-    
-      const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          handleSend();
-        }
-      };
+      } catch (err) {
+        console.error('Error fetching messages:', err);
+        setMessages([{ id: 1, sender: 'bot', text: 'Failed to load messages.' }]);
+      }
+    };
+
+    fetchMessages();
+
+    // Optional polling every 5 seconds
+    const interval = setInterval(fetchMessages, 5000);
+    return () => clearInterval(interval);
+  }, [selectedProject, clientUserId]);
+
+  // Send new message to backend and update UI
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: selectedProject.id,
+          user_id: user,
+          message: input.trim()
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to send message');
+
+      const data = await res.json();
+
+      setMessages(prev => [
+        ...prev,
+        { id: data.id, sender: 'user', text: data.message }
+      ]);
+      setInput('');
+    } catch (err) {
+      console.error('Error sending message:', err);
+      // Optionally show error feedback here
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <div className=" h-[500px] border border-gray-300 rounded-lg flex flex-col font-sans">
+    <div className="h-[500px] border border-gray-300 rounded-lg flex flex-col font-sans">
       <div className="flex-1 p-3 overflow-y-auto bg-gray-50">
         {messages.map(({ id, sender, text }) => (
           <div
@@ -66,11 +121,11 @@ export const ChatClient = () => {
         />
         <button
           type="submit"
-          className="ml-3 bg-[#3b5d47]  text-white rounded-full px-5 font-semibold text-sm transition-colors"
+          className="ml-3 bg-[#3b5d47] text-white rounded-full px-5 font-semibold text-sm transition-colors"
         >
           Send
         </button>
       </form>
     </div>
-  )
-}
+  );
+};
