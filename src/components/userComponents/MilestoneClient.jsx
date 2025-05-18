@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { MyProjectViewMilestone } from '../adminComponents/MyProjectViewMilestone';
+import { ViewSupplyExpenses } from './ViewSupplyExpenses';
 
 export const MilestoneClient = ({ selectedProject }) => {
   const [milestones, setMilestones] = useState([]);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
   const [showPendingOnly, setShowPendingOnly] = useState(true);
+
+  // Missing states added here:
+  const [selectedExpenses, setSelectedExpenses] = useState([]);
+  const [isExpensesModalOpen, setIsExpensesModalOpen] = useState(false);
 
   useEffect(() => {
     const getMilestones = async () => {
@@ -22,6 +27,15 @@ export const MilestoneClient = ({ selectedProject }) => {
 
     getMilestones();
   }, [selectedProject.id]);
+
+  const openExpensesModal = (milestone) => {
+    setSelectedExpenses(milestone.expense || []);
+    setIsExpensesModalOpen(true);
+  };
+  const closeExpensesModal = () => {
+    setIsExpensesModalOpen(false);
+    setSelectedExpenses([]);
+  };
 
   const openViewModal = (milestone) => {
     setSelectedMilestone(milestone);
@@ -42,9 +56,7 @@ export const MilestoneClient = ({ selectedProject }) => {
         <button
           onClick={() => setShowPendingOnly(true)}
           className={`px-4 py-2 rounded ${
-            showPendingOnly
-              ? 'bg-[#4c735c] text-white'
-              : 'bg-gray-200 text-gray-700'
+            showPendingOnly ? 'bg-[#4c735c] text-white' : 'bg-gray-200 text-gray-700'
           }`}
         >
           Pending Payments
@@ -52,9 +64,7 @@ export const MilestoneClient = ({ selectedProject }) => {
         <button
           onClick={() => setShowPendingOnly(false)}
           className={`px-4 py-2 rounded ${
-            !showPendingOnly
-              ? 'bg-[#4c735c] text-white'
-              : 'bg-gray-200 text-gray-700'
+            !showPendingOnly ? 'bg-[#4c735c] text-white' : 'bg-gray-200 text-gray-700'
           }`}
         >
           All Milestones
@@ -69,11 +79,17 @@ export const MilestoneClient = ({ selectedProject }) => {
           {filteredMilestones.map((milestone, index) => (
             <div key={index} className="mb-6">
               <div className="flex flex-col">
-                <div className="flex items-center mb-2 sm:mb-0 sm:mr-4">
-                  <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full mr-2" />
+                <div className="flex items-center mb-2 sm:mb-0 sm:mr-4 gap-2">
+                  <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full " />
                   <p className="text-sm text-gray-600">
                     {new Date(milestone.timestamp).toLocaleDateString()}
                   </p>
+                  <button
+                    onClick={() => openExpensesModal(milestone)}
+                    className='text-white rounded text-sm px-2 py-1 bg-[#4c735c] hover:bg-[#4c735c] cursor-pointer'
+                  >
+                    View Expenses
+                  </button>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
@@ -98,6 +114,14 @@ export const MilestoneClient = ({ selectedProject }) => {
         <MyProjectViewMilestone
           milestone={selectedMilestone}
           onClose={closeViewModal}
+        />
+      )}
+
+      {isExpensesModalOpen && (
+        <ViewSupplyExpenses
+          expenses={selectedExpenses}
+          milestoneName={selectedMilestone?.milestone || selectedMilestone?.status || "Milestone"}
+          onClose={closeExpensesModal}
         />
       )}
     </div>

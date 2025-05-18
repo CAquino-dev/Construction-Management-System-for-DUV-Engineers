@@ -40,7 +40,7 @@ export const EmployeeTable = ({ employees = [], setSelectedUser, handleEdit, han
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Department</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Joining Date</TableHead>
               <TableHead className="p-2 text-center text-white hidden md:table-cell">Status</TableHead>
-              <TableHead className="p-2 text-center text-white">Actions</TableHead>
+              {/* <TableHead className="p-2 text-center text-white">Actions</TableHead> */}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -57,22 +57,22 @@ export const EmployeeTable = ({ employees = [], setSelectedUser, handleEdit, han
                 <TableCell className={`p-2 text-center hidden md:table-cell font-semibold ${user.status === "Active" ? "text-green-600" : "text-red-600"}`}>
                   {user.status}
                 </TableCell>
-                <TableCell className="p-2">
-                  <div className="flex gap-2 justify-center items-center">
+                {/* <TableCell className="p-2">
+                  <div className="flex gap-2 justify-center items-center"> */}
                     {/* View Button */}
-                    <button onClick={() => setSelectedUser(user)} className="text-black hover:text-gray-600 cursor-pointer">
+                    {/* <button onClick={() => setSelectedUser(user)} className="text-black hover:text-gray-600 cursor-pointer">
                       <Eye size={18} />
-                    </button>
+                    </button> */}
                     {/* Edit Button */}
-                    <button onClick={() => handleEdit(user)} className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                    {/* <button onClick={() => handleEdit(user)} className="text-blue-600 hover:text-blue-800 cursor-pointer">
                       <PencilSimple size={18} />
-                    </button>
+                    </button> */}
                     {/* Delete Button */}
-                    <button onClick={() => handleDelete(user)} className="text-red-600 hover:text-red-800 cursor-pointer">
+                    {/* <button onClick={() => handleDelete(user)} className="text-red-600 hover:text-red-800 cursor-pointer">
                       <Trash size={18} />
                     </button>
                   </div>
-                </TableCell>
+                </TableCell> */}
               </TableRow>
             ))}
           </TableBody>
