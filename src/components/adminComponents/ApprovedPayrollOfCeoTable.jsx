@@ -25,7 +25,7 @@ export const ApprovedPayrollOfCeoTable = () => {
   useEffect(() => {
     const fetchCeoApprovedPayslips = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/finance/getCeoApprovedPayslips`);
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getCeoApprovedPayslips`);
         const data = await response.json();
         console.log('data', data.payslips);
         if(response.ok){
@@ -57,7 +57,7 @@ const handleConfirm = async () => {
 
   try {
     // Construct the payload to send to the backend
-    const response = await fetch("http://localhost:5000/api/finance/updatePaymentStatus", {
+    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/updatePaymentStatus`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

@@ -31,6 +31,7 @@ const AdminNavbar = ({ children }) => {
         // { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard", permission: "can_access_ceo_dashboard"},
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
+        { name: "Appointment Requests", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/appointment",},
     ];
 
     const currentPage = (() => {
@@ -127,6 +128,16 @@ const AdminNavbar = ({ children }) => {
                                             Projects
                                         </Link>
                                     </li>
+                                    <li>
+                                        <Link
+                                            to="/admin-dashboard/site-manager/add-client"
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/site-manager/add-client" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}
+                                        >
+                                            Add Client
+                                        </Link>
+                                    </li>
                                 </ul>
                             )}
                         </li>
@@ -188,6 +199,15 @@ const AdminNavbar = ({ children }) => {
                                                 location.pathname === "/admin-dashboard/finance/budget-supply-request" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
                                             }`}>
                                             Budget Supply Request
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            to="/admin-dashboard/finance/financePayment" 
+                                            className={`block p-2 rounded-lg cursor-pointer ${
+                                                location.pathname === "/admin-dashboard/finance/financePayment" ? "bg-[#5A8366] text-white" : "hover:bg-[#5A8366]"
+                                            }`}>
+                                            Clients Payment
                                         </Link>
                                     </li>
                                 </ul>

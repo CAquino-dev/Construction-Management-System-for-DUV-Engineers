@@ -25,7 +25,7 @@ const AddProjectSideModal = ({ isOpen, closeModal }) => {
   useEffect(() => {
     const getEngineers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/engr/getEngineers');
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineers`);
         const data = await response.json();
         if(response.ok){
           setEngineers(data)
@@ -60,7 +60,7 @@ const AddProjectSideModal = ({ isOpen, closeModal }) => {
     console.log(projectData);
 
     // try {
-    //   const response = await fetch("http://localhost:5000/api/projects", {
+    //   const response = await fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/projects", {
     //     method: "POST",
     //     headers: {
     //       "Content-Type": "application/json",

@@ -27,7 +27,7 @@ export const PayslipTable = () => {
   useEffect(() => {
     const getPayslips = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/hr/getPayslips');
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/getPayslips`);
         const data = await response.json();
         if (response.ok) {
           const filtered = data.map((record) => ({

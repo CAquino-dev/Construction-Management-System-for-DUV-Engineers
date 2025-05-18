@@ -2,7 +2,6 @@ import React from 'react';
 import duvLogo from '../../assets/duvLogo.jpg';
 
 export const ProjectCard = ({ project }) => {
-  console.log('project card:', project);
   return (
     <div className="card bg-white shadow-lg rounded-lg overflow-hidden cursor-pointer hover:shadow-xl">
       <div className="flex flex-col sm:flex-row">

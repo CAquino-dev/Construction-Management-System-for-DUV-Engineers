@@ -40,7 +40,7 @@ export const FinanceModal = ({ closeModal, record }) => {
     const userId = localStorage.getItem('userId'); 
 
     try {
-      const response = await fetch('http://localhost:5000/api/finance/updatePayslipStatus', {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/updatePayslipStatus`, {
         method: 'PUT',
         headers: {
           "Content-Type": "application/json",

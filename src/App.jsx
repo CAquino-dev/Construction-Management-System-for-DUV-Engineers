@@ -34,6 +34,10 @@ import { Attendance } from './pages/admin/AttendanceMonitoring';
 import { SendFeedback } from './pages/userPages/SendFeedback';
 import { LoadingSpinner } from './components/userComponents/LoadingSpinner';
 import { FinanceBudgetSupplyRequest } from './pages/admin/FinanceBudgetSupplyRequest';
+import { FinancePayment } from './pages/admin/FinancePayment';
+import { AppointmentRequestPage } from './pages/userPages/AppointmentRequestPage';
+import  Appointment from './pages/admin/Appointment';
+import { AddClient } from './pages/admin/AddClient';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -58,6 +62,7 @@ const App = () => {
           <Route path='aboutus' element={<AboutUs/>} />
           <Route path='report-problem' element={<ReportProblem/>} />
           <Route path='chatbot' element={<ChatBot/>} />
+          <Route path='appointment' element={<AppointmentRequestPage/>} />
           <Route path='send-feedback' element={<SendFeedback/>} />
         </Route>
 
@@ -89,6 +94,9 @@ const App = () => {
           <Route path='feedbacks/reported-issues' element={<ReportedIssues/>} />
           <Route path='ceo-dashboard' element={<CeoDashboard/>} />
           <Route path='AttendanceMonitoring' element={<Attendance/>} />
+          <Route path='finance/financePayment' element={<FinancePayment/>} />
+          <Route path='appointment' element={<Appointment/>} />
+          <Route path='site-manager/add-client' element={<AddClient/>} />
       </Route>
       </Routes>
     </Router>

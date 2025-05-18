@@ -10,6 +10,42 @@ import {
 import { Eye, X } from "@phosphor-icons/react";
 
 export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
+  // API call to update finance approval status
+  const updateFinanceApproval = async (newStatus) => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/expenses/${data.id}/finance-approval`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(errorData.error || "Failed to update finance approval");
+        return false;
+      }
+
+      alert(`Request ${newStatus.toLowerCase()} successfully!`);
+      return true;
+    } catch (error) {
+      alert("Network error: " + error.message);
+      return false;
+    }
+  };
+
+  const handleApprove = async () => {
+    const success = await updateFinanceApproval("Approved");
+    if (success) onClose();
+  };
+
+  const handleReject = async () => {
+    const success = await updateFinanceApproval("Rejected");
+    if (success) onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[900px] max-h-[80vh] overflow-y-auto">
@@ -50,43 +86,15 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
           </p>
         </div>
 
-        <div className="mb-4 max-h-[300px] overflow-y-auto">
-          <h3 className="text-lg font-semibold">Items</h3>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-center">Item Name</TableHead>
-                <TableHead className="text-center">Quantity</TableHead>
-                <TableHead className="text-center">Unit Price</TableHead>
-                <TableHead className="text-center">Total Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="text-center">{item.item_name}</TableCell>
-                  <TableCell className="text-center">{item.quantity}</TableCell>
-                  <TableCell className="text-center">₱{item.unit_price}</TableCell>
-                  <TableCell className="text-center">₱{item.total_price}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
         <div className="flex justify-end space-x-4">
           <button
-            onClick={() => {
-              alert("Request Approved");
-            }}
+            onClick={handleApprove}
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
             Approve Request
           </button>
           <button
-            onClick={() => {
-              alert("Request Rejected");
-            }}
+            onClick={handleReject}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Reject

@@ -143,7 +143,7 @@ const submitEstimation = async (updatedUserInputs) => {
     console.log('Request Body:', requestBody);  // Log the request body to check it
 
     // Make the POST request to the backend using fetch
-    const response = await fetch('http://localhost:5000/api/project/estimate', {
+    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/estimate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

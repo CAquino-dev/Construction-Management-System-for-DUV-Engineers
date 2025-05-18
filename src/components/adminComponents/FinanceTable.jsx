@@ -13,7 +13,7 @@ export const FinanceTable = () => {
   useEffect(() => {
     const fetchFinanceRecords = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/finance/getApprovedPayslips');
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getApprovedPayslips`);
         const data = await response.json();
         console.log(data.data);
         setFinanceRecords(data.data);
@@ -30,7 +30,7 @@ export const FinanceTable = () => {
     const userId = localStorage.getItem("userId");
 
     try {
-      const response = await fetch("http://localhost:5000/api/finance/payroll/update-status", {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/payroll/update-status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

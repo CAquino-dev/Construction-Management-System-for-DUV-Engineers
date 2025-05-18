@@ -5,15 +5,15 @@ import ConfirmationModal from './ConfirmationModal';
 export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
   const [status, setStatus] = useState('');
   const [details, setDetails] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState(''); // Expected payment amount
-  const [budgetAmount, setBudgetAmount] = useState(''); // Budget amount
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [budgetAmount, setBudgetAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [startDate, setStartDate] = useState('');
   const [completionDate, setCompletionDate] = useState('');
+  const [pdfFile, setPdfFile] = useState(null); // <-- added state for PDF file
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
   const handleSave = () => {
-    // Basic validation
     if (!status.trim() || !details.trim()) {
       alert('Please fill in both milestone title and details.');
       return false;
@@ -26,35 +26,46 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
       alert('Please enter a valid number for Budget Amount');
       return false;
     }
+    // Optional: check if file is PDF
+    if (pdfFile && pdfFile.type !== 'application/pdf') {
+      alert('Only PDF files are allowed.');
+      return false;
+    }
     return true;
   };
 
   const handleConfirmation = async () => {
     if (!handleSave()) return;
 
-    const body = {
-      status,
-      details,
-      payment_amount: paymentAmount || '0',
-      budget_amount: budgetAmount || '0',
-      due_date: dueDate || null,
-      start_date: startDate || null,
-      completion_date: completionDate || null,
-      // progress_status is set by backend to 'For Payment' by default
-    };
+    const formData = new FormData();
+    formData.append('status', status);
+    formData.append('details', details);
+    formData.append('payment_amount', paymentAmount || '0');
+    formData.append('budget_amount', budgetAmount || '0');
+    formData.append('due_date', dueDate || '');
+    formData.append('start_date', startDate || '');
+    formData.append('completion_date', completionDate || '');
+    if (pdfFile) {
+      formData.append('estimated_cost_pdf', pdfFile);
+    }
+
+    for (const pair of formData.entries()) {
+  console.log(pair[0] + ':', pair[1]);
+}
 
     try {
-      const response = await fetch(`http://localhost:5000/api/engr/createMilestones/${project.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/createMilestones/${project.id}`,
+        {
+          method: 'POST',
+          // Notice: no 'Content-Type' header for multipart form data, browser sets it automatically
+          body: formData,
+        }
+      );
 
       if (response.ok) {
         alert('Milestone Added Successfully');
-        onSave(body); // Notify parent if needed
+        onSave(await response.json()); // pass back the saved milestone data
       } else {
         alert('An error occurred while adding the milestone');
       }
@@ -76,6 +87,16 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
         <h2 className="text-xl font-semibold mb-4">Add Milestone</h2>
 
         <div>
+          {/* existing inputs ... */}
+          <label className="block text-sm font-semibold mb-2">Attach Estimated Cost (PDF)</label>
+          <input
+            name='estimated_cost_pdf'
+            type="file"
+            accept="application/pdf"
+            onChange={(e) => setPdfFile(e.target.files[0])}
+            className="block mb-4"
+          />
+          {/* existing inputs continue... */}
           <label className="block text-sm font-semibold mb-2">Milestone Title</label>
           <input
             type="text"
