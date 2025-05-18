@@ -3,6 +3,7 @@ import { MyProjectAddMilestone } from './MyProjectAddMilestone';
 import { MyProjectViewMilestone } from './MyProjectViewMilestone';
 import { MyProjectSupplyExpenses } from './MyProjectSupplyExpenses';
 import { MyProjectExpenses } from './MyProjectExpenses';
+import { MyProjectMilestoneExpenses } from './MyProjectMilestoneExpenses';
 
 const milestones = [
   {
@@ -97,7 +98,13 @@ export const MyProjectMilestones = ({ selectedProject }) => {
               <div className="flex flex-col">
                 <div className="flex items-center mb-2 sm:mb-0 sm:mr-4">
                   <div className="w-3 h-3 bg-[#4c735c]/70 rounded-full mr-2" />
-                  <p className="text-sm text-gray-600">{new Date(milestone.timestamp).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600 mr-2">{new Date(milestone.timestamp).toLocaleDateString()}</p>
+                  <button
+                    onClick={() => handleManageExpenses(milestone.id)}
+                    className="text-white rounded text-sm px-2 py-1 bg-[#4c735c] hover:bg-[#4c735c] cursor-pointer"
+                  >
+                    Add Expenses
+                  </button>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
@@ -107,12 +114,6 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                     className="text-[#4c735c] underline cursor-pointer mr-4"
                   >
                     View Attachments
-                  </button>
-                  <button
-                    onClick={() => handleManageExpenses(milestone.id)}
-                    className="text-white bg-[#4c735c] rounded px-3 py-1 hover:bg-[#3b5d47]"
-                  >
-                    Request Budget
                   </button>
                 </div>
               </div>
@@ -142,14 +143,10 @@ export const MyProjectMilestones = ({ selectedProject }) => {
       {/* Show Expenses Section */}
       {showExpenses && selectedMilestoneIdForExpenses && (
         <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-4">Request Budget for Selected Milestone</h3>
-          <MyProjectExpenses milestoneId={selectedMilestoneIdForExpenses} />
-          <button
-            onClick={() => setShowExpenses(false)}
-            className="mt-4 px-4 py-2 bg-gray-500 text-white rounded"
-          >
-            Close Expenses
-          </button>
+          <MyProjectMilestoneExpenses 
+          milestoneId={selectedMilestoneIdForExpenses} 
+          onClose={() => setShowExpenses(false)} 
+          />
         </div>
       )}
 

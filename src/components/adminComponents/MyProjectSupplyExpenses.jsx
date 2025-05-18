@@ -30,7 +30,7 @@ export const MyProjectSupplyExpenses = ({ milestoneId }) => {
 
     fetchExpenses();
   }, [milestoneId]);
-
+  console.log(milestoneId);
   // Open / close modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -45,13 +45,16 @@ export const MyProjectSupplyExpenses = ({ milestoneId }) => {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button
-          className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer"
-          onClick={handleOpenModal}
-        >
-          Request Budget
-        </button>
+        {milestoneId ? (
+          <button
+            className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer"
+            onClick={handleOpenModal}
+          >
+            Add Expenses
+          </button>
+        ) : null}
       </div>
+
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
