@@ -69,22 +69,218 @@ const getEstimate = async (req, res) => {
 
 // Get all milestones for a specific project
 const getMilestones = (req, res) => {
-  const { projectId } = req.params;  // Get projectId from request params
+  const { projectId } = req.params;
 
   const query = `
-      SELECT id, project_id, timestamp, status, details, project_photo
-      FROM milestones
-      WHERE project_id = ?
+    SELECT
+      id,
+      project_id,
+      timestamp,
+      status,
+      details,
+      project_photo,
+      progress_status,
+      payment_amount,
+      budget_amount,
+      due_date,
+      start_date,
+      completion_date,
+      estimated_cost_pdf   -- <-- add this field
+    FROM milestones
+    WHERE project_id = ?
+    ORDER BY timestamp DESC
   `;
 
   db.query(query, [projectId], (err, results) => {
-      if (err) {
-          console.error("Error fetching milestones:", err);
-          return res.status(500).json({ error: "Failed to fetch milestones" });
+    if (err) {
+      console.error("Error fetching milestones:", err);
+      return res.status(500).json({ error: "Failed to fetch milestones" });
+    }
+
+    // Optional: Convert relative path to full URL for frontend use
+    const host = req.get('host'); // e.g. 'localhost:5000'
+    const protocol = req.protocol; // 'http' or 'https'
+
+    const updatedResults = results.map(milestone => {
+      if (milestone.estimated_cost_pdf) {
+        milestone.estimated_cost_pdf = `${protocol}://${host}${milestone.estimated_cost_pdf}`;
       }
-      res.json({ milestones: results });
+      return milestone;
+    });
+
+    res.json({ milestones: updatedResults });
   });
 };
 
 
-module.exports = { getEstimate, getMilestones };
+const createExpense = (req, res) => {
+  const {
+    milestone_id,
+    expense_type, // 'Labor' or 'Supply'
+    date,         // For supply expense
+    date_from,    // For labor expense
+    date_to,      // For labor expense
+    title,
+    quantity,     // For supply expense
+    unit,         // For supply expense
+    price_per_qty,// For supply expense
+    amount,
+    status,       // Optional, default to 'Requested'
+    remarks
+  } = req.body;
+
+  // Basic validation (add more as needed)
+  if (!milestone_id || !expense_type || !title || !amount) {
+    return res.status(400).json({ error: 'milestone_id, expense_type, title, and amount are required' });
+  }
+
+  const insertQuery = `
+INSERT INTO expenses
+  (milestone_id, expense_type, date, date_from, date_to, description, quantity, unit, price_per_qty, amount, status, created_at, updated_at, remarks)
+VALUES
+  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
+  `;
+
+  db.query(
+    insertQuery,
+    [
+      milestone_id,
+      expense_type,
+      date || null,
+      date_from || null,
+      date_to || null,
+      title,
+      quantity || null,
+      unit || null,
+      price_per_qty || null,
+      amount,
+      status || 'Requested',
+      remarks || null
+    ],
+    (err, result) => {
+      if (err) {
+        console.error('Error creating expense:', err);
+        return res.status(500).json({ error: 'Failed to create expense' });
+      }
+      res.status(201).json({ message: 'Expense created successfully', expenseId: result.insertId });
+    }
+  );
+};
+
+const getExpenses = (req, res) => {
+  const { milestone_id, type } = req.query;
+
+  if (!milestone_id) {
+    return res.status(400).json({ error: "milestone_id query param is required" });
+  }
+
+  let query = `
+    SELECT
+      expense_id,
+      milestone_id,
+      expense_type,
+      date,
+      date_from,
+      date_to,
+      description,
+      quantity,
+      unit,
+      price_per_qty,
+      amount,
+      status,
+      approved_by,
+      approval_date,
+      paid_date,
+      engineer_approval_status,
+      finance_approval_status,
+      remarks
+    FROM expenses
+    WHERE milestone_id = ?
+      AND engineer_approval_status = 'Approved'
+      AND finance_approval_status = 'Approved'
+  `;
+
+  const params = [milestone_id];
+
+  if (type) {
+    query += ` AND expense_type = ?`;
+    params.push(type);
+  }
+
+  db.query(query, params, (err, results) => {
+    if (err) {
+      console.error('Error fetching expenses:', err);
+      return res.status(500).json({ error: 'Failed to fetch expenses' });
+    }
+    res.json({ expenses: results });
+  });
+};
+
+
+const getPendingExpenses = (req, res) => {
+  const engineerApprovalStatus = 'Pending';
+
+  const query = `
+    SELECT
+      expense_id,
+      milestone_id,
+      expense_type,
+      date,
+      date_from,
+      date_to,
+      description,
+      quantity,
+      unit,
+      price_per_qty,
+      amount,
+      status,
+      approved_by,
+      approval_date,
+      paid_date,
+      engineer_approval_status,
+      finance_approval_status,
+      remarks
+    FROM expenses
+    WHERE engineer_approval_status = ?
+    ORDER BY date DESC, expense_id DESC
+  `;
+
+  db.query(query, [engineerApprovalStatus], (err, results) => {
+    if (err) {
+      console.error('Error fetching pending expenses:', err);
+      return res.status(500).json({ error: 'Failed to fetch expenses' });
+    }
+    res.json({ expenses: results });
+  });
+};
+
+const updateEngineerApproval = (req, res) => {
+  const { expenseId } = req.params;
+  const { status } = req.body;
+
+  const validStatuses = ['Pending', 'Approved', 'Rejected'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status value' });
+  }
+
+  const query = `
+    UPDATE expenses
+    SET engineer_approval_status = ?, updated_at = NOW()
+    WHERE expense_id = ?
+  `;
+
+  db.query(query, [status, expenseId], (err, result) => {
+    if (err) {
+      console.error('Error updating engineer approval:', err);
+      return res.status(500).json({ error: 'Failed to update engineer approval' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    res.json({ message: 'Engineer approval status updated successfully' });
+  });
+};
+
+
+
+module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses, updateEngineerApproval };

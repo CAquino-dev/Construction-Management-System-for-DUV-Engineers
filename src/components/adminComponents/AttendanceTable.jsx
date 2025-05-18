@@ -19,7 +19,7 @@ export const AttendanceTable = () => {
     
     const fetchUserAttendance = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/hr/employeeAttendance');
+        const response = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/employeeAttendance');
         const data = await response.json();
         console.log(data);
         if(response.ok){
@@ -54,7 +54,7 @@ export const AttendanceTable = () => {
     }
     console.log(selectedDate)
     try {
-      const response = await fetch(`http://localhost:5000/api/hr/getPresentEmployees`, {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/getPresentEmployees`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

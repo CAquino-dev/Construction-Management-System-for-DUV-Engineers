@@ -1,67 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import PaginationComponent from "./Pagination";
-import { MyProjectSupplyRequest } from './MyProjectSupplyRequest'; // Importing the request modal
+import { MyProjectSupplyRequest } from './MyProjectSupplyRequest';
 import { MyProjectViewPendingSupply } from './MyProjectViewPendingSupply';
 
-const initialPendingSupply = [
-  {
-    id: 1,
-    date: "2023-09-01",
-    title: "For Tiling",
-    description: "Description A",
-    items: [
-      { itemName: "Concrete Nails", qty: 100, unit: "pcs", amount: 1000 },  
-      { itemName: "Cement", qty: 50, unit: "bags", amount: 5000 },  
-    ],
-    total_budget: 10000,
-    date_needed: "2023-09-05",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    date: "2023-09-02",
-    title: "For Tiling", 
-    description: "Description A",
-    items: [
-      { itemName: "Concrete Nails", qty: 100, unit: "pcs", amount: 1000 },  
-      { itemName: "Cement", qty: 50, unit: "bags", amount: 5000 },  
-    ],
-    total_budget: 20000,
-    date_needed: "2023-09-05",
-    status: "Pending",
-  },
-  // More items can be added here
-];
-
 export const MyProjectPendingSupplyTable = () => {
-  const [pendingSupply, setPendingSupply] = useState(initialPendingSupply);
+  const [pendingSupply, setPendingSupply] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [viewData, setViewData] = useState(null); // Store data for the selected item
+  const [viewData, setViewData] = useState(null);
+
+  useEffect(() => {
+    const fetchPendingExpenses = async () => {
+      try {
+        const res = await fetch('${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses/pending-engineer');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setPendingSupply(data.expenses);
+      } catch (error) {
+        console.error('Error loading pending expenses:', error);
+      }
+    };
+
+    fetchPendingExpenses();
+  }, []);
 
   const handleAddNewRequest = (newRequest) => {
     setPendingSupply(prevSupply => [
       ...prevSupply,
       { ...newRequest, id: prevSupply.length + 1 },
     ]);
-    setIsModalOpen(false); // Close the modal after adding a new request
+    setIsModalOpen(false);
   };
 
   const handleCancelRequest = () => {
-    setIsModalOpen(false); // Close the modal if the request is canceled
+    setIsModalOpen(false);
   };
 
   const handleViewRequest = (data) => {
     setViewData(data);
-    setIsModalOpen(true); // Open the modal with the selected data
+    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false); // Close the modal when "Close" or "Cancel" is clicked
-    setViewData(null); // Clear the data when closing the modal
+    setIsModalOpen(false);
+    setViewData(null);
   };
 
   const totalPages = Math.ceil(pendingSupply.length / itemsPerPage);
@@ -78,7 +63,6 @@ export const MyProjectPendingSupplyTable = () => {
         </button>
       </div>
 
-      {/* Modal for adding new supply request */}
       {isModalOpen && !viewData && (
         <MyProjectSupplyRequest
           closeModal={handleCloseModal}
@@ -86,7 +70,6 @@ export const MyProjectPendingSupplyTable = () => {
         />
       )}
 
-      {/* Modal for viewing the pending supply details */}
       {viewData && (
         <MyProjectViewPendingSupply
           data={viewData}
@@ -99,7 +82,7 @@ export const MyProjectPendingSupplyTable = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="text-center">Date</TableHead>
-            <TableHead className="text-center">Title</TableHead>  {/* Changed Title to Item Name */}
+            <TableHead className="text-center">Description</TableHead>
             <TableHead className="text-center">Budget Needed</TableHead>
             <TableHead className="text-center">Date Needed</TableHead>
             <TableHead className="text-center">Status</TableHead>
@@ -108,11 +91,11 @@ export const MyProjectPendingSupplyTable = () => {
         </TableHeader>
         <TableBody>
           {currentItems.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="text-center">{item.date}</TableCell>
-              <TableCell className="text-center">{item.title}</TableCell> {/* Changed to itemName */}
-              <TableCell className="text-center">₱{item.total_budget}</TableCell>
-              <TableCell className="text-center">{item.date_needed}</TableCell>
+            <TableRow key={item.expense_id || item.id}>
+              <TableCell className="text-center">{new Date(item.date).toLocaleDateString()}</TableCell>
+              <TableCell className="text-center">{item.description}</TableCell>
+              <TableCell className="text-center">₱{item.amount}</TableCell>
+              <TableCell className="text-center">{item.date_needed ? new Date(item.date_needed).toLocaleDateString() : 'N/A'}</TableCell>
               <TableCell className="text-center text-yellow-600">{item.status}</TableCell>
               <TableCell className="text-center">
                 <button onClick={() => handleViewRequest(item)} className="bg-[#4c735c] text-white p-1 rounded-md">

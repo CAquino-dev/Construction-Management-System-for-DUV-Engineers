@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -10,50 +10,37 @@ import {
 import { Eye } from "@phosphor-icons/react";
 import { FinanceBudgetSupplyRequestView } from "./FinanceBudgetSupplyRequestView";
 
-const initialPendingSupply = [
-  {
-    id: 1,
-    date: "2023-09-01",
-    title: "For Tiling",
-    description: "Description A",
-    items: [
-      { id: 1, item_name: "Concrete Nails", quantity: 100, unit_price: 10, total_price: 1000 },
-      { id: 2, item_name: "Cement", quantity: 50, unit_price: 100, total_price: 5000 },
-    ],
-    total_budget: 10000,
-    date_needed: "2023-09-05",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    date: "2023-09-02",
-    title: "For Tiling",
-    description: "Description A",
-    items: [
-      { id: 3, item_name: "Concrete Nails", quantity: 100, unit_price: 10, total_price: 1000 },
-      { id: 4, item_name: "Cement", quantity: 50, unit_price: 100, total_price: 5000 },
-    ],
-    total_budget: 20000,
-    date_needed: "2023-09-05",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    date: "2023-09-03",
-    title: "For Flooring",
-    description: "Description B",
-    items: [
-      { id: 5, item_name: "Floor Tiles", quantity: 200, unit_price: 75, total_price: 15000 },
-    ],
-    total_budget: 15000,
-    date_needed: "2023-09-10",
-    status: "Approved",
-  },
-];
-
 export const FinanceBudgetSupplyRequestTable = () => {
-  const [pendingSupply, setPendingSupply] = useState(initialPendingSupply);
+  const [pendingSupply, setPendingSupply] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
+
+  // Fetch approved expenses by engineers on mount
+  useEffect(() => {
+    fetch("${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/project/expenses/approved-by-engineer")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch data");
+        return res.json();
+      })
+      .then((data) => {
+        // Transform data if needed to match your UI structure
+        // Example assumes data.expenses is an array of expense objects
+        const transformedData = data.expenses.map((expense) => ({
+          id: expense.expense_id,
+          date: expense.date || expense.date_from || "N/A",
+          title: expense.description,
+          total_budget: expense.amount,
+          date_needed: expense.due_date || "N/A", // or any appropriate date field
+          status: expense.engineer_approval_status || "Approved",
+          // Optionally add items array if your UI expects it, else omit or transform accordingly
+          items: [], // You may want to fetch or compute items elsewhere if needed
+        }));
+
+        setPendingSupply(transformedData);
+      })
+      .catch((err) => {
+        console.error("Error loading expenses:", err);
+      });
+  }, []);
 
   const handleViewRequest = (supply) => {
     setSelectedRequest(supply);
@@ -77,6 +64,13 @@ export const FinanceBudgetSupplyRequestTable = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
+          {pendingSupply.length === 0 && (
+            <TableRow>
+              <TableCell colSpan="6" className="text-center text-gray-600">
+                No approved expenses found.
+              </TableCell>
+            </TableRow>
+          )}
           {pendingSupply.map((supply) => (
             <TableRow key={supply.id}>
               <TableCell className="text-center">{supply.date}</TableCell>
@@ -93,7 +87,7 @@ export const FinanceBudgetSupplyRequestTable = () => {
                       : "bg-gray-400"
                   }`}
                 >
-                  {supply.status}
+                  {supply.status === "Approved" ? "Approved by Engineer" : supply.status}
                 </span>
               </TableCell>
               <TableCell className="text-center">
@@ -111,10 +105,7 @@ export const FinanceBudgetSupplyRequestTable = () => {
 
       {/* Render modal if selectedRequest is set */}
       {selectedRequest && (
-        <FinanceBudgetSupplyRequestView
-          data={selectedRequest}
-          onClose={handleCloseModal}
-        />
+        <FinanceBudgetSupplyRequestView data={selectedRequest} onClose={handleCloseModal} />
       )}
     </div>
   );

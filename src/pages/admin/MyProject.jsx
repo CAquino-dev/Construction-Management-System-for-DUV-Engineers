@@ -11,7 +11,7 @@ export const MyProject = () => {
     const fetchEngineerProjects = async () => {
       try {
         
-      const response = await fetch(`http://localhost:5000/api/engr/getEngineerProjects/10`);
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/10`);
       if(response.ok){
       const data = await response.json();
       setProjects(data.projects)

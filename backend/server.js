@@ -27,7 +27,7 @@ app.use("/api/ceo", ceoRoutes);
 app.use("/api/project", projectRoutes);
 
 app.get("/", (req, res) => {
-    res.send("Chat API is running!");
+    res.send("API is running!");
   });
 
 app.listen(5000, () => {

@@ -1,22 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
 import { X } from "@phosphor-icons/react";
 import { MyProjectAddSupplyExpenses } from './MyProjectAddSupplyExpenses';
 
-const initialProjectExpenses = [
-  { id: 1, date: "2023-09-01", title: "Concrete Nails", quantity: 100, unit: "pcs", pricePerQty: 10, amount: 1000 },
-  { id: 2, date: "2023-09-02", title: "Cement", quantity: 50, unit: "bags", pricePerQty: 100, amount: 5000 },
-  { id: 3, date: "2023-09-03", title: "Pako", quantity: 86, unit: "day", pricePerQty: 20, amount: 2000 },
-];
-
-export const MyProjectSupplyExpenses = () => {
-  const [expenses, setExpenses] = useState(initialProjectExpenses);
-  const [totalAmount, setTotalAmount] = useState(initialProjectExpenses.reduce((total, expense) => total + expense.amount, 0));
+export const MyProjectSupplyExpenses = ({ milestoneId }) => {
+  const [expenses, setExpenses] = useState([]);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Fetch supply expenses when component mounts or milestoneId changes
+  useEffect(() => {
+    if (!milestoneId) return;
+
+    const fetchExpenses = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/expenses?milestone_id=${milestoneId}&type=Supply`);
+        if (!res.ok) throw new Error('Failed to fetch supply expenses');
+        const data = await res.json();
+
+        setExpenses(data.expenses || []);
+        const total = (data.expenses || []).reduce((sum, exp) => sum + Number(exp.amount), 0);
+        setTotalAmount(total);
+      } catch (error) {
+        console.error(error);
+        setExpenses([]);
+        setTotalAmount(0);
+      }
+    };
+
+    fetchExpenses();
+  }, [milestoneId]);
+
+  // Open / close modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+  // Add new expense to state and update total
   const handleAddExpense = (newExpense) => {
     const updatedExpenses = [...expenses, newExpense];
     setExpenses(updatedExpenses);
@@ -26,8 +45,11 @@ export const MyProjectSupplyExpenses = () => {
   return (
     <div>
       <div className="flex justify-end mb-4">
-        <button className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer" onClick={handleOpenModal}>
-          Add Expenses
+        <button
+          className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer"
+          onClick={handleOpenModal}
+        >
+          Request Budget
         </button>
       </div>
 
@@ -40,7 +62,11 @@ export const MyProjectSupplyExpenses = () => {
                 <X size={24} />
               </button>
             </div>
-            <MyProjectAddSupplyExpenses closeModal={handleCloseModal} handleAddExpense={handleAddExpense} />
+            <MyProjectAddSupplyExpenses
+              closeModal={handleCloseModal}
+              handleAddExpense={handleAddExpense}
+              milestoneId={milestoneId}
+            />
           </div>
         </div>
       )}
@@ -58,12 +84,12 @@ export const MyProjectSupplyExpenses = () => {
         </TableHeader>
         <TableBody>
           {expenses.map(expense => (
-            <TableRow key={expense.id}>
+            <TableRow key={expense.expense_id || expense.id}>
               <TableCell className="text-center">{expense.date}</TableCell>
-              <TableCell className="text-center">{expense.title}</TableCell>
+              <TableCell className="text-center">{expense.title || expense.description}</TableCell>
               <TableCell className="text-center">{expense.quantity}</TableCell>
               <TableCell className="text-center">{expense.unit}</TableCell>
-              <TableCell className="text-center">₱{expense.pricePerQty}</TableCell>
+              <TableCell className="text-center">₱{expense.price_per_qty}</TableCell>
               <TableCell className="text-center">₱{expense.amount}</TableCell>
             </TableRow>
           ))}

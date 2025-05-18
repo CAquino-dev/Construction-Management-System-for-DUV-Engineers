@@ -10,7 +10,6 @@ import { MyprojectSupply } from './MyprojectSupply';
 import { MyProjectChat } from './MyProjectChat';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
-    console.log(selectedProject);
     const [activeTab, setActiveTab] = useState('projectDetails');
     const startDate = new Date(selectedProject.start_date).toLocaleDateString();
     const endDate = new Date(selectedProject.end_date).toLocaleDateString();
