@@ -37,6 +37,7 @@ import { FinanceBudgetSupplyRequest } from './pages/admin/FinanceBudgetSupplyReq
 import { FinancePayment } from './pages/admin/FinancePayment';
 import { AppointmentRequestPage } from './pages/userPages/AppointmentRequestPage';
 import  Appointment from './pages/admin/Appointment';
+import { AddClient } from './pages/admin/AddClient';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -95,6 +96,7 @@ const App = () => {
           <Route path='AttendanceMonitoring' element={<Attendance/>} />
           <Route path='finance/financePayment' element={<FinancePayment/>} />
           <Route path='appointment' element={<Appointment/>} />
+          <Route path='site-manager/add-client' element={<AddClient/>} />
       </Route>
       </Routes>
     </Router>
