@@ -8,7 +8,6 @@ export const FinancePaymentEntry = () => {
   const [amountPaid, setAmountPaid] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
 
   // Load projects on mount
   useEffect(() => {
@@ -44,66 +43,40 @@ export const FinancePaymentEntry = () => {
   }, [selectedMilestoneId, milestones]);
 
   const handleSubmit = async (e) => {
-    let finished = false; 
-
     e.preventDefault();
     setMessage('');
     if (!selectedProjectId) return setMessage('Please select a project.');
     if (!selectedMilestoneId) return setMessage('Please select a milestone.');
     if (!amountPaid || isNaN(amountPaid)) return setMessage('Please enter a valid amount.');
 
-    setLoading(true);
-
+    try {
       const payload = {
-      milestone_id: selectedMilestoneId,
-      payment_date: paymentDate,
-      amount_paid: amountPaid,
-    };
+        milestone_id: selectedMilestoneId,
+        payment_date: paymentDate,
+        amount_paid: amountPaid,
+      };
 
-    const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/payments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (res.ok){
-     finished = true;
-    }
-
-    if(finished === true) {
-      try {
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/create-checkout-session`, {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: parseFloat(amountPaid),
-          description: `Payment for milestone ${selectedMilestoneId} of project ${selectedProjectId}`,
-          success_url: 'http://localhost:3000/payment-success', // Change to your success page URL
-          cancel_url: 'http://localhost:3000/payment-cancel',   // Change to your cancel page URL
-          // You can add line_items here if your backend supports it
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to create checkout session');
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to record payment');
       }
 
-      const data = await res.json();
-
-      // Redirect user to PayMongo checkout page
-      window.location.href = data.checkout_url;
-
+      setMessage('Payment recorded successfully!');
+      // Optionally reset form fields here
     } catch (error) {
       setMessage(`Error: ${error.message}`);
-      setLoading(false);
-    }
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-4">
-      {message && <p className="text-red-600">{message}</p>}
+      {message && <p className={`text-sm ${message.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>{message}</p>}
 
       <label>
         Project:
@@ -112,7 +85,6 @@ export const FinancePaymentEntry = () => {
           onChange={(e) => setSelectedProjectId(e.target.value)}
           className="block w-full border p-2"
           required
-          disabled={loading}
         >
           <option value="">-- Select project --</option>
           {projects.map(p => (
@@ -128,7 +100,7 @@ export const FinancePaymentEntry = () => {
           onChange={(e) => setSelectedMilestoneId(e.target.value)}
           className="block w-full border p-2"
           required
-          disabled={!selectedProjectId || loading}
+          disabled={!selectedProjectId}
         >
           <option value="">-- Select milestone --</option>
           {milestones.map(m => (
@@ -149,16 +121,26 @@ export const FinancePaymentEntry = () => {
           onChange={(e) => setAmountPaid(e.target.value)}
           className="block w-full border p-2"
           required
-          disabled={loading}
+        />
+      </label>
+
+      <label>
+        Payment Date:
+        <input
+          type="date"
+          value={paymentDate}
+          onChange={(e) => setPaymentDate(e.target.value)}
+          className="block w-full border p-2"
+          max={new Date().toISOString().slice(0, 10)}
+          required
         />
       </label>
 
       <button
         type="submit"
-        disabled={loading}
-        className={`py-2 px-4 rounded text-white ${loading ? 'bg-gray-500' : 'bg-green-600'}`}
+        className="py-2 px-4 rounded bg-green-600 text-white"
       >
-        {loading ? 'Redirecting to Payment...' : 'Pay & Record Payment'}
+        Record Payment
       </button>
     </form>
   );
