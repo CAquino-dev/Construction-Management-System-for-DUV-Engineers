@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Eye, PencilSimple, Trash } from "@phosphor-icons/react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
-import PaginationComponent from "./Pagination";
-import SearchEmployee from "./SearchEmployee";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
+import PaginationComponent from "../Pagination";
+import SearchEmployee from "../SearchEmployee";
 
 export const EmployeeTable = ({ employees = [], setSelectedUser, handleEdit, handleDelete }) => {
   const [currentPage, setCurrentPage] = useState(1);

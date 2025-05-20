@@ -6,9 +6,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../components/ui/table";
+} from "../../ui/table";
 import { DotsThree, CalendarBlank } from "@phosphor-icons/react";
-import { DateRangePicker } from "../../components/ui/calendar";
+import { DateRangePicker } from "../../ui/calendar";
 import { EmployeePayrollModal } from "./EmployeePayrollModal";
 import { Eye } from "@phosphor-icons/react";
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { X, Eye } from "@phosphor-icons/react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
-import PaginationComponent from "./Pagination";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
+import PaginationComponent from "../Pagination";
 import { DotsThree } from "@phosphor-icons/react";
-import ConfirmationModal from "./ConfirmationModal";
-import { EmployeePayrollModal } from "./EmployeePayrollModal"; // Import the EmployeePayrollModal component
+import ConfirmationModal from "../ConfirmationModal";
+import { EmployeePayrollModal } from "../HR/EmployeePayrollModal"; // Import the EmployeePayrollModal component
 
 export const PayslipModal = ({ closeModal, payslip }) => {
   if (!payslip) return null; // Ensures the modal only renders when a payslip is selected

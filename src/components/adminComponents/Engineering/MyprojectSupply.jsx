@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"; // Assuming you're using shadcn UI library
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs"; // Assuming you're using shadcn UI library
 import { MyprojectSupplyTable } from './MyprojectSupplyTable';
 import { MyProjectPendingSupplyTable } from './MyProjectPendingSupplyTable';
 import { MyProjectApprovedSupplyTable } from './MyProjectApprovedSupplyTable';

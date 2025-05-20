@@ -6,7 +6,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "../ui/table";
+} from "../../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { FinanceBudgetSupplyRequestView } from "./FinanceBudgetSupplyRequestView";
 

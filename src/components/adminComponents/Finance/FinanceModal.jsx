@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
-import ConfirmationModal from "./ConfirmationModal";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
+import ConfirmationModal from "../ConfirmationModal";
 
 export const FinanceModal = ({ closeModal, record }) => {
   console.log('record', record)

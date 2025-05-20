@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
 import { Eye } from "@phosphor-icons/react";
-import PaginationComponent from "./Pagination";
+import PaginationComponent from "../Pagination";
 import { MyProjectSupplyRequest } from './MyProjectSupplyRequest';
 import { MyProjectViewPendingSupply } from './MyProjectViewPendingSupply';
 

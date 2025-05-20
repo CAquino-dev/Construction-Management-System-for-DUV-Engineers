@@ -1,5 +1,5 @@
 import React from 'react'
-import { FinanceBudgetSupplyRequestTable } from '../../components/adminComponents/FinanceBudgetSupplyRequestTable' 
+import { FinanceBudgetSupplyRequestTable } from '../../components/adminComponents/Finance/FinanceBudgetSupplyRequestTable' 
 
 export const FinanceBudgetSupplyRequest = () => {
   return (

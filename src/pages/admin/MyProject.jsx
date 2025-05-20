@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { MyProjectCard } from '../../components/adminComponents/MyProjectCard' // Assuming MyProjectCard is in this directory
-import { ViewMyProject } from '../../components/adminComponents/ViewMyProject' // Assuming ViewMyProject is in this directory
+import { MyProjectCard } from '../../components/adminComponents/Engineering/MyProjectCard' // Assuming MyProjectCard is in this directory
+import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject' // Assuming ViewMyProject is in this directory
 import duvLogo from '../../assets/duvLogo.jpg';
 
 export const MyProject = () => {

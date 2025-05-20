@@ -1,10 +1,10 @@
 import React, {useState} from 'react'
-import { Button } from '../ui/button';
-import { Card, CardHeader, CardContent } from '../ui/card';
-import { MyProjectDetails } from './MyProjectDetails';
+import { Button } from '../../ui/button';
+import { Card, CardHeader, CardContent } from '../../ui/card';
+import { MyProjectDetails } from '../HR/MyProjectDetails';
 import { MyProjectMilestones } from './MyProjectMilestones';
 import { MyprojectLegals } from './MyprojectLegals';
-import duvLogo from '../../assets/duvLogo.jpg';
+import duvLogo from '../../../assets/duvLogo.jpg';
 import { MyProjectExpenses } from './MyProjectExpenses';
 import { MyprojectSupply } from './MyprojectSupply';
 import { MyProjectChat } from './MyProjectChat';

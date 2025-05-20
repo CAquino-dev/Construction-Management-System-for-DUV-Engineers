@@ -1,6 +1,6 @@
   import React, { useEffect, useState } from "react";
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table"; // Adjust path if needed
-  import { ImportAttendanceModal } from "../../components/adminComponents/ImportAttendanceModal";
+  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table"; // Adjust path if needed
+  import { ImportAttendanceModal } from "../ImportAttendanceModal";
 
   const attendanceRecords = [
     { id: "M02489", name: "Ajay Lumari", clockIn: "09:00 AM", clockOut: "05:00 PM", timeCount: "09:00:00", status: "On Time", date: "2025-09-03" },

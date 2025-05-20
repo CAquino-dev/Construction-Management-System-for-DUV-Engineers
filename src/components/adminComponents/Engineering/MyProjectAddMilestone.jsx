@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from '@phosphor-icons/react';
-import ConfirmationModal from './ConfirmationModal';
+import ConfirmationModal from '../ConfirmationModal';
 
 export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
   const [status, setStatus] = useState('');

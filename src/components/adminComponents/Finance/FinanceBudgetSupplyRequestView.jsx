@@ -6,7 +6,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "../ui/table";
+} from "../../ui/table";
 import { Eye, X } from "@phosphor-icons/react";
 
 export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {

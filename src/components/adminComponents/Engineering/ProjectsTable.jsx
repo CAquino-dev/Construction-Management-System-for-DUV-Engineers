@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Eye } from "@phosphor-icons/react";
-import Pagination from "./Pagination";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table"; // Ensure correct path
+import Pagination from "../Pagination";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table"; // Ensure correct path
 
 const initialProjectsData = [
   {

@@ -1,5 +1,5 @@
 import React from "react";
-import { AttendanceTable } from "../../components/adminComponents/AttendanceTable";
+import { AttendanceTable } from "../../components/adminComponents/HR/AttendanceTable";
 
 export const EmployeeAttendance = () => {
   return (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
 import { Eye } from "@phosphor-icons/react";
-import PaginationComponent from "./Pagination"; // Assuming you've saved the Pagination component with your code
+import PaginationComponent from "../Pagination"; // Assuming you've saved the Pagination component with your code
 
 const initialApprovedSupply = [
   {

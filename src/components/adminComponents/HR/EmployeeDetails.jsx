@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Button } from "../ui/button";
-import { Card, CardHeader, CardContent } from "../ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Button } from "../../ui/button";
+import { Card, CardHeader, CardContent } from "../../ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs";
+import { Avatar, AvatarFallback } from "../../ui/avatar";
 
 export const EmployeeDetails = ({ selectedUser, onBack }) => {
   const [activeTab, setActiveTab] = useState("Information");

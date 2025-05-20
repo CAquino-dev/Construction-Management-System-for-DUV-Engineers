@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
-import ConfirmationModal from "./ConfirmationModal"; // Import ConfirmationModal
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
+import ConfirmationModal from "../ConfirmationModal"; // Import ConfirmationModal
 
 export const MyProjectViewPendingSupply = ({ data, closeModal, handleCancelRequest }) => {
   console.log(data);

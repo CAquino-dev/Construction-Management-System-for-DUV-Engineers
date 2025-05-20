@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { PayslipModal } from "./PayslipModal";
-import PaginationComponent from "./Pagination";
+import PaginationComponent from "../Pagination";
 
 
 export const PayslipTable = () => {

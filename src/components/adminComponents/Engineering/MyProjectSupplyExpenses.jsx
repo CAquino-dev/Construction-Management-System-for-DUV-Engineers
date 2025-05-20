@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
 import { X } from "@phosphor-icons/react";
 import { MyProjectAddSupplyExpenses } from './MyProjectAddSupplyExpenses';
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "@phosphor-icons/react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"; // Assuming you're using shadcn UI library
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs"; // Assuming you're using shadcn UI library
 
 export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
 const [formData, setFormData] = useState({

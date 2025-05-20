@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ProjectsTable } from '../../components/adminComponents/ProjectsTable';
+import { ProjectsTable } from '../../components/adminComponents/Engineering/ProjectsTable';
 import { AddProject } from '../../components/adminComponents/AddProject';
-import { ViewMyProject } from '../../components/adminComponents/ViewMyProject';
+import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject';
 
 export const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);

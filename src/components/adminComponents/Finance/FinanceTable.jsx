@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { FinanceModal } from "./FinanceModal";
-import Pagination from "./Pagination";
+import Pagination from "../Pagination";
 
 export const FinanceTable = () => {
   const [financeRecords, setFinanceRecords] = useState([]);

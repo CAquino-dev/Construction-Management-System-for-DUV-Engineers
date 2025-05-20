@@ -1,5 +1,5 @@
 import React from 'react'
-import duvLogo from '../../assets/duvLogo.jpg';
+import duvLogo from '../../../assets/duvLogo.jpg';
 export const MyProjectCard = ({ project }) => {
   return (
     <div className="card bg-white shadow-lg rounded-lg overflow-hidden cursor-pointer hover:shadow-xl">

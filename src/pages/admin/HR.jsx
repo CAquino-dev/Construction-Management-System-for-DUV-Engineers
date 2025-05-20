@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { EmployeeTable } from "../../components/adminComponents/EmployeeTable";
-import { EmployeeDetails } from "../../components/adminComponents/EmployeeDetails";
-import { AddEmployeeModal } from "../../components/adminComponents/AddEmployeeModal";
+import { EmployeeTable } from "../../components/adminComponents/HR/EmployeeTable";
+import { EmployeeDetails } from "../../components/adminComponents/HR/EmployeeDetails";
+import { AddEmployeeModal } from "../../components/adminComponents/HR/AddEmployeeModal";
 
 export const HR = () => {
   const [employees, setEmployees] = useState([]);
