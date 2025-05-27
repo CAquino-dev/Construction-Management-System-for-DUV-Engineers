@@ -38,6 +38,7 @@ import { FinancePayment } from './pages/admin/FinancePayment';
 import { AppointmentRequestPage } from './pages/userPages/AppointmentRequestPage';
 import  Appointment from './pages/admin/Appointment';
 import { AddClient } from './pages/admin/AddClient';
+import LeadManagement from './pages/admin/LeadManagement';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -97,6 +98,7 @@ const App = () => {
           <Route path='finance/financePayment' element={<FinancePayment/>} />
           <Route path='appointment' element={<Appointment/>} />
           <Route path='site-manager/add-client' element={<AddClient/>} />
+          <Route path='sales/lead' element={<LeadManagement/>} />
       </Route>
       </Routes>
     </Router>

@@ -7,7 +7,7 @@ export const MyProject = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
 
-    const userId = localStorage.getItem('userId');
+  const userId = localStorage.getItem('userId');
 
   useEffect(() => {
     const fetchEngineerProjects = async () => {
