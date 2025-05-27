@@ -168,26 +168,59 @@ const createProject = (req, res) => {
     });
   };
   
-  const getEngineerProjects = (req, res) => {
-    const { engineerId } = req.params;  // Get engineerId from request params
+//   const getEngineerProjects = (req, res) => {
+//     const { engineerId } = req.params;  // Get engineerId from request params
 
-    // SQL query to fetch all projects assigned to the engineer
+//     // SQL query to fetch all projects assigned to the engineer
+//     const query = `
+//         SELECT ep.id, ep.project_name, ep.description, ep.start_date, ep.end_date, ep.status, 
+//                ep.budget, ep.location, ep.project_type, ep.project_photo, 
+//                u.full_name AS client_name
+//         FROM engineer_projects ep
+//         JOIN users u ON ep.client_id = u.id
+//         WHERE ep.engineer_id = ?;
+//     `;
+
+//     db.query(query, [engineerId], (err, results) => {
+//         if (err) {
+//             console.error("Error fetching engineer's projects:", err);
+//             return res.status(500).json({ error: "Failed to fetch engineer's projects" });
+//         }
+
+//         // Send the list of projects as a response
+//         res.json({ projects: results });
+//     });
+// };
+
+const getEngineerProjects = (req, res) => {
+    const { employeeId } = req.params;  // Get employeeId from request params
+
+    // SQL query to fetch all projects assigned to the employee
     const query = `
-        SELECT ep.id, ep.project_name, ep.description, ep.start_date, ep.end_date, ep.status, 
-               ep.budget, ep.location, ep.project_type, ep.project_photo, 
-               u.full_name AS client_name
-        FROM engineer_projects ep
-        JOIN users u ON ep.client_id = u.id
-        WHERE ep.engineer_id = ?;
+        SELECT 
+            p.id, 
+            p.project_name, 
+            p.description, 
+            p.start_date, 
+            p.end_date, 
+            p.status, 
+            p.budget, 
+            p.location, 
+            p.project_type, 
+            p.project_photo, 
+            u.full_name AS client_name
+        FROM project_assignments pa
+        JOIN engineer_projects p ON pa.project_id = p.id
+        JOIN users u ON p.client_id = u.id
+        WHERE pa.user_id = ?;
     `;
 
-    db.query(query, [engineerId], (err, results) => {
+    db.query(query, [employeeId], (err, results) => {
         if (err) {
-            console.error("Error fetching engineer's projects:", err);
-            return res.status(500).json({ error: "Failed to fetch engineer's projects" });
+            console.error("Error fetching employee's projects:", err);
+            return res.status(500).json({ error: "Failed to fetch employee's projects" });
         }
 
-        // Send the list of projects as a response
         res.json({ projects: results });
     });
 };
