@@ -12,6 +12,7 @@ const projectRoutes = require('./routes/projectRoute');
 const appointmentRoutes = require('./routes/appointmentRoute');
 const messageRoutes = require('./routes/messagesRoute');
 const paymentRoutes = require('./routes/paymentRoute')
+const messageRoutes = require('./routes/messageRoute');
  
 require("./config/db"); // Ensure database connects
 
@@ -31,6 +32,7 @@ app.use("/api/project", projectRoutes);
 app.use("/api", appointmentRoutes);
 app.use("/api", messageRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/chat", messageRoutes);
 
 app.get("/", (req, res) => {
     res.send("API is running!");
