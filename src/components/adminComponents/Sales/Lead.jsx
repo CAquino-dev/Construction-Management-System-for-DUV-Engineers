@@ -14,17 +14,19 @@ const Lead = () => {
 
   // Fetch leads list on mount
   useEffect(() => {
-    // fetchLeads();
-  }, []);
-
-  async function fetchLeads() {
-    try {
-      const response = await axios.get('/api/leads');
-      setLeads(response.data);
-    } catch (err) {
-      setError('Failed to fetch leads');
+    const fetchLeads = async() => {
+      try{
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/getLeads`);
+        const data = await response.json();
+        console.log(data);
+        setLeads(data);
+      }catch(err){
+        setError("Failed to fetch leads")
+      }
     }
-  }
+
+    fetchLeads();
+  }, []);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -34,13 +36,25 @@ const Lead = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
     try {
-      await axios.post('/api/leads', formData);
-      setSuccess('Lead created successfully!');
-      setFormData({ client_name: '', contact_info: '', project_interest: '', budget: '', timeline: '' });
-      fetchLeads();
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create lead');
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/createLead`, {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+      },
+        body: JSON.stringify(formData),  // Send the FormData (multipart/form-data)
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        alert('Lead Added Successfully');
+      } else {
+        alert('An error occurred while adding the Lead');
+      }
+    } catch (error) {
+      console.log('Error message:', error);
     }
   };
 
