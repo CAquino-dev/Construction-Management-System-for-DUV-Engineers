@@ -14,6 +14,7 @@ const messageRoutes = require('./routes/messagesRoute');
 const paymentRoutes = require('./routes/paymentRoute')
 const messageRoutes = require('./routes/messageRoute');
 const salesRoutes = require('./routes/salesRoute');
+const projectManagerRoutes = require('./routes/projectManagerRoute');
  
 require("./config/db"); // Ensure database connects
 
@@ -35,6 +36,7 @@ app.use("/api", messageRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/chat", messageRoutes);
 app.use("/api/sales", salesRoutes);
+app.use("/api/projectManager", projectManagerRoutes);
 
 app.get("/", (req, res) => {
     res.send("API is running!");

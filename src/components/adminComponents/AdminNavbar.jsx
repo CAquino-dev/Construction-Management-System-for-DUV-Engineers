@@ -33,6 +33,8 @@ const AdminNavbar = ({ children }) => {
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
         { name: "Appointment Requests", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/appointment",},
         { name: "Lead", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/sales/lead",},
+        { name: "Proposal", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/site-manager/proposal",},
+        
     ];
 
     const currentPage = (() => {
