@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import { MyProjectCard } from '../../components/adminComponents/MyProjectCard' // Assuming MyProjectCard is in this directory
-import { ViewMyProject } from '../../components/adminComponents/ViewMyProject' // Assuming ViewMyProject is in this directory
+import { MyProjectCard } from '../../components/adminComponents/Engineering/MyProjectCard' // Assuming MyProjectCard is in this directory
+import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject' // Assuming ViewMyProject is in this directory
 import duvLogo from '../../assets/duvLogo.jpg';
 
 export const MyProject = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
 
+  const userId = localStorage.getItem('userId');
+
   useEffect(() => {
     const fetchEngineerProjects = async () => {
       try {
         
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/10`);
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/${userId}`);
       if(response.ok){
       const data = await response.json();
       setProjects(data.projects)

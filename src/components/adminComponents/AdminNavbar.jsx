@@ -32,6 +32,9 @@ const AdminNavbar = ({ children }) => {
         { name: "CEO Dashboard", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/ceo-dashboard", permission: "can_access_ceo_dashboard"},
         { name: "Attendance Monitoring", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/AttendanceMonitoring",},
         { name: "Appointment Requests", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/appointment",},
+        { name: "Lead", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/sales/lead",},
+        { name: "Proposal", icon: <UserCircleCheck size={20} />, href: "/admin-dashboard/site-manager/proposal",},
+        
     ];
 
     const currentPage = (() => {
@@ -111,7 +114,7 @@ const AdminNavbar = ({ children }) => {
                         ))}
                         {/* Collapsible Site manager Section */}
                         <li>
-                            {<button onClick={toggleSiteManagerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
+                            {permissions.can_view_sitemanager === 'Y' && <button onClick={toggleSiteManagerDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
                             <span className="flex items-center gap-3 font-semibold">
                                 <UserCircleGear size={20}/> Site Manager
                             </span>

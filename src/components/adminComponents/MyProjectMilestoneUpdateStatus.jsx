@@ -3,11 +3,12 @@ import { X } from '@phosphor-icons/react'
 
 export const MyProjectMilestoneUpdateStatus = ({ milestone, onClose }) => {
   const [selectedImage, setSelectedImage] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setSelectedImage(URL.createObjectURL(file))
+      setSelectedImage(file)
     }
   }
 
@@ -32,7 +33,6 @@ export const MyProjectMilestoneUpdateStatus = ({ milestone, onClose }) => {
     }
   }
 
-  // Determine button text based on current progress_status
   const getStatusButtonText = (status) => {
     switch (status) {
       case "Payment Confirmed":
@@ -44,9 +44,61 @@ export const MyProjectMilestoneUpdateStatus = ({ milestone, onClose }) => {
     }
   }
 
-  // Example handler for status update button (you can replace with actual logic)
-  const handleStatusUpdate = () => {
-    alert(`Status will change from "${milestone.progress_status}" to next stage`)
+  // Handler for regular status updates (non-image)
+  const handleStatusUpdate = async () => {
+    let nextStatus = null
+    if (milestone.progress_status === "Payment Confirmed") nextStatus = "In Progress"
+    else if (milestone.progress_status === "In Progress") {
+      alert("Please upload a completion photo to mark as Completed")
+      return
+    } else {
+      alert("No status update available")
+      return
+    }
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/project/milestones/${milestone.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newStatus: nextStatus }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to update status")
+
+      alert(data.message)
+      onClose()  // Close modal or refresh after success
+    } catch (error) {
+      alert(`Error: ${error.message}`)
+    }
+  }
+
+  // Handler for completing milestone with image upload
+  const handleCompleteMilestone = async () => {
+    if (!selectedImage) {
+      alert("Please select an image as proof of completion")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('project_photo', selectedImage)
+
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/${milestone.id}/complete`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to complete milestone')
+
+      alert(data.message)
+      onClose()  // Close modal or refresh after success
+    } catch (error) {
+      alert(`Error: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -67,12 +119,26 @@ export const MyProjectMilestoneUpdateStatus = ({ milestone, onClose }) => {
             <p className="text-gray-600">
               Status: <span className={`font-medium ${getStatusDotColor(milestone.progress_status)}`}>{milestone.progress_status}</span>
             </p>
-            <button
-              onClick={handleStatusUpdate}
-              className="bg-[#4c735c] hover:bg-[#3b5d47] text-white px-5 py-1 rounded-md transition"
-            >
-              {getStatusButtonText(milestone.progress_status)}
-            </button>
+            {(milestone.progress_status === "Payment Confirmed" || milestone.progress_status === "In Progress") && (
+              <>
+                {milestone.progress_status === "In Progress" ? (
+                  <button
+                    onClick={handleCompleteMilestone}
+                    disabled={loading || !selectedImage}
+                    className={`bg-green-600 hover:bg-green-700 text-white px-5 py-1 rounded-md transition ${(!selectedImage || loading) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {loading ? 'Completing...' : 'Mark as Completed'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStatusUpdate}
+                    className="bg-[#4c735c] hover:bg-[#3b5d47] text-white px-5 py-1 rounded-md transition"
+                  >
+                    {getStatusButtonText(milestone.progress_status)}
+                  </button>
+                )}
+              </>
+            )}
             <button
               onClick={onClose}
               className="bg-red-500 hover:bg-red-600 text-white px-5 py-1 rounded-md transition"
@@ -104,6 +170,7 @@ export const MyProjectMilestoneUpdateStatus = ({ milestone, onClose }) => {
                 </svg>
                 <span className="text-gray-500">Click or drag to upload an image</span>
                 <input
+                  name="project_photo"
                   id="imageUpload"
                   type="file"
                   accept="image/*"
@@ -114,7 +181,7 @@ export const MyProjectMilestoneUpdateStatus = ({ milestone, onClose }) => {
             ) : (
               <div className="relative inline-block">
                 <img
-                  src={selectedImage}
+                  src={URL.createObjectURL(selectedImage)}
                   alt="Preview"
                   className="max-w-full max-h-64 rounded-md border"
                 />

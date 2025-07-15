@@ -254,8 +254,6 @@ const createPayment = (req, res) => {
     milestone_id,
     payment_date,
     amount_paid,
-    payment_method,
-    remarks
   } = req.body;
 
   if (!milestone_id || !payment_date || !amount_paid) {
@@ -268,7 +266,7 @@ const createPayment = (req, res) => {
     VALUES (?, ?, ?, 'Pending', ?, ?, NOW(), NOW())
   `;
 
-  db.query(insertPaymentQuery, [milestone_id, payment_date, amount_paid, payment_method || null, remarks || null], (err, result) => {
+  db.query(insertPaymentQuery, [milestone_id, payment_date, amount_paid,  null,   null], (err, result) => {
     if (err) {
       console.error('Error creating payment:', err);
       return res.status(500).json({ error: 'Failed to create payment' });
@@ -352,8 +350,7 @@ const getAllExpensesApprovedByEngineer = (req, res) => {
       finance_approval_status,
       remarks
     FROM expenses
-    WHERE engineer_approval_status = 'Approved'
-      AND finance_approval_status = 'Pending'
+    WHERE finance_approval_status = 'Pending'
   `;
 
   db.query(query, (err, results) => {

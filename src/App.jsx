@@ -38,6 +38,9 @@ import { FinancePayment } from './pages/admin/FinancePayment';
 import { AppointmentRequestPage } from './pages/userPages/AppointmentRequestPage';
 import  Appointment from './pages/admin/Appointment';
 import { AddClient } from './pages/admin/AddClient';
+import LeadManagement from './pages/admin/LeadManagement';
+import Proposal from './pages/admin/Proposal';
+import ProposalRespond from './pages/userPages/ProposalRespond';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -64,6 +67,7 @@ const App = () => {
           <Route path='chatbot' element={<ChatBot/>} />
           <Route path='appointment' element={<AppointmentRequestPage/>} />
           <Route path='send-feedback' element={<SendFeedback/>} />
+          <Route path='proposal/respond/:token' element={<ProposalRespond/>} />
         </Route>
 
         {/*Client Logged in Route*/}
@@ -97,6 +101,8 @@ const App = () => {
           <Route path='finance/financePayment' element={<FinancePayment/>} />
           <Route path='appointment' element={<Appointment/>} />
           <Route path='site-manager/add-client' element={<AddClient/>} />
+          <Route path='sales/lead' element={<LeadManagement/>} />
+          <Route path='site-manager/proposal' element={<Proposal/>} />
       </Route>
       </Routes>
     </Router>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { FinancePaymentEntry } from '../../components/adminComponents/FinancePaymentEntry '
+import { FinancePaymentEntry } from '../../components/adminComponents/Finance/FinancePaymentEntry '
 
 export const FinancePayment = () => {
   return (

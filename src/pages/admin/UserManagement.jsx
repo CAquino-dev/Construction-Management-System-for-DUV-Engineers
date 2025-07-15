@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { EmployeeTable } from '../../components/adminComponents/EmployeeTable';
+import { EmployeeTable } from '../../components/adminComponents/HR/EmployeeTable';
 import { ClientTable } from '../../components/adminComponents/ClientTable';
 
 export const UserManagement = () => {

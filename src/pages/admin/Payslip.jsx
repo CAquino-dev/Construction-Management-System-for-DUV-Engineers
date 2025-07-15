@@ -1,5 +1,5 @@
 import React from 'react'
-import { PayslipTable } from '../../components/adminComponents/PayslipTable'
+import { PayslipTable } from '../../components/adminComponents/HR/PayslipTable'
 
 export const Payslip = () => {
   return (
