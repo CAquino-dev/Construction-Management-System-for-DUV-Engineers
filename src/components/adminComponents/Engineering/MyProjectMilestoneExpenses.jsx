@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../ui/tabs";
 import { MyProjectSupplyExpenses } from './MyProjectSupplyExpenses';
 import { MyProjectLaborExpenses } from './MyProjectLaborExpenses';
 import { X } from "@phosphor-icons/react";
