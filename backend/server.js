@@ -37,6 +37,11 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/chat", messageRoutes);
 app.use("/api/sales", salesRoutes);
 app.use("/api/projectManager", projectManagerRoutes);
+app.use("/api", messageRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/chat", messageRoutes);
+app.use("/api/sales", salesRoutes);
+app.use("/api/projectManager", projectManagerRoutes);
 
 app.get("/", (req, res) => {
     res.send("API is running!");
