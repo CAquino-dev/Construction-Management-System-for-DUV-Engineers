@@ -13,21 +13,21 @@ const transporter = nodemailer.createTransport({
 });
 
 const createAppointment = (req, res) => {
-  const { clientName, clientEmail, clientPhone, preferredDate, preferredTime, notes } = req.body;
+  const { clientName, clientEmail, clientPhone, preferredDate, preferredTime, purpose, notes } = req.body;
 
-  if (!clientName || !clientEmail || !preferredDate || !preferredTime) {
+  if (!clientName || !clientEmail || !preferredDate || !preferredTime || !purpose) {
     return res.status(400).json({ message: "Please fill all required fields." });
   }
 
   const sql = `
     INSERT INTO appointment_requests
-    (client_name, client_email, client_phone, preferred_date, preferred_time, notes)
-    VALUES (?, ?, ?, ?, ?, ?)
+    (client_name, client_email, client_phone, preferred_date, preferred_time, purpose, notes)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
     sql,
-    [clientName, clientEmail, clientPhone || null, preferredDate, preferredTime, notes || null],
+    [clientName, clientEmail, clientPhone || null, preferredDate, preferredTime, purpose, notes || null],
     (error, results) => {
       if (error) {
         console.error("Error creating appointment:", error);
@@ -46,6 +46,7 @@ Thank you for requesting an appointment with us.
 Here are the details you submitted:
 - Preferred Date: ${preferredDate}
 - Preferred Time: ${preferredTime}
+- Purpose: ${purpose || "None"}
 - Additional Notes: ${notes || "None"}
 
 We will review your request and get back to you shortly.
@@ -150,7 +151,7 @@ Your Business Team
 };
 
 const getAllAppointments = (req, res) => {
-  const sql = `SELECT id, client_name, client_email, client_phone, preferred_date, preferred_time, status, notes FROM appointment_requests ORDER BY created_at DESC`;
+  const sql = `SELECT id, client_name, client_email, client_phone, preferred_date, preferred_time, status, purpose, notes FROM appointment_requests ORDER BY created_at DESC`;
 
   db.query(sql, (error, results) => {
     if (error) {
@@ -162,5 +163,19 @@ const getAllAppointments = (req, res) => {
   });
 };
 
+const getBookedSlots = (req, res) => {
+  const query = `
+    SELECT preferred_date, COUNT(*) as count 
+    FROM appointment_requests 
+    WHERE status IN ('Pending', 'Confirmed') 
+    GROUP BY preferred_date
+  `;
 
-module.exports = { createAppointment, updateAppointmentStatus, getAllAppointments };
+  db.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Failed to fetch booked slots' });
+    res.status(200).json(results); // Each item will be { preferred_date, count }
+  });
+}
+
+
+module.exports = { createAppointment, updateAppointmentStatus, getAllAppointments, getBookedSlots };
