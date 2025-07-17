@@ -146,6 +146,53 @@ const getProposalByToken = (req, res) => {
   });
 };
 
+const respondToProposal = (req, res) => {
+  const { token, status } = req.body;
+  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+  if (!token || !["approve", "reject"].includes(status)) {
+    return res.status(400).json({ message: "Invalid request" });
+  }
+
+  // Step 1: Check if the proposal exists
+  const selectSql = "SELECT * FROM proposals WHERE approval_token = ? LIMIT 1";
+  db.query(selectSql, [token], (err, results) => {
+    if (err) {
+      console.error("Error querying proposals:", err);
+      return res.status(500).json({ message: "Server error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Proposal not found or already handled" });
+    }
+
+    const proposal = results[0];
+
+    if (proposal.status !== "pending") {
+      return res.status(400).json({ message: `Proposal already ${proposal.status}` });
+    }
+
+    // Step 2: Update the proposal
+    const finalStatus = status === "approve" ? "approved" : "rejected";
+    const updateSql = `
+      UPDATE proposals
+      SET status = ?, approved_at = NOW(), approved_by_ip = ?
+      WHERE id = ?
+    `;
+
+    db.query(updateSql, [finalStatus, clientIp, proposal.id], (updateErr, updateResult) => {
+      if (updateErr) {
+        console.error("Error updating proposal:", updateErr);
+        return res.status(500).json({ message: "Server error" });
+      }
+
+      res.json({ message: `Proposal successfully ${finalStatus}.` });
+    });
+  });
+};
+
+
+
 module.exports = {
-  createProposal, getProposalByToken
+  createProposal, getProposalByToken, respondToProposal
 };
