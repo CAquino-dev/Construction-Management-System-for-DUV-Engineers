@@ -168,26 +168,59 @@ const createProject = (req, res) => {
     });
   };
   
-  const getEngineerProjects = (req, res) => {
-    const { engineerId } = req.params;  // Get engineerId from request params
+//   const getEngineerProjects = (req, res) => {
+//     const { engineerId } = req.params;  // Get engineerId from request params
 
-    // SQL query to fetch all projects assigned to the engineer
+//     // SQL query to fetch all projects assigned to the engineer
+//     const query = `
+//         SELECT ep.id, ep.project_name, ep.description, ep.start_date, ep.end_date, ep.status, 
+//                ep.budget, ep.location, ep.project_type, ep.project_photo, 
+//                u.full_name AS client_name
+//         FROM engineer_projects ep
+//         JOIN users u ON ep.client_id = u.id
+//         WHERE ep.engineer_id = ?;
+//     `;
+
+//     db.query(query, [engineerId], (err, results) => {
+//         if (err) {
+//             console.error("Error fetching engineer's projects:", err);
+//             return res.status(500).json({ error: "Failed to fetch engineer's projects" });
+//         }
+
+//         // Send the list of projects as a response
+//         res.json({ projects: results });
+//     });
+// };
+
+const getEngineerProjects = (req, res) => {
+    const { employeeId } = req.params;  // Get employeeId from request params
+
+    // SQL query to fetch all projects assigned to the employee
     const query = `
-        SELECT ep.id, ep.project_name, ep.description, ep.start_date, ep.end_date, ep.status, 
-               ep.budget, ep.location, ep.project_type, ep.project_photo, 
-               u.full_name AS client_name
-        FROM engineer_projects ep
-        JOIN users u ON ep.client_id = u.id
-        WHERE ep.engineer_id = ?;
+        SELECT 
+            p.id, 
+            p.project_name, 
+            p.description, 
+            p.start_date, 
+            p.end_date, 
+            p.status, 
+            p.budget, 
+            p.location, 
+            p.project_type, 
+            p.project_photo, 
+            u.full_name AS client_name
+        FROM project_assignments pa
+        JOIN engineer_projects p ON pa.project_id = p.id
+        JOIN users u ON p.client_id = u.id
+        WHERE pa.user_id = ?;
     `;
 
-    db.query(query, [engineerId], (err, results) => {
+    db.query(query, [employeeId], (err, results) => {
         if (err) {
-            console.error("Error fetching engineer's projects:", err);
-            return res.status(500).json({ error: "Failed to fetch engineer's projects" });
+            console.error("Error fetching employee's projects:", err);
+            return res.status(500).json({ error: "Failed to fetch employee's projects" });
         }
 
-        // Send the list of projects as a response
         res.json({ projects: results });
     });
 };
@@ -281,10 +314,56 @@ const getMilestonesForPaymentByProject = (req, res) => {
   });
 };
 
-  
+const completeMilestone = (req, res) => {
+  // Use your existing 'upload' middleware for file upload with field name 'project_photo'
+  upload(req, res, (err) => {
+    if (err) {
+      console.error('Upload error:', err);
+      return res.status(400).json({ error: err.message });
+    }
+
+    const milestoneId = req.params.id;
+    if (!milestoneId) {
+      return res.status(400).json({ error: 'Milestone ID is required' });
+    }
+
+    // Build the path for uploaded photo if any
+    const projectPhotoPath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // We will update:
+    // - progress_status = 'Completed'
+    // - completion_date = current date (if you want to set)
+    // - project_photo = photo path (optional)
+    const query = `
+      UPDATE milestones
+      SET progress_status = 'Completed',
+          completion_date = NOW(),
+          project_photo = ?
+      WHERE id = ?
+    `;
+
+    db.query(query, [projectPhotoPath, milestoneId], (err, result) => {
+      if (err) {
+        console.error('Error updating milestone:', err);
+        return res.status(500).json({ error: 'Failed to update milestone' });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Milestone not found' });
+      }
+
+      res.json({
+        message: 'Milestone marked as completed',
+        completionPhoto: projectPhotoPath,
+      });
+    });
+  });
+};
+
+
   
 
 
 module.exports = { getEngineers, createProject, getClients, 
                   getClientProject, getEngineerProjects, createMilestone,
-                getMilestonesForPaymentByProject };
+                getMilestonesForPaymentByProject, completeMilestone };

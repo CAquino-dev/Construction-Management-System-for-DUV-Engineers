@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { EmployeeTable } from "../../components/adminComponents/EmployeeTable";
-import { AddEmployeeModal } from "../../components/adminComponents/AddEmployeeModal";
-import { EmployeeDetails } from "../../components/adminComponents/EmployeeDetails";
+import { EmployeeTable } from "../../components/adminComponents/HR/EmployeeTable";
+import { AddEmployeeModal } from "../../components/adminComponents/HR/AddEmployeeModal";
+import { EmployeeDetails } from "../../components/adminComponents/HR/EmployeeDetails";
 import { Button } from "../../components/ui/button";
 
 

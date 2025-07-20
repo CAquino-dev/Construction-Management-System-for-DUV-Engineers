@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MyProjectViewMilestone } from '../adminComponents/MyProjectViewMilestone';
-import { ViewSupplyExpenses } from './ViewSupplyExpenses';
+import { MyProjectViewMilestone } from '../adminComponents/Engineering/MyProjectViewMilestone';
 
 export const MilestoneClient = ({ selectedProject }) => {
   const [milestones, setMilestones] = useState([]);
@@ -162,6 +161,7 @@ export const MilestoneClient = ({ selectedProject }) => {
 
       {isExpensesModalOpen && (
         <ViewSupplyExpenses
+          selectedProject={selectedProject}
           expenses={selectedExpenses}
           milestoneName={selectedMilestone?.milestone || selectedMilestone?.status || "Milestone"}
           onClose={closeExpensesModal}

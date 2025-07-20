@@ -1,5 +1,5 @@
 import React from 'react'
-import { FinanceTable } from '../../components/adminComponents/FinanceTable'
+import { FinanceTable } from '../../components/adminComponents/Finance/FinanceTable'
 
 export const Finance = () => {
   return (
