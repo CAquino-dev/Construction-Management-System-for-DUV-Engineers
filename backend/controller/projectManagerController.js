@@ -176,7 +176,7 @@ const respondToProposal = (req, res) => {
     const finalStatus = status === "approve" ? "approved" : "rejected";
     const updateSql = `
       UPDATE proposals
-      SET status = ?, approved_at = NOW(), approved_by_ip = ?
+      SET status = ?, responded_at = NOW(), approved_by_ip = ?
       WHERE id = ?
     `;
 
@@ -192,7 +192,32 @@ const respondToProposal = (req, res) => {
 };
 
 
+const getProposalResponse = (req, res) => {
+
+  const query = `
+      SELECT 
+      proposals.id,
+      leads.client_name,
+      proposals.status,
+      proposals.created_at,
+      proposals.responded_at,
+      proposals.approved_by_ip
+    FROM proposals
+    JOIN leads ON proposals.lead_id = leads.id
+    ORDER BY proposals.responded_at DESC, proposals.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching proposal responses:', err);
+      return res.status(500).json({ message: 'Server error' });
+    }
+
+    res.json(results);
+  })
+}
+
 
 module.exports = {
-  createProposal, getProposalByToken, respondToProposal
+  createProposal, getProposalByToken, respondToProposal, getProposalResponse
 };
