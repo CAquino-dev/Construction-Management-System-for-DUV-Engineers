@@ -24,10 +24,12 @@ const ProposalRespond = () => {
 
   const handleDecision = async (status) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/respond/${token}`, {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ response: status })
+        body: JSON.stringify({ 
+          token,
+          response: status })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

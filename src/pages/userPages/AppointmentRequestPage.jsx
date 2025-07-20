@@ -1,25 +1,45 @@
 import { useState, useEffect } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export const AppointmentRequestPage = () => {
   const [formData, setFormData] = useState({
     clientName: "",
     clientEmail: "",
     clientPhone: "",
-    preferredDate: "",
     preferredTime: "",
+    purpose: "",
     notes: "",
   });
 
+  const [preferredDate, setPreferredDate] = useState(null);
+  const [bookedDates, setBookedDates] = useState([]);
   const [submitStatus, setSubmitStatus] = useState(null);
-  const [minDate, setMinDate] = useState("");
+
+  const MAX_APPOINTMENTS_PER_DAY = 1;
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    setMinDate(today);
+    const fetchBookedDates = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`);
+        if (!response.ok) throw new Error("Failed to fetch booked dates.");
+        const data = await response.json();
+
+        const fullyBookedDates = data
+          .filter(d => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
+          .map(d => new Date(d.preferred_date)); // Convert to Date objects
+
+        setBookedDates(fullyBookedDates);
+      } catch (error) {
+        console.error("Error fetching booked dates:", error);
+      }
+    };
+
+    fetchBookedDates();
   }, []);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -28,22 +48,29 @@ export const AppointmentRequestPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
+    const selectedDateStr = preferredDate?.toISOString().split("T")[0];
+
     if (
       !formData.clientName.trim() ||
       !formData.clientEmail.trim() ||
-      !formData.preferredDate ||
-      !formData.preferredTime
+      !selectedDateStr ||
+      !formData.preferredTime ||
+      !formData.purpose
     ) {
       setSubmitStatus({ success: false, message: "Please fill all required fields." });
       return;
     }
 
+    const submissionData = {
+      ...formData,
+      preferredDate: selectedDateStr,
+    };
+
     try {
       const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       if (response.ok) {
@@ -52,10 +79,11 @@ export const AppointmentRequestPage = () => {
           clientName: "",
           clientEmail: "",
           clientPhone: "",
-          preferredDate: "",
           preferredTime: "",
+          purpose: "",
           notes: "",
         });
+        setPreferredDate(null);
       } else {
         const errorData = await response.json();
         setSubmitStatus({ success: false, message: errorData.message || "Submission failed." });
@@ -69,118 +97,115 @@ export const AppointmentRequestPage = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 mt-30">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
         <h1 className="text-3xl font-bold mb-6 text-center">Request an Appointment</h1>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="clientName" className="block font-semibold mb-1">
+            <label className="block font-semibold mb-1">
               Full Name <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
-              id="clientName"
               name="clientName"
               value={formData.clientName}
               onChange={handleChange}
-              required
               placeholder="Your full name"
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
             />
           </div>
 
           <div>
-            <label htmlFor="clientEmail" className="block font-semibold mb-1">
+            <label className="block font-semibold mb-1">
               Email Address <span className="text-red-600">*</span>
             </label>
             <input
               type="email"
-              id="clientEmail"
               name="clientEmail"
               value={formData.clientEmail}
               onChange={handleChange}
-              required
               placeholder="you@example.com"
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
             />
           </div>
 
           <div>
-            <label htmlFor="clientPhone" className="block font-semibold mb-1">
-              Phone Number
-            </label>
+            <label className="block font-semibold mb-1">Phone Number</label>
             <input
               type="tel"
-              id="clientPhone"
               name="clientPhone"
               value={formData.clientPhone}
               onChange={handleChange}
-              placeholder="Optional"
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Your phone number"
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
             />
           </div>
 
           <div>
-            <label htmlFor="preferredDate" className="block font-semibold mb-1">
+            <label className="block font-semibold mb-1">
               Preferred Date <span className="text-red-600">*</span>
             </label>
-            <input
-              type="date"
-              id="preferredDate"
-              name="preferredDate"
-              value={formData.preferredDate}
-              onChange={handleChange}
-              required
-              min={minDate}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <DatePicker
+              selected={preferredDate}
+              onChange={(date) => setPreferredDate(date)}
+              minDate={new Date()}
+              excludeDates={bookedDates} // disables fully booked dates
+              placeholderText="Select a date"
+              className="w-full border border-gray-300 rounded px-3 py-2"
             />
           </div>
 
           <div>
-            <label htmlFor="preferredTime" className="block font-semibold mb-1">
+            <label className="block font-semibold mb-1">
               Preferred Time <span className="text-red-600">*</span>
             </label>
             <input
               type="time"
-              id="preferredTime"
               name="preferredTime"
               value={formData.preferredTime}
               onChange={handleChange}
+              className="w-full border border-gray-300 rounded px-3 py-2"
               required
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label htmlFor="notes" className="block font-semibold mb-1">
-              Additional Notes
-            </label>
+            <label className="block font-semibold mb-1">Purpose</label>
             <textarea
-              id="notes"
+              name="purpose"
+              value={formData.purpose}
+              onChange={handleChange}
+              rows={3}
+              placeholder="The purpose of your appointment"
+              className="w-full border border-gray-300 rounded px-3 py-2"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block font-semibold mb-1">Additional Notes</label>
+            <textarea
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               rows={3}
               placeholder="Any questions or details you'd like to add"
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded px-3 py-2"
             />
           </div>
 
           {submitStatus && (
-            <p
-              className={`text-center font-medium ${
-                submitStatus.success ? "text-green-600" : "text-red-600"
-              }`}
-            >
+            <p className={`text-center font-medium ${submitStatus.success ? "text-green-600" : "text-red-600"}`}>
               {submitStatus.message}
             </p>
           )}
 
-          <button
-            type="submit"
-            className="w-full bg-[#4c735c] text-white py-3 rounded transition"
-          >
+          <button type="submit" className="w-full bg-[#4c735c] text-white py-3 rounded">
             Submit Request
           </button>
         </form>
       </div>
     </div>
   );
-}
+};
