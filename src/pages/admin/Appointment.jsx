@@ -48,9 +48,28 @@ const Appointment = () => {
     }
   };
 
+  const formatDateTime = (dateStr, timeStr) => {
+    if (!dateStr || !timeStr) return '';
+    // Split date and time
+    const [year, month, day] = dateStr.split('-');
+    let [hour, minute] = timeStr.split(':');
+    let hourNum = parseInt(hour, 10);
+    const ampm = hourNum >= 12 ? 'PM' : 'AM';
+    hourNum = hourNum % 12;
+    if (hourNum === 0) hourNum = 12;
+    // Month names
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const monthName = monthNames[parseInt(month, 10) - 1];
+    return `${monthName} ${parseInt(day, 10)}, ${year}, ${hourNum}:${minute} ${ampm}`;
+  };
+
   return (
-<div className="min-h-screen bg-gray-100 p-6 mt-20">
-      <h1 className="text-3xl font-bold mb-6 text-center">Manage Appointments</h1>
+<div className="h-screen bg-gray-100 mt-4 sm:mt-0">
+  <div className='bg-white max-w-4xl mx-auto rounded shadow p-4 h-full max-h-[80%] sm:max-h-[90%]'>
+    <h1 className="text-3xl font-bold mb-6 text-center">Manage Appointments</h1>
 
       {loading && <p className="text-center">Loading appointments...</p>}
       {error && <p className="text-center text-red-600">{error}</p>}
@@ -59,18 +78,18 @@ const Appointment = () => {
         <p className="text-center text-gray-600">No appointments found.</p>
       )}
 
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="h-full max-h-[80%] sm:max-h-[90%] overflow-y-auto mx-auto space-y-4">
         {appointments.map((appt) => (
           <div
             key={appt.id}
-            className="bg-white rounded shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+            className="bg-gray-50 rounded shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="mb-3 sm:mb-0">
               <p>
-                <strong>{appt.client_name}</strong> — {appt.client_email}
+                <span className="font-semibold">{appt.client_name}</span> - <span className='text-gray-600'>{appt.client_email}</span>
               </p>
               <p>
-                Date: {appt.preferred_date} @ {appt.preferred_time}
+                Date: {formatDateTime(appt.preferred_date, appt.preferred_time)}
               </p>
               <p>Status:{" "}
                 <span
@@ -120,7 +139,8 @@ const Appointment = () => {
           </div>
         ))}
       </div>
-    </div>
+  </div>
+</div>
   )
 }
 
