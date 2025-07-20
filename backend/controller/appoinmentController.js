@@ -69,6 +69,62 @@ Your Business Team
   );
 };
 
+const adminCreateAppointment = (req, res) => {
+  const { clientName, clientEmail, clientPhone, preferredDate, preferredTime, purpose, notes } = req.body;
+
+  if (!clientName || !clientEmail || !preferredDate || !preferredTime || !purpose) {
+    return res.status(400).json({ message: "Please fill all required fields." });
+  }
+
+  const sql = `
+    INSERT INTO appointment_requests
+    (client_name, client_email, client_phone, preferred_date, preferred_time, purpose, notes, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    sql,
+    [clientName, clientEmail, clientPhone || null, preferredDate, preferredTime, purpose, notes || null, "Confirmed"],
+    (error, results) => {
+      if (error) {
+        console.error("Error creating appointment:", error);
+        return res.status(500).json({ message: "Internal server error." });
+      }
+
+      // Send confirmation email
+      const mailOptions = {
+        from: '"DUV ENGINEERS" <yourgmail@gmail.com>',
+        to: clientEmail,
+        subject: "Appointment Request Confirmed",
+        text: `Hello ${clientName},
+
+Your appointment has been successfully confirmed.
+
+Details:
+- Date: ${preferredDate}
+- Time: ${preferredTime}
+- Purpose: ${purpose || "None"}
+- Additional Notes: ${notes || "None"}
+
+We look forward to seeing you.
+
+Best regards,
+Your Business Team
+`,
+      };
+
+      transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+          console.error("Error sending email:", err);
+        }
+      });
+
+      return res.status(201).json({ message: "Appointment created and confirmed." });
+    }
+  );
+};
+
+
 const updateAppointmentStatus = (req, res) => {
   const appointmentId = req.params.id;
   const { status, adminNotes } = req.body; // expected: status='Confirmed' or 'Cancelled'
@@ -178,4 +234,4 @@ const getBookedSlots = (req, res) => {
 }
 
 
-module.exports = { createAppointment, updateAppointmentStatus, getAllAppointments, getBookedSlots };
+module.exports = { createAppointment, updateAppointmentStatus, getAllAppointments, getBookedSlots, adminCreateAppointment };

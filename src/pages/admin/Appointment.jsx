@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const Appointment = () => {
   const [appointments, setAppointments] = useState([]);
@@ -8,14 +10,18 @@ const Appointment = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [newAppointment, setNewAppointment] = useState({
-    client_name: "",
-    client_email: "",
-    client_phone: "",
-    preferred_date: "",
-    preferred_time: "",
+    clientName: "",
+    clientEmail: "",
+    clientPhone: "",
+    preferredTime: "",
     purpose: "",
     notes: "",
   });
+  const [preferredDate, setPreferredDate] = useState(null);
+  const [bookedDates, setBookedDates] = useState([]);
+  const [submitStatus, setSubmitStatus] = useState(null);
+
+  const MAX_APPOINTMENTS_PER_DAY = 1;
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -34,6 +40,26 @@ const Appointment = () => {
 
   useEffect(() => {
     fetchAppointments();
+  }, []);
+
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`);
+        if (!response.ok) throw new Error("Failed to fetch booked dates.");
+        const data = await response.json();
+
+        const fullyBookedDates = data
+          .filter(d => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
+          .map(d => new Date(d.preferred_date));
+
+        setBookedDates(fullyBookedDates);
+      } catch (error) {
+        console.error("Error fetching booked dates:", error);
+      }
+    };
+
+    fetchBookedDates();
   }, []);
 
   const updateStatus = async (id, status) => {
@@ -56,46 +82,56 @@ const Appointment = () => {
     }
   };
 
-  const formatDateTime = (dateStr, timeStr) => {
-    if (!dateStr || !timeStr) return '';
-    // Split date and time
-    const [year, month, day] = dateStr.split('-');
-    let [hour, minute] = timeStr.split(':');
-    let hourNum = parseInt(hour, 10);
-    const ampm = hourNum >= 12 ? 'PM' : 'AM';
-    hourNum = hourNum % 12;
-    if (hourNum === 0) hourNum = 12;
-    // Month names
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    const monthName = monthNames[parseInt(month, 10) - 1];
-    return `${monthName} ${parseInt(day, 10)}, ${year}, ${hourNum}:${minute} ${ampm}`;
+  const handleChange = (e) => {
+    setNewAppointment(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleAdminSubmit = async (e) => {
     e.preventDefault();
+
+    const selectedDateStr = preferredDate?.toISOString().split("T")[0];
+
+    if (
+      !newAppointment.clientName.trim() ||
+      !newAppointment.clientEmail.trim() ||
+      !selectedDateStr ||
+      !newAppointment.preferredTime ||
+      !newAppointment.purpose
+    ) {
+      setSubmitStatus({ success: false, message: "Please fill all required fields." });
+      return;
+    }
+
+    const submissionData = {
+      ...newAppointment,
+      preferredDate: selectedDateStr,
+    };
+
     try {
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments`, {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/adminAppointments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAppointment),
+        body: JSON.stringify(submissionData),
       });
       if (!res.ok) throw new Error("Failed to add appointment");
+
       setShowModal(false);
+      setSubmitStatus({ success: true, message: "Appointment submitted successfully!" });
       setNewAppointment({
-        client_name: "",
-        client_email: "",
-        client_phone: "",
-        preferred_date: "",
-        preferred_time: "",
+        clientName: "",
+        clientEmail: "",
+        clientPhone: "",
+        preferredTime: "",
         purpose: "",
         notes: "",
       });
+      setPreferredDate(null);
       await fetchAppointments();
     } catch (err) {
-      alert("Error: " + err.message);
+      setSubmitStatus({ success: false, message: err.message });
     }
   };
 
@@ -190,43 +226,43 @@ const Appointment = () => {
             <form onSubmit={handleAdminSubmit} className="space-y-4">
               <input
                 type="text"
-                name="client_name"
+                name="clientName"
                 placeholder="Full Name"
-                value={newAppointment.client_name}
-                onChange={(e) => setNewAppointment({ ...newAppointment, client_name: e.target.value })}
+                value={newAppointment.clientName}
+                onChange={handleChange}
                 required
                 className="w-full border rounded px-3 py-2"
               />
               <input
                 type="email"
-                name="client_email"
+                name="clientEmail"
                 placeholder="Email"
-                value={newAppointment.client_email}
-                onChange={(e) => setNewAppointment({ ...newAppointment, client_email: e.target.value })}
+                value={newAppointment.clientEmail}
+                onChange={handleChange}
                 required
                 className="w-full border rounded px-3 py-2"
               />
               <input
                 type="text"
-                name="client_phone"
+                name="clientPhone"
                 placeholder="Phone"
-                value={newAppointment.client_phone}
-                onChange={(e) => setNewAppointment({ ...newAppointment, client_phone: e.target.value })}
+                value={newAppointment.clientPhone}
+                onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
               />
-              <input
-                type="date"
-                name="preferred_date"
-                value={newAppointment.preferred_date}
-                onChange={(e) => setNewAppointment({ ...newAppointment, preferred_date: e.target.value })}
-                required
+              <DatePicker
+                selected={preferredDate}
+                onChange={(date) => setPreferredDate(date)}
+                minDate={new Date()}
+                excludeDates={bookedDates}
+                placeholderText="Select a date"
                 className="w-full border rounded px-3 py-2"
               />
               <input
                 type="time"
-                name="preferred_time"
-                value={newAppointment.preferred_time}
-                onChange={(e) => setNewAppointment({ ...newAppointment, preferred_time: e.target.value })}
+                name="preferredTime"
+                value={newAppointment.preferredTime}
+                onChange={handleChange}
                 required
                 className="w-full border rounded px-3 py-2"
               />
@@ -234,22 +270,30 @@ const Appointment = () => {
                 name="purpose"
                 placeholder="Purpose"
                 value={newAppointment.purpose}
-                onChange={(e) => setNewAppointment({ ...newAppointment, purpose: e.target.value })}
+                onChange={handleChange}
+                required
                 className="w-full border rounded px-3 py-2"
               />
               <textarea
                 name="notes"
                 placeholder="Notes"
                 value={newAppointment.notes}
-                onChange={(e) => setNewAppointment({ ...newAppointment, notes: e.target.value })}
+                onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
               />
 
-              <div className="flex justify-between">
-                <button
-                  type="submit"
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              {submitStatus && (
+                <p
+                  className={`text-center font-medium ${
+                    submitStatus.success ? "text-green-600" : "text-red-600"
+                  }`}
                 >
+                  {submitStatus.message}
+                </p>
+              )}
+
+              <div className="flex justify-between">
+                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
                   Submit
                 </button>
                 <button
