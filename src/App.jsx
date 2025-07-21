@@ -41,6 +41,7 @@ import { AddClient } from './pages/admin/AddClient';
 import LeadManagement from './pages/admin/LeadManagement';
 import Proposal from './pages/admin/Proposal';
 import ProposalRespond from './pages/userPages/ProposalRespond';
+import ContractRespond from './pages/userPages/ContractRespond';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -68,6 +69,7 @@ const App = () => {
           <Route path='appointment' element={<AppointmentRequestPage/>} />
           <Route path='send-feedback' element={<SendFeedback/>} />
           <Route path='proposal/respond/:token' element={<ProposalRespond/>} />
+          <Route path='contract/respond/:proposalId' element={<ContractRespond/>} />
         </Route>
 
         {/*Client Logged in Route*/}

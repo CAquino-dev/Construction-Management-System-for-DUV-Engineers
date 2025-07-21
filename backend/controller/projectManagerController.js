@@ -3,6 +3,8 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const ejs = require('ejs');
+const puppeteer = require('puppeteer');
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '../uploads/proposals');
@@ -34,7 +36,6 @@ const uploadProposalPDF = multer({
   }
 }).single('proposal_file'); // Name should match frontend
 
-// Proposal creation handler
 const createProposal = (req, res) => {
   uploadProposalPDF(req, res, (err) => {
     if (err) {
@@ -56,7 +57,6 @@ const createProposal = (req, res) => {
       return res.status(400).json({ error: 'All required fields must be filled.' });
     }
 
-    // ✅ Parse the scope_of_work string from FormData (from JSON string to array)
     let parsedScopeOfWork;
     try {
       parsedScopeOfWork = JSON.parse(scope_of_work);
@@ -135,7 +135,6 @@ const getProposalByToken = (req, res) => {
 
     const proposal = results[0];
 
-    // ✅ Parse scope_of_work from JSON string to array
     try {
       proposal.scope_of_work = JSON.parse(proposal.scope_of_work);
     } catch (err) {
@@ -154,7 +153,6 @@ const respondToProposal = (req, res) => {
     return res.status(400).json({ message: "Invalid request" });
   }
 
-  // Step 1: Check if the proposal exists
   const selectSql = "SELECT * FROM proposals WHERE approval_token = ? LIMIT 1";
   db.query(selectSql, [token], (err, results) => {
     if (err) {
@@ -172,7 +170,6 @@ const respondToProposal = (req, res) => {
       return res.status(400).json({ message: `Proposal already ${proposal.status}` });
     }
 
-    // Step 2: Update the proposal
     const finalStatus = status === "approve" ? "approved" : "rejected";
     const updateSql = `
       UPDATE proposals
@@ -180,7 +177,7 @@ const respondToProposal = (req, res) => {
       WHERE id = ?
     `;
 
-    db.query(updateSql, [finalStatus, clientIp, proposal.id], (updateErr, updateResult) => {
+    db.query(updateSql, [finalStatus, clientIp, proposal.id], (updateErr) => {
       if (updateErr) {
         console.error("Error updating proposal:", updateErr);
         return res.status(500).json({ message: "Server error" });
@@ -191,13 +188,12 @@ const respondToProposal = (req, res) => {
   });
 };
 
-
 const getProposalResponse = (req, res) => {
-
   const query = `
-      SELECT 
+    SELECT 
       proposals.id,
       leads.client_name,
+      proposals.title,
       proposals.status,
       proposals.created_at,
       proposals.responded_at,
@@ -214,10 +210,121 @@ const getProposalResponse = (req, res) => {
     }
 
     res.json(results);
-  })
-}
+  });
+};
+
+const generateContract = (req, res) => {
+  const { proposalId } = req.params;
+
+  // Step 1: Get proposal and lead info
+  const query = `
+    SELECT p.*, l.client_name, l.contact_info, l.project_interest, l.budget, l.timeline, l.id AS lead_id
+    FROM proposals p
+    JOIN leads l ON p.lead_id = l.id
+    WHERE p.id = ?
+  `;
+
+  db.query(query, [proposalId], (err, result) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (!result.length) {
+      return res.status(404).json({ error: "Proposal not found" });
+    }
+
+    const data = result[0];
+
+    // Step 2: Render EJS template
+    ejs.renderFile(
+      path.join(__dirname, "../templates/contract_template.ejs"),
+      { data },
+      async (err, htmlTemplate) => {
+        if (err) {
+          console.error("EJS render error:", err);
+          return res.status(500).json({ error: "Template rendering failed" });
+        }
+
+        try {
+          // Step 3: Generate PDF using Puppeteer
+          const browser = await puppeteer.launch();
+          const page = await browser.newPage();
+          await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });
+          const pdfBuffer = await page.pdf({ format: "A4" });
+          await browser.close();
+
+          // Step 4: Save PDF to disk
+          const fileName = `contract_${proposalId}_${Date.now()}.pdf`;
+          const filePath = path.join(__dirname, "../public/contracts", fileName);
+          fs.writeFileSync(filePath, pdfBuffer);
+
+          const fileUrl = `/contracts/${fileName}`;
+
+          // Step 5: Insert contract record into DB
+          const insertQuery = `
+            INSERT INTO contracts (lead_id, proposal_id, contract_file_url)
+            VALUES (?, ?, ?)
+          `;
+
+          db.query(insertQuery, [data.lead_id, data.id, fileUrl], (insertErr, resultInsert) => {
+            if (insertErr) {
+              console.error("Insert error:", insertErr);
+              return res.status(500).json({ error: "Failed to save contract record" });
+            }
+
+            // Step 6: Generate approval link
+            const contractId = resultInsert.insertId;
+            const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
+
+            // ✅ Success
+            res.status(201).json({
+              message: "Contract generated",
+              fileUrl,
+              approvalLink
+            });
+          });
+        } catch (pdfErr) {
+          console.error("PDF generation error:", pdfErr);
+          res.status(500).json({ error: "Failed to generate contract PDF" });
+        }
+      }
+    );
+  });
+};
+
+const getContract = (req, res) => {
+  const { proposalId } = req.params;
+
+  const query = `
+    SELECT contract_file_url 
+    FROM contracts
+    JOIN proposals on contracts.id = proposals.id
+    WHERE contracts.id = ?
+  `;
+
+  db.query(query, [proposalId], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Server error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Invalid or expired contract link.' });
+    }
+
+    const proposal = results[0];
+
+    return res.json(proposal);
+  });
+};
 
 
 module.exports = {
-  createProposal, getProposalByToken, respondToProposal, getProposalResponse
+  createProposal,
+  getProposalByToken,
+  respondToProposal,
+  getProposalResponse,
+  generateContract,
+  getContract
 };
