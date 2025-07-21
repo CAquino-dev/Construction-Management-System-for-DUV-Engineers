@@ -214,18 +214,17 @@ const getProposalResponse = (req, res) => {
 };
 
 const generateContract = (req, res) => {
-  const {proposalId} = req.params;
+  const { proposalId } = req.params;
 
   // Step 1: Get proposal and lead info
   const query = `
-    SELECT p.*, l.client_name, l.contact_info, l.project_interest, l.budget, l.timeline
+    SELECT p.*, l.client_name, l.contact_info, l.project_interest, l.budget, l.timeline, l.id AS lead_id
     FROM proposals p
     JOIN leads l ON p.lead_id = l.id
     WHERE p.id = ?
   `;
 
   db.query(query, [proposalId], (err, result) => {
-
     if (err) {
       console.error("DB error:", err);
       return res.status(500).json({ error: "Database error" });
@@ -267,14 +266,23 @@ const generateContract = (req, res) => {
             INSERT INTO contracts (lead_id, proposal_id, contract_file_url)
             VALUES (?, ?, ?)
           `;
-          db.query(insertQuery, [data.lead_id, data.id, fileUrl], (insertErr) => {
+
+          db.query(insertQuery, [data.lead_id, data.id, fileUrl], (insertErr, resultInsert) => {
             if (insertErr) {
               console.error("Insert error:", insertErr);
               return res.status(500).json({ error: "Failed to save contract record" });
             }
 
+            // Step 6: Generate approval link
+            const contractId = resultInsert.insertId;
+            const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
+
             // ✅ Success
-            res.status(201).json({ message: "Contract generated", fileUrl });
+            res.status(201).json({
+              message: "Contract generated",
+              fileUrl,
+              approvalLink
+            });
           });
         } catch (pdfErr) {
           console.error("PDF generation error:", pdfErr);
@@ -285,10 +293,38 @@ const generateContract = (req, res) => {
   });
 };
 
+const getContract = (req, res) => {
+  const { proposalId } = req.params;
+
+  const query = `
+    SELECT contract_file_url 
+    FROM contracts
+    JOIN proposals on contracts.id = proposals.id
+    WHERE contracts.id = ?
+  `;
+
+  db.query(query, [proposalId], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Server error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Invalid or expired contract link.' });
+    }
+
+    const proposal = results[0];
+
+    return res.json(proposal);
+  });
+};
+
+
 module.exports = {
   createProposal,
   getProposalByToken,
   respondToProposal,
   getProposalResponse,
-  generateContract
+  generateContract,
+  getContract
 };

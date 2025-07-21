@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const ViewProposals = () => {
   const [proposals, setProposals] = useState([]);
+  const [message, setMessage] = useState({ success: '', error: '', approvalLink: '' });
 
   useEffect(() => {
     const fetchProposalResponse = async () => {
@@ -16,6 +17,8 @@ const ViewProposals = () => {
   }, []);
 
   const handleGenerateContract = async (proposalId) => {
+    setMessage({ success: '', error: '', approvalLink: '' });
+
     try {
       const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/generateContract/${proposalId}`, {
         method: 'POST',
@@ -24,17 +27,44 @@ const ViewProposals = () => {
       if (!res.ok) throw new Error("Failed to generate contract");
 
       const data = await res.json();
-      alert("Contract generated!");
-      window.open(`${import.meta.env.VITE_REACT_APP_API_URL}${data.fileUrl}`, '_blank');
+
+      setMessage({
+        success: "Contract generated successfully!",
+        error: '',
+        approvalLink: `${data.approvalLink}`
+      });
+
     } catch (err) {
-      alert("Error generating contract.");
+      setMessage({ error: err.message || "Error generating contract.", success: '', approvalLink: '' });
       console.error(err);
     }
   };
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 max-w-6xl mx-auto px-4">
       <h2 className="text-xl font-bold mb-4">Submitted Proposals</h2>
+
+      {/* ✅ Success/Error Message */}
+      {(message.success || message.error) && (
+        <div className={`p-4 mb-6 rounded shadow ${message.error ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+          {message.success && <p className="font-semibold">{message.success}</p>}
+          {message.error && <p className="font-semibold">{message.error}</p>}
+          {message.approvalLink && (
+            <div className="mt-2">
+              <p className="text-sm">Contract Link:</p>
+              <a
+                href={message.approvalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 underline break-all"
+              >
+                {message.approvalLink}
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+
       <table className="w-full border">
         <thead>
           <tr className="bg-gray-100">
