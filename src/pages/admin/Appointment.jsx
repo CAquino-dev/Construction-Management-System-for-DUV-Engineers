@@ -154,7 +154,7 @@ const Appointment = () => {
         <div className="flex justify-end mb-4">
           <button
             onClick={() => setShowModal(true)}
-            className="px-4 py-2 bg-[#4c735c] text-white rounded"
+            className="px-4 py-2 bg-[#4c735c] text-white rounded cursor-pointer"
           >
             + Add Appointment
           </button>
@@ -201,14 +201,14 @@ const Appointment = () => {
                   <button
                     disabled={updatingId === appt.id}
                     onClick={() => updateStatus(appt.id, "Confirmed")}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 cursor-pointer"
                   >
                     {updatingId === appt.id ? "Processing..." : "Approve"}
                   </button>
                   <button
                     disabled={updatingId === appt.id}
                     onClick={() => updateStatus(appt.id, "Cancelled")}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 cursor-pointer"
                   >
                     {updatingId === appt.id ? "Processing..." : "Reject"}
                   </button>
