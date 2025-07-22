@@ -135,92 +135,105 @@ const Appointment = () => {
     }
   };
 
+  // Helper to format date as 'Mon, July 30. 2025'
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const options = { weekday: "short", month: "long", day: "numeric", year: "numeric" };
+    let formatted = date.toLocaleDateString("en-US", options);
+    formatted = formatted.replace(/, ([0-9]{1,2}),/, ' $1.');
+    formatted = formatted.replace(/,/, ',');
+    return formatted;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
-      <h1 className="text-3xl font-bold mb-6 text-center">Manage Appointments</h1>
+    <div className=" bg-gray-100 p-6 h-screen">
+      <div className="max-w-4xl mx-auto bg-white shadow h-9/10 px-4 py-6"> 
+        <h1 className="text-3xl font-bold mb-6 text-center">Manage Appointments</h1>
 
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          + Add Appointment
-        </button>
-      </div>
-
-      {loading && <p className="text-center">Loading appointments...</p>}
-      {error && <p className="text-center text-red-600">{error}</p>}
-
-      {!loading && !error && appointments.length === 0 && (
-        <p className="text-center text-gray-600">No appointments found.</p>
-      )}
-
-      <div className="h-full max-h-[80%] sm:max-h-[90%] overflow-y-auto mx-auto space-y-4">
-        {appointments.map((appt) => (
-          <div
-            key={appt.id}
-            className="bg-gray-50 rounded shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-4 py-2 bg-[#4c735c] text-white rounded"
           >
-            <div className="mb-3 sm:mb-0">
-              <p>
-                <span className="font-semibold">{appt.client_name}</span> - <span className='text-gray-600'>{appt.client_email}</span>
-              </p>
-              <p>
-                Date: {formatDateTime(appt.preferred_date, appt.preferred_time)}
-              </p>
-              <p>
-                Status:{" "}
-                <span
-                  className={
-                    appt.status === "Confirmed"
-                      ? "text-green-600 font-semibold"
-                      : appt.status === "Cancelled"
-                      ? "text-red-600 font-semibold"
-                      : "text-yellow-600 font-semibold"
-                  }
-                >
-                  {appt.status}
-                </span>
-              </p>
+            + Add Appointment
+          </button>
+        </div>
+
+        {loading && <p className="text-center">Loading appointments...</p>}
+        {error && <p className="text-center text-red-600">{error}</p>}
+
+        {!loading && !error && appointments.length === 0 && (
+          <p className="text-center text-gray-600">No appointments found.</p>
+        )}
+
+        <div className="max-w-4xl mx-auto space-y-4 overflow-y-auto h-8/10 border-1">
+          {appointments.map((appt) => (
+            <div
+              key={appt.id}
+              className="bg-gray-100 shadow rounded shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="mb-3 sm:mb-0">
+                <p>
+                  <strong>{appt.client_name}</strong>  <span className="text-gray-600">{appt.client_email}</span>
+                </p>
+                <p>
+                  Date: {formatDisplayDate(appt.preferred_date)} @ {appt.preferred_time}
+                </p>
+                <p>
+                  Status:{" "}
+                  <span
+                    className={
+                      appt.status === "Confirmed"
+                        ? "text-green-600 font-semibold"
+                        : appt.status === "Cancelled"
+                        ? "text-red-600 font-semibold"
+                        : "text-yellow-600 font-semibold"
+                    }
+                  >
+                    {appt.status}
+                  </span>
+                </p>
+              </div>
+
+              {appt.status === "Pending" && (
+                <div className="flex space-x-2">
+                  <button
+                    disabled={updatingId === appt.id}
+                    onClick={() => updateStatus(appt.id, "Confirmed")}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {updatingId === appt.id ? "Processing..." : "Approve"}
+                  </button>
+                  <button
+                    disabled={updatingId === appt.id}
+                    onClick={() => updateStatus(appt.id, "Cancelled")}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {updatingId === appt.id ? "Processing..." : "Reject"}
+                  </button>
+                </div>
+              )}
+
+              {appt.status !== "Pending" && (
+                <div>
+                  <button
+                    disabled
+                    className="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed"
+                    title={`Appointment already ${appt.status.toLowerCase()}`}
+                  >
+                    {appt.status}
+                  </button>
+                </div>
+              )}
             </div>
-
-            {appt.status === "Pending" && (
-              <div className="flex space-x-2">
-                <button
-                  disabled={updatingId === appt.id}
-                  onClick={() => updateStatus(appt.id, "Confirmed")}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                >
-                  {updatingId === appt.id ? "Processing..." : "Approve"}
-                </button>
-                <button
-                  disabled={updatingId === appt.id}
-                  onClick={() => updateStatus(appt.id, "Cancelled")}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-                >
-                  {updatingId === appt.id ? "Processing..." : "Reject"}
-                </button>
-              </div>
-            )}
-
-            {appt.status !== "Pending" && (
-              <div>
-                <button
-                  disabled
-                  className="px-4 py-2 bg-gray-400 text-white rounded cursor-not-allowed"
-                  title={`Appointment already ${appt.status.toLowerCase()}`}
-                >
-                  {appt.status}
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-gray-800/20 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg">
             <h2 className="text-xl font-bold mb-4">Add Appointment</h2>
             <form onSubmit={handleAdminSubmit} className="space-y-4">
