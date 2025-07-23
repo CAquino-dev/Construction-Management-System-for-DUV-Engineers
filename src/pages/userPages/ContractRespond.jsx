@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
 import { useParams } from 'react-router-dom';
 
 const ContractRespond = () => {
@@ -8,19 +9,22 @@ const ContractRespond = () => {
   const [responseStatus, setResponseStatus] = useState('');
   const [message, setMessage] = useState({ error: '', success: '' });
 
+  const sigPad = useRef();
+
+  const [showSignPad, setShowSignPad] = useState(false);
+  const [trimmedSignature, setTrimmedSignature] = useState(null);
+
   useEffect(() => {
     const getContract = async () => {
       try {
         const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/contract/${proposalId}`);
         if (response.ok) {
           const data = await response.json();
-          console.log("contract url", data);
-          setContractUrl(data.contract_file_url); // ✅ Fix here
+          setContractUrl(data.contract_file_url);
         } else {
           setMessage({ error: 'Failed to fetch contract.', success: '' });
         }
       } catch (err) {
-        console.error(err);
         setMessage({ error: 'An error occurred.', success: '' });
       } finally {
         setLoading(false);
@@ -30,19 +34,43 @@ const ContractRespond = () => {
     getContract();
   }, [proposalId]);
 
-  const respondToContract = async (action) => {
-    try {
-      const res = await axios.post(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/respondToContract`, {
-        proposal_id: proposalId,
-        action, // 'digital', 'in_person', 'rejected'
-      });
+  const clearSignature = () => sigPad.current.clear();
 
-      setResponseStatus(`Successfully submitted: ${action}`);
-    } catch (err) {
-      console.error('Failed to submit response:', err);
-      setResponseStatus('Failed to submit response');
+const handleSaveSignature = async () => {
+  if (sigPad.current.isEmpty()) {
+    alert("Please provide a signature.");
+    return;
+  }
+
+  const canvas = sigPad.current.getCanvas(); // Get the raw canvas
+  const dataURL = canvas.toDataURL('image/png');
+  setTrimmedSignature(dataURL);
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        base64Signature: dataURL,
+        proposalId: proposalId
+      }),
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      setResponseStatus("Successfully saved the signature!");
+      setMessage({ success: data.message, error: '' });
+      setShowSignPad(false);
+    } else {
+      setMessage({ error: data.error || 'Signature upload failed.', success: '' });
     }
-  };
+  } catch (err) {
+    setMessage({ error: 'Error uploading signature.', success: '' });
+  }
+};
+
 
   if (loading) return <p className="p-4">Loading contract...</p>;
 
@@ -52,40 +80,55 @@ const ContractRespond = () => {
 
       {contractUrl ? (
         <div className="bg-white p-4 shadow-lg rounded-lg border mb-6">
-        <iframe
+          <iframe
             src={`${import.meta.env.VITE_REACT_APP_API_URL}${contractUrl}`}
             title="Contract PDF"
             className="w-full h-[600px] rounded border"
             allow="fullscreen"
-        />
+          />
         </div>
       ) : (
         <p>No contract found for this proposal.</p>
       )}
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 mb-4">
         <button
-          onClick={() => respondToContract('digital')}
           className="bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={() => setShowSignPad(true)}
         >
           Sign Digitally
         </button>
-        <button
-          onClick={() => respondToContract('in_person')}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
+        <button className="bg-green-600 text-white px-4 py-2 rounded">
           Sign In Person
         </button>
-        <button
-          onClick={() => respondToContract('rejected')}
-          className="bg-red-600 text-white px-4 py-2 rounded"
-        >
+        <button className="bg-red-600 text-white px-4 py-2 rounded">
           Reject Contract
         </button>
       </div>
 
+      {showSignPad && (
+        <div className="border p-4 bg-gray-50 rounded">
+          <SignatureCanvas
+            penColor="black"
+            ref={sigPad}
+            canvasProps={{ width: 500, height: 200, className: 'border border-black' }}
+          />
+          <div className="mt-2 flex gap-2">
+            <button className="bg-gray-300 px-3 py-1 rounded" onClick={clearSignature}>Clear</button>
+            <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleSaveSignature}>Submit Signature</button>
+          </div>
+        </div>
+      )}
+
+      {trimmedSignature && (
+        <div className="mt-4">
+          <p className="mb-2 font-medium">Preview:</p>
+          <img src={trimmedSignature} alt="Signature Preview" className="border w-[300px]" />
+        </div>
+      )}
+
       {responseStatus && (
-        <p className="mt-4 font-medium text-gray-700">{responseStatus}</p>
+        <p className="mt-4 font-medium text-green-700">{responseStatus}</p>
       )}
 
       {message.error && (

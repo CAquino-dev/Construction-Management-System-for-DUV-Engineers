@@ -8,7 +8,8 @@ const {
   getProposalResponse,
 //   renderContractPreview,     // For viewing
   generateContract,           // ✅ New: contract PDF generation
-  getContract
+  getContract,
+  uploadClientSignature
 } = require('../controller/projectManagerController');
 
 router.post('/createProposal', createProposal);
@@ -18,5 +19,6 @@ router.get('/getProposalResponse', getProposalResponse);
 
 router.get('/contract/:proposalId', getContract);       // View contract (EJS)
 router.post('/generateContract/:proposalId', generateContract);   // ✅ Generate contract PDF
+router.post('/signature', uploadClientSignature);
 
 module.exports = router;
