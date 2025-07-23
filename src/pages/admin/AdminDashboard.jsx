@@ -10,7 +10,7 @@ import { RecentRegisteredUser } from "../../components/adminComponents/RecentReg
 
 export const AdminDashboard = () => {
   return (
-    <div className="p-6 mt-10">
+    <div className="p-6">
       {/* Flex container for responsive layout */}
       <div className="flex flex-col md:flex-row gap-6">
         
