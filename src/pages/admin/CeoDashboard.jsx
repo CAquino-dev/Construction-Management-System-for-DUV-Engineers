@@ -5,7 +5,7 @@ import { ViewCeoPayslip } from '../../components/adminComponents/ViewCeoPayslip'
 export const CeoDashboard = () => {
     const [selectedPayslips, setSelectedPayslips] = useState(null);
   return (
-    <div className='p-6 mt-15 bg-white rounded-lg shadow-sm'>
+    <div className='p-6 bg-white rounded-lg shadow-sm'>
         {selectedPayslips ? (
             <ViewCeoPayslip selectedPayslips={selectedPayslips} onBack={() => setSelectedPayslips(null)} />
         ) : (  
