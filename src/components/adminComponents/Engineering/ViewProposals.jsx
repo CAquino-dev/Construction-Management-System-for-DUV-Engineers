@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import PaginationComponent from '../Pagination';
 
 const ViewProposals = () => {
   const [proposals, setProposals] = useState([]);
   const [message, setMessage] = useState({ success: '', error: '', approvalLink: '' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const fetchProposalResponse = async () => {
@@ -40,8 +43,24 @@ const ViewProposals = () => {
     }
   };
 
+  // Helper to get status color class
+  const getStatusClass = (status) => {
+    if (!status) return '';
+    const s = status.toLowerCase();
+    if (s === 'pending') return 'text-yellow-600 font-semibold';
+    if (s === 'approve' || s === 'approved') return 'text-green-600 font-semibold';
+    return '';
+  };
+
+  // Pagination logic
+  const totalPages = Math.ceil(proposals.length / itemsPerPage);
+  const paginatedProposals = proposals.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
-    <div className="mt-6 max-w-6xl mx-auto px-4">
+    <div className="mt-6 mx-auto px-4 bg-white p-6 rounded shadow-md rounded-md">
       <h2 className="text-xl font-bold mb-4">Submitted Proposals</h2>
 
       {/* ✅ Success/Error Message */}
@@ -77,16 +96,16 @@ const ViewProposals = () => {
           </tr>
         </thead>
         <tbody>
-          {proposals.map((p) => (
+          {paginatedProposals.map((p) => (
             <tr key={p.id}>
-              <td className="border p-2">{p.title}</td>
-              <td className="border p-2">{p.client_name}</td>
-              <td className="border p-2 capitalize">{p.status}</td>
-              <td className="border p-2">{p.responded_at || 'Pending'}</td>
-              <td className="border p-2">{p.approved_by_ip || 'N/A'}</td>
-              <td className="border p-2">
+              <td className="border p-2 text-center">{p.title}</td>
+              <td className="border p-2 text-center">{p.client_name}</td>
+              <td className={`border p-2 capitalize text-center ${getStatusClass(p.status)}`}>{p.status}</td>
+              <td className={`border p-2 text-center ${!p.responded_at || p.responded_at.toLowerCase() === 'pending' ? 'text-yellow-600 font-semibold' : ''}`}>{p.responded_at || 'Pending'}</td>
+              <td className={`border p-2 text-center ${!p.approved_by_ip || p.approved_by_ip.toLowerCase() === 'n/a' ? 'text-gray-400 font-semibold' : ''}`}>{p.approved_by_ip || 'N/A'}</td>
+              <td className="border p-2 text-center">
                 <button
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  className="bg-[#4c735c] cursor-pointer text-white px-3 py-1 rounded"
                   onClick={() => handleGenerateContract(p.id)}
                 >
                   Generate Contract
@@ -96,6 +115,11 @@ const ViewProposals = () => {
           ))}
         </tbody>
       </table>
+      <PaginationComponent
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+      />
     </div>
   );
 };

@@ -5,10 +5,13 @@ import ViewProposals from '../../components/adminComponents/Engineering/ViewProp
 
 const Proposal = () => {
   return (
-    <div className="p-4">
-      <CreateProposal />
-      <hr className="my-6 border-gray-300" />
-      <ViewProposals />
+    <div className="p-4 h-screen">
+      <div className='h-1/2'>
+        <CreateProposal />
+      </div>
+      <div>
+        <ViewProposals />
+      </div>
     </div>
   )
 }
