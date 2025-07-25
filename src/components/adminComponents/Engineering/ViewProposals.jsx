@@ -84,42 +84,68 @@ const ViewProposals = () => {
         </div>
       )}
 
-      <table className="w-full border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">Title</th>
-            <th className="border p-2">Client</th>
-            <th className="border p-2">Status</th>
-            <th className="border p-2">Responded At</th>
-            <th className="border p-2">IP Address</th>
-            <th className="border p-2">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedProposals.map((p) => (
-            <tr key={p.id}>
-              <td className="border p-2 text-center">{p.title}</td>
-              <td className="border p-2 text-center">{p.client_name}</td>
-              <td className={`border p-2 capitalize text-center ${getStatusClass(p.status)}`}>{p.status}</td>
-              <td className={`border p-2 text-center ${!p.responded_at || p.responded_at.toLowerCase() === 'pending' ? 'text-yellow-600 font-semibold' : ''}`}>{p.responded_at || 'Pending'}</td>
-              <td className={`border p-2 text-center ${!p.approved_by_ip || p.approved_by_ip.toLowerCase() === 'n/a' ? 'text-gray-400 font-semibold' : ''}`}>{p.approved_by_ip || 'N/A'}</td>
-              <td className="border p-2 text-center">
-                <button
-                  className="bg-[#4c735c] cursor-pointer text-white px-3 py-1 rounded"
-                  onClick={() => handleGenerateContract(p.id)}
-                >
-                  Generate Contract
-                </button>
-              </td>
+      {/* Table for md+ screens, cards for mobile */}
+      <div className="hidden md:block">
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border p-2">Title</th>
+              <th className="border p-2">Client</th>
+              <th className="border p-2">Status</th>
+              <th className="border p-2">Responded At</th>
+              <th className="border p-2">IP Address</th>
+              <th className="border p-2">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <PaginationComponent
-        currentPage={currentPage}
-        totalPages={totalPages}
-        setCurrentPage={setCurrentPage}
-      />
+          </thead>
+          <tbody>
+            {paginatedProposals.map((p) => (
+              <tr key={p.id}>
+                <td className="border p-2 text-center">{p.title}</td>
+                <td className="border p-2 text-center">{p.client_name}</td>
+                <td className={`border p-2 capitalize text-center ${getStatusClass(p.status)}`}>{p.status}</td>
+                <td className={`border p-2 text-center ${!p.responded_at || p.responded_at.toLowerCase() === 'pending' ? 'text-yellow-600 font-semibold' : ''}`}>{p.responded_at || 'Pending'}</td>
+                <td className={`border p-2 text-center ${!p.approved_by_ip || p.approved_by_ip.toLowerCase() === 'n/a' ? 'text-gray-400 font-semibold' : ''}`}>{p.approved_by_ip || 'N/A'}</td>
+                <td className="border p-2 text-center">
+                  <button
+                    className="bg-[#4c735c] cursor-pointer text-white px-3 py-1 rounded"
+                    onClick={() => handleGenerateContract(p.id)}
+                  >
+                    Generate Contract
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Mobile Cards */}
+      <div className="md:hidden space-y-4">
+        {paginatedProposals.map((p) => (
+          <div key={p.id} className="border rounded-lg p-4 shadow-sm bg-gray-50">
+            <div className="mb-2"><span className="font-semibold">Title:</span> {p.title}</div>
+            <div className="mb-2"><span className="font-semibold">Client:</span> {p.client_name}</div>
+            <div className={`mb-2 capitalize ${getStatusClass(p.status)}`}><span className="font-semibold">Status:</span> {p.status}</div>
+            <div className={`mb-2 ${!p.responded_at || p.responded_at.toLowerCase() === 'pending' ? 'text-yellow-600 font-semibold' : ''}`}><span className="font-semibold">Responded At:</span> {p.responded_at || 'Pending'}</div>
+            <div className={`mb-2 ${!p.approved_by_ip || p.approved_by_ip.toLowerCase() === 'n/a' ? 'text-gray-400 font-semibold' : ''}`}><span className="font-semibold">IP Address:</span> {p.approved_by_ip || 'N/A'}</div>
+            <div className="flex justify-end mt-2">
+              <button
+                className="bg-[#4c735c] cursor-pointer text-white px-3 py-1 rounded"
+                onClick={() => handleGenerateContract(p.id)}
+              >
+                Generate Contract
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Pagination - wrap in a responsive container to prevent overflow */}
+      <div className="w-full overflow-x-auto flex justify-center mt-4">
+        <PaginationComponent
+          currentPage={currentPage}
+          totalPages={totalPages}
+          setCurrentPage={setCurrentPage}
+        />
+      </div>
     </div>
   );
 };
