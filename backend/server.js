@@ -23,6 +23,8 @@ app.use(express.json()); // Parse JSON
 app.use(cors()); // Handle CORS
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/contracts', express.static(path.join(__dirname, 'public/contracts')));
+
 
 
 

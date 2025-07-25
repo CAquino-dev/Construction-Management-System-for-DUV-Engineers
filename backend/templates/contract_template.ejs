@@ -4,16 +4,44 @@
     <meta charset="UTF-8">
     <style>
       body { font-family: Arial, sans-serif; padding: 30px; }
+      .signature-section {
+        margin-top: 60px;
+      }
+      .signature-label {
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .signature-image {
+        width: 200px;
+        height: auto;
+      }
+      .signature-box {
+        width: 300px;
+        height: 100px;
+        border: 1px solid #000;
+      }
     </style>
   </head>
   <body>
     <h1>Construction Contract</h1>
+
     <p><strong>Client:</strong> <%= data.client_name %></p>
     <p><strong>Project:</strong> <%= data.project_interest %></p>
     <p><strong>Budget:</strong> ₱<%= data.budget %></p>
     <p><strong>Timeline:</strong> <%= data.timeline %></p>
+
     <hr>
     <p>This contract outlines the terms agreed upon...</p>
-    <!-- Add more terms & conditions as needed -->
+
+    <div class="signature-section">
+      <p class="signature-label">Client Signature:</p>
+      <% if (data.signatureImagePath) { %>
+        <img class="signature-image" src="file://<%= data.signatureImagePath %>" alt="Client Signature" />
+        <p style="margin-top: 5px;">Date Signed: <%= data.dateSigned || '__________' %></p>
+      <% } else { %>
+        <div class="signature-box"></div>
+        <p style="margin-top: 5px;">Date: ___________________</p>
+      <% } %>
+    </div>
   </body>
 </html>
