@@ -9,11 +9,15 @@ const {
 //   renderContractPreview,     // For viewing
   generateContract,           // ✅ New: contract PDF generation
   getContract,
-  uploadClientSignature
+  uploadClientSignature,
+  getApprovedContracts,
+  sendContractToClient 
 } = require('../controller/projectManagerController');
 
+router.post('/contract/send-to-client/:id', sendContractToClient);
 router.post('/createProposal', createProposal);
 router.get('/respond/:token', getProposalByToken);
+router.get('/getApprovedContracts', getApprovedContracts);
 router.post('/respond', respondToProposal);
 router.get('/getProposalResponse', getProposalResponse);
 

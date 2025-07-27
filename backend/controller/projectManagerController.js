@@ -6,6 +6,9 @@ const multer = require('multer');
 const ejs = require('ejs');
 const puppeteer = require('puppeteer');
 const { PDFDocument } = require('pdf-lib');
+const nodemailer = require("nodemailer");
+const qrcode = require("qrcode");
+
 
 
 // Ensure uploads directory exists
@@ -228,7 +231,7 @@ const generateContract = (req, res) => {
 
   // Step 1: Get proposal and lead info
   const query = `
-    SELECT p.*, l.client_name, l.contact_info, l.project_interest, l.budget, l.timeline, l.id AS lead_id
+    SELECT p.*, l.client_name, l.email, l.phone_number, l.project_interest, l.budget, l.timeline, l.id AS lead_id
     FROM proposals p
     JOIN leads l ON p.lead_id = l.id
     WHERE p.id = ?
@@ -250,16 +253,17 @@ const generateContract = (req, res) => {
     const formData = {
       title: data.title,
       description: data.description,
-      scope_of_work: JSON.parse(data.scope_of_work || '[]'), // Assuming scope_of_work is stored as a JSON string
+      scope_of_work: JSON.parse(data.scope_of_work || '[]'),
       budget_estimate: data.budget,
       timeline_estimate: data.timeline,
-      payment_terms: data.payment_terms || '50% down payment, 30% upon completion, 20% upon final acceptance' // Default payment terms if not provided
+      payment_terms: data.payment_terms || '50% down payment, 30% upon completion, 20% upon final acceptance'
     };
 
-    // Create selectedLead object
+    // Updated: Create selectedLead object with email and phone_number
     const selectedLead = {
       client_name: data.client_name,
-      contact_info: data.contact_info, // Add other fields as necessary
+      email: data.email,
+      phone_number: data.phone_number,
       project_interest: data.project_interest,
       budget: data.budget,
       timeline: data.timeline,
@@ -269,7 +273,7 @@ const generateContract = (req, res) => {
     // Step 3: Render the EJS template
     ejs.renderFile(
       path.join(__dirname, "../templates/contract_template.ejs"),
-      { selectedLead, formData }, // Pass the necessary data to the template
+      { selectedLead, formData },
       async (err, htmlTemplate) => {
         if (err) {
           console.error("EJS render error:", err);
@@ -293,39 +297,39 @@ const generateContract = (req, res) => {
 
           // Step 6: Save contract info to database
           const insertQuery = `
-          INSERT INTO contracts (lead_id, proposal_id, contract_file_url)
-          VALUES (?, ?, ?)
-        `;
-
-        db.query(insertQuery, [data.lead_id, data.id, fileUrl], (insertErr, resultInsert) => {
-          if (insertErr) {
-            console.error("Insert error:", insertErr);
-            return res.status(500).json({ error: "Failed to save contract record" });
-          }
-
-          const contractId = resultInsert.insertId;
-          const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
-
-          // Update access_link column with approvalLink
-          const updateAccessLinkQuery = `
-            UPDATE contracts
-            SET access_link = ?
-            WHERE id = ?
+            INSERT INTO contracts (lead_id, proposal_id, contract_file_url)
+            VALUES (?, ?, ?)
           `;
 
-          db.query(updateAccessLinkQuery, [approvalLink, contractId], (updateErr) => {
-            if (updateErr) {
-              console.error("Failed to update access_link:", updateErr);
-              return res.status(500).json({ error: "Failed to update access link" });
+          db.query(insertQuery, [data.lead_id, data.id, fileUrl], (insertErr, resultInsert) => {
+            if (insertErr) {
+              console.error("Insert error:", insertErr);
+              return res.status(500).json({ error: "Failed to save contract record" });
             }
 
-            res.status(201).json({
-              message: "Contract generated successfully",
-              fileUrl,
-              approvalLink
+            const contractId = resultInsert.insertId;
+            const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
+
+            // Update access_link column with approvalLink
+            const updateAccessLinkQuery = `
+              UPDATE contracts
+              SET access_link = ?
+              WHERE id = ?
+            `;
+
+            db.query(updateAccessLinkQuery, [approvalLink, contractId], (updateErr) => {
+              if (updateErr) {
+                console.error("Failed to update access_link:", updateErr);
+                return res.status(500).json({ error: "Failed to update access link" });
+              }
+
+              res.status(201).json({
+                message: "Contract generated successfully",
+                fileUrl,
+                approvalLink
+              });
             });
           });
-        });
         } catch (pdfErr) {
           console.error("PDF generation error:", pdfErr);
           res.status(500).json({ error: "Failed to generate contract PDF" });
@@ -334,6 +338,7 @@ const generateContract = (req, res) => {
     );
   });
 };
+
 
 
 const getContract = (req, res) => {
@@ -449,6 +454,104 @@ const uploadClientSignature = (req, res) => {
   });
 };
 
+const getApprovedContracts = (req, res) => {
+  const query = "SELECT * FROM contracts WHERE approval_status = 'approved'";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching approved contracts:", err);
+      return res.status(500).json({ error: "Failed to fetch approved contracts" });
+    }
+
+    // Ensure file URLs are absolute
+    const contracts = results.map(contract => ({
+      ...contract,
+      contract_file_url: contract.contract_file_url.startsWith("http")
+        ? contract.contract_file_url
+        : `${req.protocol}://${req.get("host")}${contract.contract_file_url}`
+    }));
+
+    res.json(contracts);
+  });
+};
+
+
+const sendContractToClient = (req, res) => {
+  const contractId = req.params.id;
+
+  const query = `
+    SELECT c.*, l.email, l.client_name
+    FROM contracts c
+    JOIN leads l ON c.lead_id = l.id
+    WHERE c.id = ?;
+  `;
+
+  db.query(query, [contractId], (err, results) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
+    const contract = results[0];
+    const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contract.id}`;
+
+    if (!contract.email) {
+      return res.status(400).json({ error: "Client email is missing" });
+    }
+
+    qrcode.toDataURL(approvalLink, (qrErr, qrCodeDataURL) => {
+      if (qrErr) {
+        console.error("QR code error:", qrErr);
+        return res.status(500).json({ error: "Failed to generate QR code" });
+      }
+
+      // Remove the header "data:image/png;base64," so we can attach it
+      const base64Data = qrCodeDataURL.replace(/^data:image\/png;base64,/, "");
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "caquino.dev@gmail.com",
+          pass: "qbxl zrkb mnyt quau",
+        },
+      });
+
+      const mailOptions = {
+        from: '"DUV Engineers" <caquino.dev@gmail.com>',
+        to: contract.email,
+        subject: "Your Contract is Ready for Review",
+        html: `
+          <p>Hi ${contract.client_name},</p>
+          <p>Your contract is now ready for your review. Please click the link below or scan the QR code to view and approve it:</p>
+          <p><a href="${approvalLink}">${approvalLink}</a></p>
+          <img src="cid:qrcode" alt="QR Code" />
+        `,
+        attachments: [
+          {
+            filename: "qrcode.png",
+            content: base64Data,
+            encoding: "base64",
+            cid: "qrcode", // same as in the img src
+          },
+        ],
+      };
+
+      transporter.sendMail(mailOptions, (emailErr, info) => {
+        if (emailErr) {
+          console.error("Email sending error:", emailErr);
+          return res.status(500).json({ error: "Failed to send email" });
+        }
+
+        res.status(200).json({ message: "Contract sent to client successfully" });
+      });
+    });
+  });
+};
+
 
 module.exports = {
   createProposal,
@@ -457,5 +560,7 @@ module.exports = {
   getProposalResponse,
   generateContract,
   getContract,
-  uploadClientSignature
+  uploadClientSignature,
+  getApprovedContracts,
+  sendContractToClient
 };

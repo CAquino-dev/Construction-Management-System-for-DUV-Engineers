@@ -43,6 +43,7 @@ import FinanceContracts from './pages/admin/FinanceContracts';
 import Proposal from './pages/admin/Proposal';
 import ProposalRespond from './pages/userPages/ProposalRespond';
 import ContractRespond from './pages/userPages/ContractRespond';
+import ApprovedContracts from './pages/admin/ApprovedContracts';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -107,6 +108,7 @@ const App = () => {
           <Route path='site-manager/add-client' element={<AddClient/>} />
           <Route path='sales/lead' element={<LeadManagement/>} />
           <Route path='site-manager/proposal' element={<Proposal/>} />
+          <Route path='project-manager/approved-contracts' element={<ApprovedContracts/>} />
       </Route>
       </Routes>
     </Router>
