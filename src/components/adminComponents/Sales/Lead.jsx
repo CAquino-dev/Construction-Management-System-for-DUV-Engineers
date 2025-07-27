@@ -3,16 +3,17 @@ import React, { useEffect, useState } from "react";
 const Lead = () => {
   const [formData, setFormData] = useState({
     client_name: "",
-    contact_info: "",
+    email: "",
+    phone_number: "",
     project_interest: "",
     budget: "",
     timeline: "",
   });
+
   const [leads, setLeads] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Fetch leads list on mount
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -47,7 +48,7 @@ const Lead = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData), // Send the FormData (multipart/form-data)
+          body: JSON.stringify(formData),
         }
       );
 
@@ -80,13 +81,21 @@ const Lead = () => {
               required
             />
             <input
-              type="text"
-              name="contact_info"
-              placeholder="Contact Info"
-              value={formData.contact_info}
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
               onChange={handleChange}
               className="border rounded-lg p-2 w-full bg-gray-100"
               required
+            />
+            <input
+              type="text"
+              name="phone_number"
+              placeholder="Phone Number (optional)"
+              value={formData.phone_number}
+              onChange={handleChange}
+              className="border rounded-lg p-2 w-full bg-gray-100"
             />
             <textarea
               name="project_interest"
@@ -137,12 +146,13 @@ const Lead = () => {
                   className="border border-gray-100 rounded p-4 bg-gray-50 shadow-md rounded-xl"
                 >
                   <p className="text-gray-700">
-                    <span className="font-semibold">Name: </span>{" "}
-                    {lead.client_name}
+                    <span className="font-semibold">Name:</span> {lead.client_name}
                   </p>
                   <p className="text-gray-700">
-                    <span className="font-semibold">Contact:</span>{" "}
-                    {lead.contact_info}
+                    <span className="font-semibold">Email:</span> {lead.email}
+                  </p>
+                  <p className="text-gray-700">
+                    <span className="font-semibold">Phone:</span> {lead.phone_number}
                   </p>
                   <p className="text-gray-700">
                     <span className="font-semibold">Project Interest:</span>{" "}
