@@ -30,7 +30,7 @@ const FinanceContracts = () => {
         alert("Rejection cancelled. Notes are required.");
         return;
       }
-      body.rejection_notes = notes;
+      body.finance_rejection_notes = notes;
     }
 
     try {

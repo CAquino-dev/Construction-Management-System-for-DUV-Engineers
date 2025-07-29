@@ -10,7 +10,6 @@ const ContractRespond = () => {
   const [message, setMessage] = useState({ error: '', success: '' });
 
   const sigPad = useRef();
-
   const [showSignPad, setShowSignPad] = useState(false);
   const [trimmedSignature, setTrimmedSignature] = useState(null);
 
@@ -36,41 +35,67 @@ const ContractRespond = () => {
 
   const clearSignature = () => sigPad.current.clear();
 
-const handleSaveSignature = async () => {
-  if (sigPad.current.isEmpty()) {
-    alert("Please provide a signature.");
-    return;
-  }
-
-  const canvas = sigPad.current.getCanvas(); // Get the raw canvas
-  const dataURL = canvas.toDataURL('image/png');
-  setTrimmedSignature(dataURL);
-
-  try {
-    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        base64Signature: dataURL,
-        proposalId: proposalId
-      }),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      setResponseStatus("Successfully saved the signature!");
-      setMessage({ success: data.message, error: '' });
-      setShowSignPad(false);
-    } else {
-      setMessage({ error: data.error || 'Signature upload failed.', success: '' });
+  const handleSaveSignature = async () => {
+    if (sigPad.current.isEmpty()) {
+      alert("Please provide a signature.");
+      return;
     }
-  } catch (err) {
-    setMessage({ error: 'Error uploading signature.', success: '' });
-  }
-};
 
+    const canvas = sigPad.current.getCanvas();
+    const dataURL = canvas.toDataURL('image/png');
+    setTrimmedSignature(dataURL);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          base64Signature: dataURL,
+          proposalId: proposalId
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setResponseStatus("Successfully saved the signature!");
+        setMessage({ success: data.message, error: '' });
+        setShowSignPad(false);
+      } else {
+        setMessage({ error: data.error || 'Signature upload failed.', success: '' });
+      }
+    } catch (err) {
+      setMessage({ error: 'Error uploading signature.', success: '' });
+    }
+  };
+
+  const handleRejectContract = async () => {
+    const notes = window.prompt("Please provide a reason for rejection:");
+    if (!notes || !notes.trim()) {
+      alert("Rejection notes are required.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/contracts/${proposalId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ client_rejection_notes: notes }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setMessage({ success: "Contract rejected successfully.", error: '' });
+      } else {
+        setMessage({ error: data.error || 'Failed to reject contract.', success: '' });
+      }
+    } catch (err) {
+      setMessage({ error: 'Error rejecting contract.', success: '' });
+    }
+  };
 
   if (loading) return <p className="p-4">Loading contract...</p>;
 
@@ -101,7 +126,10 @@ const handleSaveSignature = async () => {
         <button className="bg-green-600 text-white px-4 py-2 rounded">
           Sign In Person
         </button>
-        <button className="bg-red-600 text-white px-4 py-2 rounded">
+        <button
+          className="bg-red-600 text-white px-4 py-2 rounded"
+          onClick={handleRejectContract}
+        >
           Reject Contract
         </button>
       </div>
@@ -133,6 +161,9 @@ const handleSaveSignature = async () => {
 
       {message.error && (
         <p className="text-red-600 mt-2">{message.error}</p>
+      )}
+      {message.success && (
+        <p className="text-green-600 mt-2">{message.success}</p>
       )}
     </div>
   );

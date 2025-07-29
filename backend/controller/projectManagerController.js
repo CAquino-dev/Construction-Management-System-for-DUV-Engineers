@@ -554,6 +554,24 @@ const sendContractToClient = (req, res) => {
   });
 };
 
+const clientRejectContract = (req, res) => {
+  const contractId = req.params.id;
+  const { client_rejection_notes } = req.body;
+
+    if (!client_rejection_notes) {
+    return res.status(400).json({ error: "Rejection notes are required" });
+  }
+
+  const query = `UPDATE contracts 
+  SET status = 'rejected', client_rejection_notes = ? 
+  WHERE id = ?`;
+
+  db.query(query, [client_rejection_notes, contractId], (err) => {
+    if (err) return res.status(500).json({ error: "Rejection failed" });
+    res.json({ success: true });
+  });
+
+}
 
 module.exports = {
   createProposal,
@@ -564,5 +582,6 @@ module.exports = {
   getContract,
   uploadClientSignature,
   getApprovedContracts,
-  sendContractToClient
+  sendContractToClient,
+  clientRejectContract
 };
