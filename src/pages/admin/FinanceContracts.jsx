@@ -1,4 +1,3 @@
-import { meta } from "@eslint/js";
 import React, { useEffect, useState } from "react";
 
 const FinanceContracts = () => {
@@ -7,40 +6,51 @@ const FinanceContracts = () => {
 
   useEffect(() => {
     const fetchContracts = async () => {
-        try {
+      try {
         const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getContracts`);
         const data = await res.json();
         console.log(data);
         setContracts(data);
-        } catch (err) {
+      } catch (err) {
         console.error("Failed to fetch contracts", err);
-        } finally {
+      } finally {
         setLoading(false);
-        }
+      }
     };
 
     fetchContracts();
   }, []);
 
-const handleAction = async (id, action) => {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/contracts/${id}/${action}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
+  const handleAction = async (id, action) => {
+    let body = {};
 
-    if (!response.ok) {
-      throw new Error(`Server returned status ${response.status}`);
+    if (action === "reject") {
+      const notes = window.prompt("Please provide rejection notes:");
+      if (!notes) {
+        alert("Rejection cancelled. Notes are required.");
+        return;
+      }
+      body.rejection_notes = notes;
     }
 
-    setContracts(prev => prev.filter(c => c.id !== id));
-  } catch (err) {
-    console.error(`Failed to ${action} contract`, err);
-  }
-};
+    try {
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/contracts/${id}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
 
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      setContracts(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      console.error(`Failed to ${action} contract`, err);
+    }
+  };
 
   if (loading) return <div className="text-center mt-10">Loading contracts...</div>;
 

@@ -416,14 +416,22 @@ const approveContract = (req, res) => {
 
 const rejectContract = (req, res) => {
   const contractId = req.params.id;
+  const { rejection_notes } = req.body;
 
-  const query = `UPDATE contracts SET approval_status = 'rejected' WHERE id = ?`;
+  if (!rejection_notes) {
+    return res.status(400).json({ error: "Rejection notes are required" });
+  }
 
-  db.query(query, [contractId], (err) => {
+  const query = `UPDATE contracts 
+    SET approval_status = 'rejected', rejection_notes = ? 
+    WHERE id = ?`;
+
+  db.query(query, [rejection_notes, contractId], (err) => {
     if (err) return res.status(500).json({ error: "Rejection failed" });
     res.json({ success: true });
   });
-}
+};
+
 
 
  
