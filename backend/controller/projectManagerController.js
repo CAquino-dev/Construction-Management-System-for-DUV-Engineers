@@ -159,47 +159,49 @@ const getProposalByToken = (req, res) => {
 };
 
 const respondToProposal = (req, res) => {
-  const { token, status } = req.body;
+  const { token, response, notes } = req.body;
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
-  if (!token || !["approve", "reject"].includes(status)) {
-    return res.status(400).json({ message: "Invalid request" });
+  if (!token || !["approved", "rejected"].includes(response)) {
+    return res.status(400).json({ error: "Invalid request" });
   }
 
   const selectSql = "SELECT * FROM proposals WHERE approval_token = ? LIMIT 1";
   db.query(selectSql, [token], (err, results) => {
     if (err) {
       console.error("Error querying proposals:", err);
-      return res.status(500).json({ message: "Server error" });
+      return res.status(500).json({ error: "Server error" });
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ message: "Proposal not found or already handled" });
+      return res.status(404).json({ error: "Proposal not found or already handled" });
     }
 
     const proposal = results[0];
 
     if (proposal.status !== "pending") {
-      return res.status(400).json({ message: `Proposal already ${proposal.status}` });
+      return res.status(400).json({ error: `Proposal already ${proposal.status}` });
     }
 
-    const finalStatus = status === "approve" ? "approved" : "rejected";
     const updateSql = `
       UPDATE proposals
-      SET status = ?, responded_at = NOW(), approved_by_ip = ?
+      SET status = ?, responded_at = NOW(), approved_by_ip = ?, rejection_notes = ?
       WHERE id = ?
     `;
 
-    db.query(updateSql, [finalStatus, clientIp, proposal.id], (updateErr) => {
+    const rejectionNotes = response === "rejected" ? notes || null : null;
+
+    db.query(updateSql, [response, clientIp, rejectionNotes, proposal.id], (updateErr) => {
       if (updateErr) {
         console.error("Error updating proposal:", updateErr);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ error: "Server error" });
       }
 
-      res.json({ message: `Proposal successfully ${finalStatus}.` });
+      res.json({ message: `Proposal successfully ${response}.` });
     });
   });
 };
+
 
 const getProposalResponse = (req, res) => {
   const query = `
