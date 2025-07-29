@@ -6,19 +6,23 @@ const {
   getProposalByToken,
   respondToProposal,
   getProposalResponse,
-//   renderContractPreview,     // For viewing
-  generateContract,           // ✅ New: contract PDF generation
+  generateContract,        
   getContract,
-  uploadClientSignature
+  uploadClientSignature,
+  getApprovedContracts,
+  sendContractToClient,
+  clientRejectContract
 } = require('../controller/projectManagerController');
 
+router.post('/contract/send-to-client/:id', sendContractToClient);
 router.post('/createProposal', createProposal);
 router.get('/respond/:token', getProposalByToken);
+router.get('/getApprovedContracts', getApprovedContracts);
 router.post('/respond', respondToProposal);
 router.get('/getProposalResponse', getProposalResponse);
-
-router.get('/contract/:proposalId', getContract);       // View contract (EJS)
-router.post('/generateContract/:proposalId', generateContract);   // ✅ Generate contract PDF
+router.post('/contracts/:id/reject', clientRejectContract);
+router.get('/contract/:proposalId', getContract);       
+router.post('/generateContract/:proposalId', generateContract); 
 router.post('/signature', uploadClientSignature);
 
 module.exports = router;

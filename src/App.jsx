@@ -39,9 +39,11 @@ import { AppointmentRequestPage } from './pages/userPages/AppointmentRequestPage
 import  Appointment from './pages/admin/Appointment';
 import { AddClient } from './pages/admin/AddClient';
 import LeadManagement from './pages/admin/LeadManagement';
+import FinanceContracts from './pages/admin/FinanceContracts';
 import Proposal from './pages/admin/Proposal';
 import ProposalRespond from './pages/userPages/ProposalRespond';
 import ContractRespond from './pages/userPages/ContractRespond';
+import ApprovedContracts from './pages/admin/ApprovedContracts';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -90,6 +92,7 @@ const App = () => {
           <Route path='hr/payroll' element={<EmployeePayroll/>} />
           <Route path='hr/payslip' element={<Payslip/>} />
           <Route path='finance/approved-payroll-from-hr' element={<Finance/>} />
+          <Route path='finance/view-contracts' element={<FinanceContracts/>} />
           <Route path='finance/approved-payroll-from-ceo' element={<ApprovedPayrollOfCeo/>} />
           <Route path='finance/budget-supply-request' element={<FinanceBudgetSupplyRequest/>} />
           <Route path='site-manager/projects' element={<Projects/>} />
@@ -105,6 +108,7 @@ const App = () => {
           <Route path='site-manager/add-client' element={<AddClient/>} />
           <Route path='sales/lead' element={<LeadManagement/>} />
           <Route path='site-manager/proposal' element={<Proposal/>} />
+          <Route path='project-manager/approved-contracts' element={<ApprovedContracts/>} />
       </Route>
       </Routes>
     </Router>

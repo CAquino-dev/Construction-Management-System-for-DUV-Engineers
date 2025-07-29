@@ -390,11 +390,56 @@ const updateFinanceApprovalStatus = (req, res) => {
   });
 };
 
+const getContracts = (req, res) => {
+  
+  const query = "SELECT * FROM contracts WHERE approval_status = 'pending'";
+
+  db.query(query, (err, results) => {
+      if (err) {
+      console.error('Error fetching contracts:', err);
+      return res.status(500).json({ error: 'Failed to fetch approved expenses' });
+    }
+    res.json(results);
+  })
+};
+
+const approveContract = (req, res) => {
+  const contractId = req.params.id;
+
+  const query = `UPDATE contracts SET approval_status = 'approved' WHERE id = ?`;
+
+  db.query(query, [contractId], (err) => {
+    if (err) return res.status(500).json({ error: "Approval failed" });
+    res.json({ success: true });
+  });
+}
+
+const rejectContract = (req, res) => {
+  const contractId = req.params.id;
+  const { finance_rejection_notes } = req.body;
+
+  if (!finance_rejection_notes) {
+    return res.status(400).json({ error: "Rejection notes are required" });
+  }
+
+  const query = `UPDATE contracts 
+    SET approval_status = 'rejected', finance_rejection_notes = ? 
+    WHERE id = ?`;
+
+  db.query(query, [finance_rejection_notes, contractId], (err) => {
+    if (err) return res.status(500).json({ error: "Rejection failed" });
+    res.json({ success: true });
+  });
+};
+
+
 
  
 
 
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
-  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject, getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus
+  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
+  getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
+  approveContract, rejectContract
  };

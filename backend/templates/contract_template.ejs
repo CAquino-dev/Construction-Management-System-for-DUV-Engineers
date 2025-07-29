@@ -1,47 +1,154 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Contract Agreement</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 30px; }
-      .signature-section {
-        margin-top: 60px;
-      }
-      .signature-label {
-        font-weight: bold;
-        margin-bottom: 10px;
-      }
-      .signature-image {
-        width: 200px;
-        height: auto;
-      }
-      .signature-box {
-        width: 300px;
-        height: 100px;
-        border: 1px solid #000;
-      }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #4c735c;
+            padding-bottom: 20px;
+        }
+        .company-logo {
+            height: 80px;
+            margin-bottom: 10px;
+        }
+        h1 {
+            color: #4c735c;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        h2 {
+            color: #4c735c;
+            font-size: 18px;
+            margin-top: 25px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .parties {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .party {
+            width: 48%;
+        }
+        .signature-block {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-line {
+            width: 300px;
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            text-align: center;
+        }
+        .scope-item {
+            margin-bottom: 10px;
+        }
+        .dated {
+            text-align: right;
+            margin-bottom: 30px;
+        }
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
     </style>
-  </head>
-  <body>
-    <h1>Construction Contract</h1>
-
-    <p><strong>Client:</strong> <%= data.client_name %></p>
-    <p><strong>Project:</strong> <%= data.project_interest %></p>
-    <p><strong>Budget:</strong> ₱<%= data.budget %></p>
-    <p><strong>Timeline:</strong> <%= data.timeline %></p>
-
-    <hr>
-    <p>This contract outlines the terms agreed upon...</p>
-
-    <div class="signature-section">
-      <p class="signature-label">Client Signature:</p>
-      <% if (data.signatureImagePath) { %>
-        <img class="signature-image" src="file://<%= data.signatureImagePath %>" alt="Client Signature" />
-        <p style="margin-top: 5px;">Date Signed: <%= data.dateSigned || '__________' %></p>
-      <% } else { %>
-        <div class="signature-box"></div>
-        <p style="margin-top: 5px;">Date: ___________________</p>
-      <% } %>
+</head>
+<body>
+    <div class="header">
+        <img src="https://placehold.co/300x80" alt="Construction company logo showing a modern building silhouette with the company name below in bold letters" class="company-logo">
+        <h1>CONSTRUCTION CONTRACT AGREEMENT</h1>
+        <p>This Agreement is made and entered into as of <span class="effective-date"><%= new Date().toLocaleDateString() %></span></p>
     </div>
-  </body>
+
+    <div class="parties">
+        <div class="party">
+            <h2>CONTRACTOR</h2>
+            <p><strong>[YOUR COMPANY NAME]</strong></p>
+            <p>[Your Company Address]</p>
+            <p>Phone: [Your Phone Number]</p>
+            <p>Email: [Your Email]</p>
+            <p>License #: [Your License Number]</p>
+        </div>
+        <div class="party">
+            <h2>CLIENT</h2>
+            <p><strong><%= selectedLead.client_name %></strong></p>
+            <p>[Client Address]</p>
+            <p>Phone: [Client Phone]</p>
+            <p>Email: [Client Email]</p>
+        </div>
+    </div>
+
+    <h2>1. PROJECT DESCRIPTION</h2>
+    <p>This Contract is for the construction services described below ("Project"):</p>
+    <p><strong>Project Title:</strong> <%= formData.title %></p>
+    <p><strong>Project Description:</strong> <%= formData.description %></p>
+
+    <h2>2. SCOPE OF WORK</h2>
+    <p>The Contractor agrees to perform the following work:</p>
+    <% formData.scope_of_work.forEach(item => { %>
+        <div class="scope-item">• <%= item %></div>
+    <% }); %>
+
+    <h2>3. CONTRACT PRICE AND PAYMENT TERMS</h2>
+    <p><strong>Total Contract Price:</strong> ₱<%= formData.budget_estimate %></p>
+    <p><strong>Payment Terms:</strong> <%= formData.payment_terms || '50% down payment, 30% upon completion of [milestone], 20% upon final completion and acceptance' %></p>
+
+    <h2>4. PROJECT TIMELINE</h2>
+    <p><strong>Estimated Start Date:</strong> [Start Date]</p>
+    <p><strong>Estimated Completion Date:</strong> [Completion Date]</p>
+    <p><strong>Project Duration:</strong> <%= formData.timeline_estimate %></p>
+
+    <h2>5. CHANGE ORDERS</h2>
+    <p>Any changes to this Contract must be made in writing and signed by both parties. Additional work will be billed as a Change Order at the Contractor's then-current rates.</p>
+
+    <h2>6. WARRANTIES</h2>
+    <p>The Contractor warrants that all work will be performed in a workmanlike manner and in accordance with all applicable building codes and regulations.</p>
+
+    <h2>7. INSURANCE AND INDEMNIFICATION</h2>
+    <p>The Contractor agrees to maintain appropriate liability and workers' compensation insurance for the duration of the Project.</p>
+
+    <h2>8. TERMINATION</h2>
+    <p>Either party may terminate this Contract upon [number] days written notice for any reason. In the event of termination, the Client shall pay the Contractor for all work completed to date.</p>
+
+    <h2>9. GOVERNING LAW</h2>
+    <p>This Contract shall be governed by and construed in accordance with the laws of [State/Country].</p>
+
+    <h2>10. ENTIRE AGREEMENT</h2>
+    <p>This Contract represents the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements.</p>
+
+    <div class="signature-block">
+        <div>
+            <p><strong>[YOUR COMPANY NAME]</strong></p>
+            <div class="signature-line"></div>
+            <p>Authorized Signature</p>
+            <p>Date: _______________</p>
+        </div>
+        <div>
+            <p><strong><%= selectedLead.client_name %></strong></p>
+            <div class="signature-line"></div>
+            <p>Authorized Signature</p>
+            <p>Date: _______________</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>This document constitutes a legally binding contract between the parties named above.</p>
+    </footer>
+</body>
 </html>
