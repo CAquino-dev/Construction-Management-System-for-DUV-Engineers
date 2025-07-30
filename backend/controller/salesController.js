@@ -1,16 +1,28 @@
 const db = require('../config/db');  // Importing the MySQL connection
 
 const createLead = (req, res) => {
-    const { client_name, contact_info, project_interest, budget, timeline } = req.body;
+    const { client_name, email, phone_number, project_interest, budget, timeline } = req.body;
 
     // Validate required fields
+    if (!client_name || !email || !project_interest) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
 
     const query = `
-    INSERT INTO leads (client_name, contact_info, project_interest, budget, timeline, status)
-    VALUES (?, ?, ?, ?, ?, 'new');
+        INSERT INTO leads (client_name, email, phone_number, project_interest, budget, timeline, status)
+        VALUES (?, ?, ?, ?, ?, ?, 'new');
     `;
 
-    db.query(query, [client_name, contact_info, project_interest, budget || null, timeline || null], (error, results) => {
+    const values = [
+        client_name,
+        email,
+        phone_number || null, // allow null phone number
+        project_interest,
+        budget || null,
+        timeline || null
+    ];
+
+    db.query(query, values, (error, results) => {
         if (error) {
             console.error('Error creating lead:', error);
             return res.status(500).json({ error: 'Failed to create lead' });
@@ -22,6 +34,8 @@ const createLead = (req, res) => {
         });
     });
 };
+
+
 
 const getLeads = (req, res) => {
     const query = `SELECT * FROM leads WHERE status NOT IN ('approved') ORDER BY created_at DESC`;

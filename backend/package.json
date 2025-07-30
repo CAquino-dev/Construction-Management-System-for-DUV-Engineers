@@ -22,6 +22,7 @@
     "nodemailer": "^7.0.3",
     "pdf-lib": "^1.17.1",
     "puppeteer": "^24.14.0",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
   }
