@@ -26,7 +26,9 @@ const Appointment = () => {
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/getAppointments`);
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/getAppointments`
+      );
       if (!res.ok) throw new Error("Failed to fetch appointments");
       const data = await res.json();
       setAppointments(data);
@@ -45,13 +47,15 @@ const Appointment = () => {
   useEffect(() => {
     const fetchBookedDates = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`
+        );
         if (!response.ok) throw new Error("Failed to fetch booked dates.");
         const data = await response.json();
 
         const fullyBookedDates = data
-          .filter(d => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
-          .map(d => new Date(d.preferred_date));
+          .filter((d) => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
+          .map((d) => new Date(d.preferred_date));
 
         setBookedDates(fullyBookedDates);
       } catch (error) {
@@ -65,11 +69,16 @@ const Appointment = () => {
   const updateStatus = async (id, status) => {
     setUpdatingId(id);
     try {
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments/${id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/appointments/${id}/status`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }
+      );
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to update status");
@@ -83,7 +92,7 @@ const Appointment = () => {
   };
 
   const handleChange = (e) => {
-    setNewAppointment(prev => ({
+    setNewAppointment((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -101,7 +110,10 @@ const Appointment = () => {
       !newAppointment.preferredTime ||
       !newAppointment.purpose
     ) {
-      setSubmitStatus({ success: false, message: "Please fill all required fields." });
+      setSubmitStatus({
+        success: false,
+        message: "Please fill all required fields.",
+      });
       return;
     }
 
@@ -111,15 +123,21 @@ const Appointment = () => {
     };
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/adminAppointments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submissionData),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/adminAppointments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(submissionData),
+        }
+      );
       if (!res.ok) throw new Error("Failed to add appointment");
 
       setShowModal(false);
-      setSubmitStatus({ success: true, message: "Appointment submitted successfully!" });
+      setSubmitStatus({
+        success: true,
+        message: "Appointment submitted successfully!",
+      });
       setNewAppointment({
         clientName: "",
         clientEmail: "",
@@ -139,17 +157,24 @@ const Appointment = () => {
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
-    const options = { weekday: "short", month: "long", day: "numeric", year: "numeric" };
+    const options = {
+      weekday: "short",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    };
     let formatted = date.toLocaleDateString("en-US", options);
-    formatted = formatted.replace(/, ([0-9]{1,2}),/, ' $1.');
-    formatted = formatted.replace(/,/, ',');
+    formatted = formatted.replace(/, ([0-9]{1,2}),/, " $1.");
+    formatted = formatted.replace(/,/, ",");
     return formatted;
   };
 
   return (
-    <div className=" bg-gray-100 p-6 h-screen">
-      <div className="max-w-4xl mx-auto bg-white shadow h-9/10 px-4 py-6"> 
-        <h1 className="text-3xl font-bold mb-6 text-center">Manage Appointments</h1>
+    <div className="bg-gray-100 h-screen">
+      <div className="max-w-4xl mx-auto bg-white shadow h-9/10 px-4 py-6">
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Manage Appointments
+        </h1>
 
         <div className="flex justify-end mb-4">
           <button
@@ -175,10 +200,12 @@ const Appointment = () => {
             >
               <div className="mb-3 sm:mb-0">
                 <p>
-                  <strong>{appt.client_name}</strong>  <span className="text-gray-600">{appt.client_email}</span>
+                  <strong>{appt.client_name}</strong>{" "}
+                  <span className="text-gray-600">{appt.client_email}</span>
                 </p>
                 <p>
-                  Date: {formatDisplayDate(appt.preferred_date)} @ {appt.preferred_time}
+                  Date: {formatDisplayDate(appt.preferred_date)} @{" "}
+                  {appt.preferred_time}
                 </p>
                 <p>
                   Status:{" "}
@@ -306,7 +333,10 @@ const Appointment = () => {
               )}
 
               <div className="flex justify-between">
-                <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                >
                   Submit
                 </button>
                 <button
