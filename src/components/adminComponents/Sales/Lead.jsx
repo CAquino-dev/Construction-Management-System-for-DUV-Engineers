@@ -66,7 +66,7 @@ const Lead = () => {
 
   return (
     <div className="sm:h-screen">
-      <div className="flex flex-col sm:flex-row gap-4 justify-center h-3/5">
+      <div className="flex flex-row gap-4 justify-center h-3/5">
         {/* Left Panel */}
         <div className="sm:w-6/11 p-4 rounded shadow bg-white">
           <h2 className="text-2xl font-bold mb-4">Capture Lead</h2>
