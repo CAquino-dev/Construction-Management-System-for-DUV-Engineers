@@ -66,7 +66,7 @@ const Lead = () => {
 
   return (
     <div className="sm:h-screen">
-      <div className="flex flex-col sm:flex-row gap-4 justify-center h-3/5">
+      <div className="flex flex-row gap-4 justify-center h-3/5">
         {/* Left Panel */}
         <div className="sm:w-6/11 p-4 rounded shadow bg-white">
           <h2 className="text-2xl font-bold mb-4">Capture Lead</h2>
@@ -146,13 +146,15 @@ const Lead = () => {
                   className="border border-gray-100 rounded p-4 bg-gray-50 shadow-md rounded-xl"
                 >
                   <p className="text-gray-700">
-                    <span className="font-semibold">Name:</span> {lead.client_name}
+                    <span className="font-semibold">Name:</span>{" "}
+                    {lead.client_name}
                   </p>
                   <p className="text-gray-700">
                     <span className="font-semibold">Email:</span> {lead.email}
                   </p>
                   <p className="text-gray-700">
-                    <span className="font-semibold">Phone:</span> {lead.phone_number}
+                    <span className="font-semibold">Phone:</span>{" "}
+                    {lead.phone_number}
                   </p>
                   <p className="text-gray-700">
                     <span className="font-semibold">Project Interest:</span>{" "}
