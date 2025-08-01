@@ -37,9 +37,7 @@ const FinanceContracts = () => {
 
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_REACT_APP_API_URL
-        }/api/finance/contracts/${id}/${action}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/contracts/${id}/${action}`,
         {
           method: "POST",
           headers: {
@@ -53,7 +51,7 @@ const FinanceContracts = () => {
         throw new Error(`Server returned status ${response.status}`);
       }
 
-      setContracts((prev) => prev.filter((c) => c.id !== id));
+      setContracts((prev) => prev.filter((c) => c.contract_id !== id));
     } catch (err) {
       console.error(`Failed to ${action} contract`, err);
     }
@@ -64,45 +62,91 @@ const FinanceContracts = () => {
 
   return (
     <div className="h-screen">
-      <div className="max-w-4xl mx-auto bg-white shadow h-9/10 px-4 py-6">
+      <div className="max-w-5xl mx-auto bg-white shadow h-9/10 px-4 py-6">
         <h1 className="text-3xl font-bold mb-6 text-center">
           Pending Contracts for Review
         </h1>
 
-        <div className="max-w-4xl mx-auto space-y-4 overflow-y-auto h-8/10 sm:h-9/10 border-1">
+        <div className="space-y-4 overflow-y-auto h-8/10 sm:h-9/10 border-1">
           {contracts.map((contract) => (
             <div
-              key={contract.id}
+              key={contract.contract_id}
               className="p-4 bg-gray-100 shadow rounded-xl border"
             >
               <div className="flex flex-col gap-4">
-                <div>
+                {/* Basic Contract Info */}
+                <div className="space-y-2">
                   <p>
-                    <strong>Contract ID:</strong> {contract.id}
+                    <strong>Contract ID:</strong> {contract.contract_id}
                   </p>
                   <p>
-                    <strong>Proposal ID:</strong> {contract.proposal_id}
-                  </p>
-                  <p>
-                    <strong>Status:</strong>{" "}
+                    <strong>Status:</strong>
                     <span
-                      className={`capitalize ${
-                        contract.status === "signed"
+                      className={`capitalize ml-2 ${
+                        contract.contract_status === "signed"
                           ? "text-green-600"
+                          : contract.contract_status === "rejected"
+                          ? "text-red-600"
                           : "text-yellow-600"
                       }`}
                     >
-                      {contract.status}
+                      {contract.contract_status}
                     </span>
                   </p>
                   {contract.contract_signed_at && (
                     <p>
                       <strong>Signed At:</strong>{" "}
-                      {new Date(contract.contract_signed_at).toLocaleString()}
+                      {new Date(
+                        contract.contract_signed_at
+                      ).toLocaleString()}
                     </p>
                   )}
                 </div>
 
+                {/* Proposal Info */}
+                <div className="space-y-1">
+                  <hr className="my-2" />
+                  <p>
+                    <strong>Proposal Title:</strong> {contract.proposal_title}
+                  </p>
+                  <p>
+                    <strong>Budget Estimate:</strong> ₱
+                    {parseFloat(contract.budget_estimate).toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Timeline:</strong> {contract.timeline_estimate}
+                  </p>
+                  {contract.scope_of_work && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-blue-600 underline">
+                        View Scope of Work
+                      </summary>
+                      <div className="mt-1 whitespace-pre-wrap text-gray-700 text-sm">
+                        {contract.scope_of_work}
+                      </div>
+                    </details>
+                  )}
+                </div>
+
+                {/* Client Info */}
+                <div className="space-y-1">
+                  <hr className="my-2" />
+                  <p>
+                    <strong>Client Name:</strong> {contract.client_name}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {contract.client_email}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {contract.client_phone}
+                  </p>
+                  <p>
+                    <strong>Project Interest:</strong>{" "}
+                    {contract.project_interest}
+                  </p>
+                </div>
+
+                {/* View Contract */}
                 <div>
                   <p className="font-medium mb-1">View Contract:</p>
                   <button
@@ -116,19 +160,24 @@ const FinanceContracts = () => {
                     }
                     className="text-blue-500 underline"
                   >
-                    View Contract
+                    View Contract PDF
                   </button>
                 </div>
 
+                {/* Action Buttons */}
                 <div className="flex flex-row gap-2 justify-end">
                   <button
-                    onClick={() => handleAction(contract.id, "approve")}
+                    onClick={() =>
+                      handleAction(contract.contract_id, "approve")
+                    }
                     className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
                   >
                     Approve
                   </button>
                   <button
-                    onClick={() => handleAction(contract.id, "reject")}
+                    onClick={() =>
+                      handleAction(contract.contract_id, "reject")
+                    }
                     className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
                   >
                     Reject
