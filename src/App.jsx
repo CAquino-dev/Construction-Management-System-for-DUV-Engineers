@@ -44,6 +44,7 @@ import Proposal from './pages/admin/Proposal';
 import ProposalRespond from './pages/userPages/ProposalRespond';
 import ContractRespond from './pages/userPages/ContractRespond';
 import ApprovedContracts from './pages/admin/ApprovedContracts';
+import CreateProjectPage from './pages/admin/CreateProjectPage';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,7 @@ const App = () => {
           <Route path='sales/lead' element={<LeadManagement/>} />
           <Route path='site-manager/proposal' element={<Proposal/>} />
           <Route path='project-manager/approved-contracts' element={<ApprovedContracts/>} />
+          <Route path="project/create/:contractId" element={<CreateProjectPage />} />
       </Route>
       </Routes>
     </Router>

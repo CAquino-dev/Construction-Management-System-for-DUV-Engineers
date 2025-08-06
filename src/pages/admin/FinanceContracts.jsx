@@ -79,20 +79,6 @@ const FinanceContracts = () => {
                   <p>
                     <strong>Contract ID:</strong> {contract.contract_id}
                   </p>
-                  <p>
-                    <strong>Status:</strong>
-                    <span
-                      className={`capitalize ml-2 ${
-                        contract.contract_status === "signed"
-                          ? "text-green-600"
-                          : contract.contract_status === "rejected"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                      }`}
-                    >
-                      {contract.contract_status}
-                    </span>
-                  </p>
                   {contract.contract_signed_at && (
                     <p>
                       <strong>Signed At:</strong>{" "}

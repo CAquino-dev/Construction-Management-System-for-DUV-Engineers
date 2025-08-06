@@ -1,5 +1,6 @@
 // controllers/projectController.js
 const db = require('../config/db');  // Importing the MySQL connection
+const bcrypt = require("bcrypt");
 
 const calculateEstimate = async (data) => {
   const { projectType, materialType, sizeInSqm, location, budget } = data;  // Get projectType, materialType, area in sqm, location, and budget
@@ -308,6 +309,149 @@ const updateMilestoneStatus = (req, res) => {
   });
 };
 
+const createProjectWithClient = (req, res) => {
+  const {
+    client_name,
+    client_email,
+    client_phone,
+    client_address,
+    project_name,
+    description,
+    start_date,
+    end_date,
+    budget,
+    cost_breakdown,
+    location,
+    payment_schedule,
+    project_type,
+    assigned_users // array of { user_id, role_in_project }
+  } = req.body;
+
+  // Hash a default password for client
+  const defaultPassword = "client123"; // Change this logic later
+  const saltRounds = 10;
+
+  bcrypt.hash(defaultPassword, saltRounds, (err, hashPassword) => {
+    if (err) return res.status(500).json({ error: "Error hashing password" });
+
+    const insertClientQuery = `
+      INSERT INTO users (full_name, email, phone, address, password, role_id, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'Active', NOW())
+    `;
+
+    db.query(
+      insertClientQuery,
+      [client_name, client_email, client_phone, client_address, hashPassword, 5], // role_id 5 = Client
+      (err, clientResult) => {
+        if (err) {
+          console.error("Error inserting client:", err);
+          return res.status(500).json({ error: "Failed to insert client" });
+        }
+
+        const clientId = clientResult.insertId;
+
+        const insertProjectQuery = `
+          INSERT INTO engineer_projects (
+            client_id, engineer_id, project_name, description, start_date, end_date,
+            status, budget, cost_breakdown, location, payment_schedule,
+            project_type, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+
+        db.query(
+          insertProjectQuery,
+          [
+          clientId,
+          assigned_users.find(u => u.role_in_project === "engineer")?.user_id,
+          project_name,
+          description,
+          start_date,
+          end_date,
+          budget,
+          cost_breakdown,
+          location,
+          payment_schedule,
+          project_type,
+          ],
+          (err, projectResult) => {
+            if (err) {
+              console.error("Error inserting project:", err);
+              return res.status(500).json({ error: "Failed to insert project" });
+            }
+
+            const projectId = projectResult.insertId;
+
+            // Insert project assignments
+            if (!Array.isArray(assigned_users)) {
+              return res.status(400).json({ error: "assigned_users must be an array" });
+            }
+
+            const assignments = assigned_users.map((user) => [
+              projectId,
+              user.user_id,
+              user.role_in_project,
+              new Date()
+            ]);
+
+            const assignmentQuery = `
+              INSERT INTO project_assignments (project_id, user_id, role_in_project, assigned_at)
+              VALUES ?
+            `;
+
+            db.query(assignmentQuery, [assignments], (err) => {
+              if (err) {
+                console.error("Error inserting project assignments:", err);
+                return res.status(500).json({ error: "Failed to assign users" });
+              }
+
+              return res.status(200).json({
+                message: "Project and client created successfully",
+                project_id: projectId,
+              });
+            });
+          }
+        );
+      }
+    );
+  });
+};
+
+const getContractById = (req, res) => {
+  const contractId = req.params.contractId;
+
+  const query = `
+    SELECT 
+      c.*, 
+      p.title AS proposal_title, 
+      p.budget_estimate, 
+      p.timeline_estimate,
+      l.client_name AS client_name,
+      l.email AS client_email,
+      l.phone_number AS client_phone
+    FROM contracts c
+    JOIN proposals p ON c.proposal_id = p.id
+    JOIN leads l ON p.lead_id = l.id
+    WHERE c.id = ?
+  `;
+
+  db.query(query, [contractId], (err, results) => {
+    if (err) {
+      console.error("Error fetching contract:", err);
+      return res.status(500).json({ error: "Failed to fetch contract details" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
+    res.json(results[0]);
+  });
+};
 
 
-module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses, updateEngineerApproval, updateMilestoneStatus };
+
+
+module.exports = { getEstimate, getMilestones, createExpense, 
+  getExpenses, getPendingExpenses, updateEngineerApproval, 
+  updateMilestoneStatus, createProjectWithClient, getContractById
+};

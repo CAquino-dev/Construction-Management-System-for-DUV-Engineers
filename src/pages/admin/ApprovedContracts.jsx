@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const ApprovedContracts = () => {
+  const navigate = useNavigate(); // ✅ move here
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState({});
+  const [viewMode, setViewMode] = useState("pending"); // "pending" or "signed"
 
   const BASE_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
@@ -52,6 +55,12 @@ const ApprovedContracts = () => {
     }
   };
 
+  const filteredContracts = contracts.filter((contract) =>
+    viewMode === "pending"
+      ? contract.contract_status !== "signed"
+      : contract.contract_status === "signed"
+  );
+
   if (loading)
     return (
       <div className="text-center mt-10">Loading approved contracts...</div>
@@ -64,88 +73,101 @@ const ApprovedContracts = () => {
           Approved Contracts
         </h1>
 
+        {/* Toggle Buttons */}
+        <div className="flex justify-center gap-4 mb-6">
+          <button
+            onClick={() => setViewMode("pending")}
+            className={`px-4 py-2 rounded ${
+              viewMode === "pending"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Pending to Send
+          </button>
+          <button
+            onClick={() => setViewMode("signed")}
+            className={`px-4 py-2 rounded ${
+              viewMode === "signed"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            Signed Contracts
+          </button>
+        </div>
+
+        {/* Contract List */}
         <div className="space-y-4 overflow-y-auto h-8/10 sm:h-9/10 border-1">
-          {contracts.length === 0 ? (
+          {filteredContracts.length === 0 ? (
             <p className="text-gray-500 text-center">
-              No approved contracts found.
+              {viewMode === "pending"
+                ? "No contracts pending to send."
+                : "No signed contracts found."}
             </p>
           ) : (
-            <div className="space-y-6">
-              {contracts.map((contract) => (
-                <div
-                  key={contract.contract_id}
-                  className="p-4 bg-gray-100 shadow rounded-xl border"
-                >
-                  <div className="flex flex-col gap-4">
-                    {/* Basic Contract Info */}
-                    <div className="space-y-1">
-                      <p>
-                        <strong>Contract ID:</strong> {contract.contract_id}
-                      </p>
-                      <p>
-                        <strong>Status:</strong>{" "}
-                        <span className="text-green-600 capitalize">
-                          {contract.contract_status}
-                        </span>
-                      </p>
-                      <p>
-                        <strong>Signed At:</strong>{" "}
-                        {contract.contract_signed_at
-                          ? new Date(
-                              contract.contract_signed_at
-                            ).toLocaleString()
-                          : "Not signed"}
-                      </p>
-                    </div>
+            filteredContracts.map((contract) => (
+              <div
+                key={contract.contract_id}
+                className="p-4 bg-gray-100 shadow rounded-xl border"
+              >
+                <div className="flex flex-col gap-4">
+                  {/* Basic Info */}
+                  <div className="space-y-1">
+                    <p>
+                      <strong>Contract ID:</strong> {contract.contract_id}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <span className="text-green-600 capitalize">
+                        {contract.contract_status}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Signed At:</strong>{" "}
+                      {contract.contract_signed_at
+                        ? new Date(
+                            contract.contract_signed_at
+                          ).toLocaleString()
+                        : "Not signed"}
+                    </p>
+                  </div>
 
-                    {/* Proposal Info */}
-                    <div className="space-y-1">
-                      <hr className="my-2" />
-                      <p>
-                        <strong>Proposal Title:</strong>{" "}
-                        {contract.proposal_title}
-                      </p>
-                      <p>
-                        <strong>Budget Estimate:</strong> ₱
-                        {parseFloat(
-                          contract.budget_estimate
-                        ).toLocaleString()}
-                      </p>
-                      <p>
-                        <strong>Timeline:</strong>{" "}
-                        {contract.timeline_estimate}
-                      </p>
-                      {contract.scope_of_work && (
-                        <details className="mt-1">
-                          <summary className="text-blue-600 underline cursor-pointer">
-                            View Scope of Work
-                          </summary>
-                          <div className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
-                            {contract.scope_of_work}
-                          </div>
-                        </details>
-                      )}
-                    </div>
+                  {/* Proposal Info */}
+                  <div className="space-y-1">
+                    <hr className="my-2" />
+                    <p>
+                      <strong>Proposal Title:</strong>{" "}
+                      {contract.proposal_title}
+                    </p>
+                    <p>
+                      <strong>Budget Estimate:</strong> ₱
+                      {parseFloat(
+                        contract.budget_estimate
+                      ).toLocaleString()}
+                    </p>
+                    <p>
+                      <strong>Timeline:</strong>{" "}
+                      {contract.timeline_estimate}
+                    </p>
+                  </div>
 
-                    {/* Client Info */}
-                    <div className="space-y-1">
-                      <hr className="my-2" />
-                      <p>
-                        <strong>Client Name:</strong> {contract.client_name}
-                      </p>
-                      <p>
-                        <strong>Email:</strong> {contract.client_email}
-                      </p>
-                      <p>
-                        <strong>Phone:</strong> {contract.client_phone}
-                      </p>
-                      <p>
-                        <strong>Project Interest:</strong>{" "}
-                        {contract.project_interest}
-                      </p>
-                    </div>
+                  {/* Client Info */}
+                  <div className="space-y-1">
+                    <hr className="my-2" />
+                    <p>
+                      <strong>Client Name:</strong> {contract.client_name}
+                    </p>
+                    <p>
+                      <strong>Email:</strong> {contract.client_email}
+                    </p>
+                    <p>
+                      <strong>Phone:</strong> {contract.client_phone}
+                    </p>
+                  </div>
 
-                    {/* Contract Links */}
+                  {/* View & Action */}
+                  <div className="flex flex-col justify-between">
                     <div>
                       <p className="font-medium mb-1">View Contract:</p>
                       <a
@@ -158,20 +180,20 @@ const ApprovedContracts = () => {
                       </a>
                     </div>
 
-                    {/* Access Link + Button */}
-                    <div className="flex flex-col justify-between">
-                      {contract.access_link && (
-                        <a
-                          href={contract.access_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline text-sm mb-3"
-                        >
-                          Access Link (for Client)
-                        </a>
-                      )}
+                    {contract.access_link && (
+                      <a
+                        href={contract.access_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline text-sm mb-2"
+                      >
+                        Access Link (for Client)
+                      </a>
+                    )}
 
-                      <div className="flex justify-end">
+                    {/* Conditional Button */}
+                    <div className="flex justify-end">
+                      {viewMode === "pending" ? (
                         <button
                           onClick={() =>
                             handleSendToClient(contract.contract_id)
@@ -187,12 +209,28 @@ const ApprovedContracts = () => {
                             ? "Sending..."
                             : "Send to Client"}
                         </button>
-                      </div>
+                      ) : (
+                        <span className="text-green-600 font-medium">
+                          Already Signed
+                        </span>
+                      )}
+
+                      {viewMode === "signed" && (
+                          <button
+                            onClick={() =>
+                              navigate(`/admin-dashboard/project/create/${contract.contract_id}`)
+                            }
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                          >
+                            Create Project
+                          </button>
+                        )}
+
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
       </div>
