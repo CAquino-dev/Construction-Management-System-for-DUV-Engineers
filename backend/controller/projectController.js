@@ -341,7 +341,7 @@ const createProjectWithClient = (req, res) => {
 
     db.query(
       insertClientQuery,
-      [client_name, client_email, client_phone, client_address, hashPassword, 5], // role_id 5 = Client
+      [client_name, client_email, client_phone, client_address, hashPassword, null], // role_id 5 = Client
       (err, clientResult) => {
         if (err) {
           console.error("Error inserting client:", err);
