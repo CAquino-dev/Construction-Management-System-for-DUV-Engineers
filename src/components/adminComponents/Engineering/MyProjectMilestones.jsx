@@ -186,7 +186,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                     )}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.title}</h3>
                     <p className="text-sm text-gray-600">{milestone.details}</p>
                     <button
                       onClick={() => openViewModal(milestone)}

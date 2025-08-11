@@ -10,7 +10,7 @@ const CreateProjectPage = () => {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({
     engineer_id: "",
-    supervisor_id: "",
+    forman_id: "",
     project_name: "",
     start_date: "",
     end_date: "",

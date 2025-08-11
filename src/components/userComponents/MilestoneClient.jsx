@@ -134,7 +134,7 @@ export const MilestoneClient = ({ selectedProject }) => {
                   </button>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.status}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">{milestone.title}</h3>
                   <p className="text-sm text-gray-600">{milestone.details}</p>
                   {showPendingOnly && (
                     <p className="font-semibold mt-1">Amount Due: ₱{Number(milestone.payment_amount || 0).toFixed(2)}</p>

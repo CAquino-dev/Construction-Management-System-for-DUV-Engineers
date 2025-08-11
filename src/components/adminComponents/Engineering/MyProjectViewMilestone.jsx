@@ -41,7 +41,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose, onManageExpenses })
 
         <h2 className="text-xl font-semibold mb-4">Milestone Details</h2>
         <p className="text-sm text-gray-600 mb-4">Created on: {formatDate(milestone.timestamp)}</p>
-        <p className="text-xl font-bold mb-1">{milestone.status}</p>
+        <p className="text-xl font-bold mb-1">{milestone.title}</p>
         <p className="text-md mb-4 whitespace-pre-line">{milestone.details}</p>
 
         <div className="mb-4 space-y-1">

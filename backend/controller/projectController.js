@@ -77,7 +77,7 @@ const getMilestones = (req, res) => {
       id,
       project_id,
       timestamp,
-      status,
+      title,
       details,
       project_photo,
       progress_status,

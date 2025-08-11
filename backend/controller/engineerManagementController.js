@@ -235,7 +235,7 @@ const createMilestone = (req, res) => {
 
     const { projectId } = req.params;
     const {
-      status,
+      title,
       details,
       payment_amount,
       budget_amount,
@@ -244,7 +244,7 @@ const createMilestone = (req, res) => {
       completion_date,
     } = req.body;
 
-    if (!status || !details) {
+    if (!title || !details) {
       return res.status(400).json({ error: 'Status and details are required' });
     }
 
@@ -260,7 +260,7 @@ const createMilestone = (req, res) => {
 
     const query = `
       INSERT INTO milestones
-      (project_id, timestamp, status, details, progress_status, payment_amount, budget_amount, due_date, start_date, completion_date, estimated_cost_pdf)
+      (project_id, timestamp, title, details, progress_status, payment_amount, budget_amount, due_date, start_date, completion_date, estimated_cost_pdf)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
@@ -269,7 +269,7 @@ const createMilestone = (req, res) => {
       [
         projectId,
         timestamp,
-        status,
+        title,
         details,
         progress_status,
         paymentAmount,

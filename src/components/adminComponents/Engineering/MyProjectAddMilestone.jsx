@@ -3,7 +3,7 @@ import { X } from '@phosphor-icons/react';
 import ConfirmationModal from '../ConfirmationModal';
 
 export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
-  const [status, setStatus] = useState('');
+  const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [budgetAmount, setBudgetAmount] = useState('');
@@ -14,7 +14,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
   const handleSave = () => {
-    if (!status.trim() || !details.trim()) {
+    if (!title.trim() || !details.trim()) {
       alert('Please fill in both milestone title and details.');
       return false;
     }
@@ -38,7 +38,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
     if (!handleSave()) return;
 
     const formData = new FormData();
-    formData.append('status', status);
+    formData.append('title', title);
     formData.append('details', details);
     formData.append('payment_amount', paymentAmount || '0');
     formData.append('budget_amount', budgetAmount || '0');
@@ -101,8 +101,8 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
           <input
             type="text"
             placeholder="Enter milestone title"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className="block w-full text-sm border p-2 mb-4"
           />
           <label className="block text-sm font-semibold mb-2">Details</label>
