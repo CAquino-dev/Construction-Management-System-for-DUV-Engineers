@@ -16,6 +16,9 @@ const CreateProjectPage = () => {
     end_date: "",
     location: "",
   });
+  const [boqItems, setBoqItems] = useState([
+    { description: "", unit: "", quantity: "", unit_cost: "" },
+  ]);
   const [loading, setLoading] = useState(true);
 
   // Fetch contract & user list
@@ -54,6 +57,23 @@ const CreateProjectPage = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // BOQ handlers
+  const handleBoqChange = (index, field, value) => {
+    const newBoq = [...boqItems];
+    newBoq[index][field] = value;
+    setBoqItems(newBoq);
+  };
+
+  const addBoqRow = () => {
+    setBoqItems([...boqItems, { item_no: "", description: "", unit: "", quantity: "", unit_cost: "" }]);
+  };
+
+  const removeBoqRow = (index) => {
+    const newBoq = [...boqItems];
+    newBoq.splice(index, 1);
+    setBoqItems(newBoq);
+  };
+
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId")
     if (
@@ -87,6 +107,11 @@ const CreateProjectPage = () => {
         { user_id: form.engineer_id, role_in_project: "engineer" },
         { user_id: form.foreman_id, role_in_project: "foreman" },
       ],
+
+      boq_items: boqItems.map((item, index) => ({
+        item_no: index + 1,
+        ...item
+      })), // attach BOQ to body
     };
 
     console.log("Submitting project:", body);
@@ -106,7 +131,7 @@ const CreateProjectPage = () => {
         alert(result.error || "Failed to create project");
       } else {
         alert("Project created successfully!");
-        navigate("/project");
+        // navigate("/project");
       }
     } catch (err) {
       console.error("Error submitting project:", err);
@@ -230,9 +255,81 @@ const CreateProjectPage = () => {
           </select>
         </div>
 
+        {/* BOQ Section */}
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-2">Bill of Quantities (BOQ)</h3>
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-2 py-1">Item No</th>
+                <th className="border px-2 py-1">Description</th>
+                <th className="border px-2 py-1">Unit</th>
+                <th className="border px-2 py-1">Quantity</th>
+                <th className="border px-2 py-1">Unit Cost</th>
+                <th className="border px-2 py-1">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {boqItems.map((item, index) => (
+                <tr key={index}>
+                  <td className="border px-2 py-1 text-center">{index + 1}</td>
+                  <td className="border px-2 py-1">
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={(e) => handleBoqChange(index, "description", e.target.value)}
+                      className="w-full border px-2 py-1 rounded"
+                    />
+                  </td>
+                  <td className="border px-2 py-1">
+                    <input
+                      type="text"
+                      value={item.unit}
+                      onChange={(e) => handleBoqChange(index, "unit", e.target.value)}
+                      className="w-full border px-2 py-1 rounded"
+                    />
+                  </td>
+                  <td className="border px-2 py-1">
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleBoqChange(index, "quantity", e.target.value)}
+                      className="w-full border px-2 py-1 rounded"
+                    />
+                  </td>
+                  <td className="border px-2 py-1">
+                    <input
+                      type="number"
+                      value={item.unit_cost}
+                      onChange={(e) => handleBoqChange(index, "unit_cost", e.target.value)}
+                      className="w-full border px-2 py-1 rounded"
+                    />
+                  </td>
+                  <td className="border px-2 py-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => removeBoqRow(index)}
+                      className="bg-red-500 text-white px-2 py-1 rounded"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            type="button"
+            onClick={addBoqRow}
+            className="mt-2 bg-green-500 text-white px-3 py-1 rounded"
+          >
+            + Add Row
+          </button>
+        </div>
+
         <button
           onClick={handleSubmit}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-6"
         >
           Create Project
         </button>

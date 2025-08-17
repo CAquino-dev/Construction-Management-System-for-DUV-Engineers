@@ -360,10 +360,11 @@ const createProjectWithClient = (req, res) => {
     location,
     payment_schedule,
     project_type,
-    assigned_users // array of { user_id, role_in_project }
+    assigned_users, // array of { user_id, role_in_project }
+    boq_items // array of { item_name, description, unit, quantity, unit_price }
   } = req.body;
 
-  const defaultPassword = "client123"; // Change this logic later
+  const defaultPassword = "client123"; 
   const saltRounds = 10;
 
   bcrypt.hash(defaultPassword, saltRounds, (err, hashPassword) => {
@@ -376,7 +377,7 @@ const createProjectWithClient = (req, res) => {
 
     db.query(
       insertClientQuery,
-      [client_name, client_email, client_phone, client_address, hashPassword, null], 
+      [client_name, client_email, client_phone, client_address, hashPassword, null],
       (err, clientResult) => {
         if (err) {
           console.error("Error inserting client:", err);
@@ -421,7 +422,7 @@ const createProjectWithClient = (req, res) => {
               return res.status(400).json({ error: "assigned_users must be an array" });
             }
 
-            // ✅ Add PM to assignments automatically
+            // ✅ Insert assignments
             const assignments = [
               ...assigned_users.map((user) => [
                 projectId,
@@ -443,10 +444,43 @@ const createProjectWithClient = (req, res) => {
                 return res.status(500).json({ error: "Failed to assign users" });
               }
 
-              return res.status(200).json({
-                message: "Project and client created successfully",
-                project_id: projectId
-              });
+              // ✅ Insert BOQ items if provided
+              if (Array.isArray(boq_items) && boq_items.length > 0) {
+                console.log("📦 Received BOQ Items:", boq_items); // Debug incoming BOQ data
+
+                const boqValues = boq_items.map(item => [
+                  projectId,
+                  item.item_no,
+                  item.description || null,
+                  item.unit,
+                  item.quantity,
+                  item.unit_cost,
+                  item.quantity * item.unit_cost, // total cost
+                  new Date()
+                ]);
+
+                const boqQuery = `
+                  INSERT INTO boq (project_id, item_no, description, unit, quantity, unit_cost, total_cost, created_at)
+                  VALUES ?
+                `;
+
+                db.query(boqQuery, [boqValues], (err) => {
+                  if (err) {
+                    console.error("Error inserting BOQ items:", err);
+                    return res.status(500).json({ error: "Failed to insert BOQ items" });
+                  }
+
+                  return res.status(200).json({
+                    message: "Project, client, and BOQ created successfully",
+                    project_id: projectId
+                  });
+                });
+              } else {
+                return res.status(200).json({
+                  message: "Project and client created successfully (no BOQ provided)",
+                  project_id: projectId
+                });
+              }
             });
           }
         );
@@ -454,6 +488,7 @@ const createProjectWithClient = (req, res) => {
     );
   });
 };
+
 
 
 
