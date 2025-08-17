@@ -1,44 +1,48 @@
-import React, { useState } from 'react';
-import { ProjectsTable } from '../../components/adminComponents/Engineering/ProjectsTable';
-import { AddProject } from '../../components/adminComponents/AddProject';
-import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject';
+import React, { useEffect, useState } from 'react'
+import { MyProjectCard } from '../../components/adminComponents/Engineering/MyProjectCard' // Assuming MyProjectCard is in this directory
+import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject' // Assuming ViewMyProject is in this directory
+import duvLogo from '../../assets/duvLogo.jpg';
 
 export const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
+  const [projects, setProjects] = useState([]);
 
-  // Handler to show add project form
-  const handleAddProject = () => {
-    setSelectedProject('add'); // special value to show AddProject form
-  };
+  const userId = localStorage.getItem('userId');
 
-  // Handler to go back to project list
-  const handleBack = () => {
-    setSelectedProject(null);
-  };
+  useEffect(() => {
+    const fetchEngineerProjects = async () => {
+      try {
+        
+      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/${userId}`);
+      if(response.ok){
+      const data = await response.json();
+      setProjects(data.projects)
+      }  else {
+        throw new Error("Failed to fetch projects.");
+      }        
+      } catch (error) {
+       console.error(error) 
+      }
+    };
+
+    fetchEngineerProjects();
+
+  }, []);
 
   return (
-    <div className="p-6 mt-15 bg-white rounded-lg shadow-sm">
-      {selectedProject === 'add' ? (
-        <AddProject 
-          onBack={handleBack}
-        />
-      ) : selectedProject ? (
-        // selectedProject is an object here, show project details
-        <ViewMyProject selectedProject={selectedProject} onBack={handleBack} />
+    <div className='container mx-auto p-6 mt-10'>
+      {selectedProject ? (
+        <ViewMyProject selectedProject={selectedProject} onBack={() => setSelectedProject(null)} />
       ) : (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <div>{/* Optional: Search etc. */}</div>
-            <button
-              className="px-4 py-2 bg-[#3b5d47] text-white rounded cursor-pointer mt-4 mr-4"
-              onClick={handleAddProject}
-            >
-              Add Project
-            </button>
-          </div>
-          <ProjectsTable setSelectedProject={setSelectedProject} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {/* Dynamically render MyProjectCard components from projects array */}
+          {projects.map((project) => (
+            <div key={project.id} onClick={() => setSelectedProject(project)}>
+              <MyProjectCard project={project} />
+            </div>
+          ))}
         </div>
       )}
     </div>
-  );
-};
+  )
+}

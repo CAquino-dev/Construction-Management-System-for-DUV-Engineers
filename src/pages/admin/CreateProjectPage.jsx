@@ -10,7 +10,7 @@ const CreateProjectPage = () => {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({
     engineer_id: "",
-    forman_id: "",
+    foreman_id: "",
     project_name: "",
     start_date: "",
     end_date: "",
@@ -55,6 +55,7 @@ const CreateProjectPage = () => {
   };
 
   const handleSubmit = async () => {
+    const userId = localStorage.getItem("userId")
     if (
       !form.engineer_id ||
       !form.foreman_id ||
@@ -65,29 +66,30 @@ const CreateProjectPage = () => {
       alert("Please complete all required fields.");
       return;
     }
-        const body = {
-        client_name: contract.client_name,
-        client_email: contract.client_email,
-        client_phone: contract.client_phone,
-        client_address: contract.client_address || "",
 
-        project_name: form.project_name,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        description: contract.proposal_title,
-        budget: contract.budget_estimate,
-        cost_breakdown: contract.cost_breakdown || "",
-        location: form.location,
-        payment_schedule: contract.payment_schedule || "",
-        project_type: contract.project_type || "General",
+    const body = {
+      client_name: contract.client_name,
+      client_email: contract.client_email,
+      client_phone: contract.client_phone,
+      client_address: contract.client_address || "",
+      projectManagerId: userId,
+      project_name: form.project_name,
+      start_date: form.start_date,
+      end_date: form.end_date,
+      description: contract.proposal_title,
+      budget: contract.budget_estimate,
+      cost_breakdown: contract.cost_breakdown || "",
+      location: form.location,
+      payment_schedule: contract.payment_schedule || "",
+      project_type: contract.project_type || "General",
 
-        assigned_users: [
-            { user_id: form.engineer_id, role_in_project: "engineer" },
-            { user_id: form.foreman_id, role_in_project: "foreman" },
-        ],
-        };
+      assigned_users: [
+        { user_id: form.engineer_id, role_in_project: "engineer" },
+        { user_id: form.foreman_id, role_in_project: "foreman" },
+      ],
+    };
 
-        console.log("Submitting project:", body);
+    console.log("Submitting project:", body);
 
     try {
       const res = await fetch(`${BASE_URL}/api/project/createProject`, {

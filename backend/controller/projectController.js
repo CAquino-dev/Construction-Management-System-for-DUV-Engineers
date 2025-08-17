@@ -74,22 +74,27 @@ const getMilestones = (req, res) => {
 
   const query = `
     SELECT
-      id,
-      project_id,
-      timestamp,
-      title,
-      details,
-      project_photo,
-      progress_status,
-      payment_amount,
-      budget_amount,
-      due_date,
-      start_date,
-      completion_date,
-      estimated_cost_pdf   -- <-- add this field
-    FROM milestones
-    WHERE project_id = ?
-    ORDER BY timestamp DESC
+          m.id,
+          m.project_id,
+          m.timestamp,
+          m.title,
+          m.details,
+          m.status,
+          m.start_date,
+          m.due_date,
+          mi.item_name,
+          mi.category,
+          mi.quantity,
+          mi.unit_cost,
+          mi.total_cost,
+          mi.estimated_cost,
+          mi.actual_cost
+    FROM milestones m
+    LEFT JOIN milestone_items mi ON m.id = mi.milestone_id
+    WHERE m.project_id = ?
+    ORDER BY m.timestamp DESC, m.id, mi.item_name;
+
+
   `;
 
   db.query(query, [projectId], (err, results) => {
@@ -98,20 +103,50 @@ const getMilestones = (req, res) => {
       return res.status(500).json({ error: "Failed to fetch milestones" });
     }
 
-    // Optional: Convert relative path to full URL for frontend use
-    const host = req.get('host'); // e.g. 'localhost:5000'
-    const protocol = req.protocol; // 'http' or 'https'
+    // Group by milestone id
+    const milestonesMap = new Map();
 
-    const updatedResults = results.map(milestone => {
-      if (milestone.estimated_cost_pdf) {
-        milestone.estimated_cost_pdf = `${protocol}://${host}${milestone.estimated_cost_pdf}`;
+    results.forEach(row => {
+      const milestoneId = row.id;
+
+      if (!milestonesMap.has(milestoneId)) {
+        // Clone milestone-level data (excluding item fields)
+        milestonesMap.set(milestoneId, {
+          id: row.id,
+          project_id: row.project_id,
+          timestamp: row.timestamp,
+          title: row.title,
+          details: row.details,
+          status: row.status,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          project_photo: row.project_photo,
+          budget_amount: row.budget_amount,
+          items: []
+        });
       }
-      return milestone;
+
+      // If milestone_items exist for this row, add them to items array
+      if (row.item_name) {
+        milestonesMap.get(milestoneId).items.push({
+          item_name: row.item_name,
+          category: row.category,
+          quantity: row.quantity,
+          unit_cost: row.unit_cost,
+          total_cost: row.total_cost,
+          estimated_cost: row.estimated_cost,
+          actual_cost: row.actual_cost
+        });
+      }
     });
 
-    res.json({ milestones: updatedResults });
+    // Convert map to array
+    const milestones = Array.from(milestonesMap.values());
+
+    res.json({ milestones });
   });
 };
+
 
 
 const createExpense = (req, res) => {
@@ -315,6 +350,7 @@ const createProjectWithClient = (req, res) => {
     client_email,
     client_phone,
     client_address,
+    projectManagerId,
     project_name,
     description,
     start_date,
@@ -327,7 +363,6 @@ const createProjectWithClient = (req, res) => {
     assigned_users // array of { user_id, role_in_project }
   } = req.body;
 
-  // Hash a default password for client
   const defaultPassword = "client123"; // Change this logic later
   const saltRounds = 10;
 
@@ -341,7 +376,7 @@ const createProjectWithClient = (req, res) => {
 
     db.query(
       insertClientQuery,
-      [client_name, client_email, client_phone, client_address, hashPassword, null], // role_id 5 = Client
+      [client_name, client_email, client_phone, client_address, hashPassword, null], 
       (err, clientResult) => {
         if (err) {
           console.error("Error inserting client:", err);
@@ -352,26 +387,27 @@ const createProjectWithClient = (req, res) => {
 
         const insertProjectQuery = `
           INSERT INTO engineer_projects (
-            client_id, engineer_id, project_name, description, start_date, end_date,
+            client_id, engineer_id, project_manager_id, project_name, description, start_date, end_date,
             status, budget, cost_breakdown, location, payment_schedule,
             project_type, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, NOW(), NOW())
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, NOW(), NOW())
         `;
 
         db.query(
           insertProjectQuery,
           [
-          clientId,
-          assigned_users.find(u => u.role_in_project === "engineer")?.user_id,
-          project_name,
-          description,
-          start_date,
-          end_date,
-          budget,
-          cost_breakdown,
-          location,
-          payment_schedule,
-          project_type,
+            clientId,
+            assigned_users.find(u => u.role_in_project === "engineer")?.user_id || null,
+            projectManagerId,
+            project_name,
+            description,
+            start_date,
+            end_date,
+            budget,
+            cost_breakdown,
+            location,
+            payment_schedule,
+            project_type
           ],
           (err, projectResult) => {
             if (err) {
@@ -381,17 +417,20 @@ const createProjectWithClient = (req, res) => {
 
             const projectId = projectResult.insertId;
 
-            // Insert project assignments
             if (!Array.isArray(assigned_users)) {
               return res.status(400).json({ error: "assigned_users must be an array" });
             }
 
-            const assignments = assigned_users.map((user) => [
-              projectId,
-              user.user_id,
-              user.role_in_project,
-              new Date()
-            ]);
+            // ✅ Add PM to assignments automatically
+            const assignments = [
+              ...assigned_users.map((user) => [
+                projectId,
+                user.user_id,
+                user.role_in_project,
+                new Date()
+              ]),
+              [projectId, projectManagerId, "project_manager", new Date()]
+            ];
 
             const assignmentQuery = `
               INSERT INTO project_assignments (project_id, user_id, role_in_project, assigned_at)
@@ -406,7 +445,7 @@ const createProjectWithClient = (req, res) => {
 
               return res.status(200).json({
                 message: "Project and client created successfully",
-                project_id: projectId,
+                project_id: projectId
               });
             });
           }
@@ -415,6 +454,8 @@ const createProjectWithClient = (req, res) => {
     );
   });
 };
+
+
 
 const getContractById = (req, res) => {
   const contractId = req.params.contractId;
@@ -448,10 +489,61 @@ const getContractById = (req, res) => {
   });
 };
 
+const createMilestone = (req, res) => {
+    const { project_id, title, details, start_date, due_date, items } = req.body;
+
+    if (!project_id || !title || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields or items' });
+    }
+
+    // Step 1: Insert milestone
+    const milestoneQuery = `
+        INSERT INTO milestones (project_id, title, details, start_date, due_date, status) 
+        VALUES (?, ?, ?, ?, ?, 'Draft')
+    `;
+
+    db.query(milestoneQuery, [project_id, title, details, start_date, due_date], (err, milestoneResult) => {
+        if (err) {
+            console.error('Error inserting milestone:', err);
+            return res.status(500).json({ error: 'Database error inserting milestone' });
+        }
+
+        const milestoneId = milestoneResult.insertId;
+
+        // Step 2: Insert milestone items (no unit_cost yet)
+        const itemQuery = `
+            INSERT INTO milestone_items (milestone_id, item_name, category, quantity, unit_cost) 
+            VALUES ?
+        `;
+
+        const itemValues = items.map(item => [
+            milestoneId,
+            item.item_name,
+            item.category,
+            item.quantity,
+            null // unit_cost is NULL until project manager estimates it
+        ]);
+
+        db.query(itemQuery, [itemValues], (err2, itemResult) => {
+            if (err2) {
+                console.error('Error inserting milestone items:', err2);
+                return res.status(500).json({ error: 'Database error inserting items' });
+            }
+
+            return res.status(201).json({
+                message: 'Milestone created successfully. Items pending cost estimation by Project Manager.',
+                milestone_id: milestoneId
+            });
+        });
+    });
+};
+
 
 
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
-  updateMilestoneStatus, createProjectWithClient, getContractById
+  updateMilestoneStatus, createProjectWithClient, getContractById,
+
+  createMilestone
 };
