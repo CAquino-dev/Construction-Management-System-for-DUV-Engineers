@@ -109,8 +109,11 @@ const CreateProjectPage = () => {
       ],
 
       boq_items: boqItems.map((item, index) => ({
-        item_no: index + 1,
-        ...item
+      item_no: index + 1, // number, not empty string
+      description: item.description,
+      unit: item.unit,
+      quantity: parseFloat(item.quantity),
+      unit_cost: parseFloat(item.unit_cost)
       })), // attach BOQ to body
     };
 

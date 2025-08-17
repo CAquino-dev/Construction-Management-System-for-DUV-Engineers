@@ -227,73 +227,101 @@ const getEngineerProjects = (req, res) => {
 
 // Create Milestone function
 const createMilestone = (req, res) => {
-  uploadMilestonePdf(req, res, (err) => {
-    if (err) {
-      console.error('Multer error:', err);
-      return res.status(400).json({ error: err.message });
-    }
+  const {
+    project_id,
+    title,
+    details,
+    start_date,
+    due_date,
+    boq_item_ids, // array of BOQ item IDs
+    mto_items // object: { "2": [...], "3": [...] }
+  } = req.body;
 
-    const { projectId } = req.params;
-    const {
-      title,
-      details,
-      payment_amount,
-      budget_amount,
-      due_date,
-      start_date,
-      completion_date,
-    } = req.body;
+  if (!title || !details) return res.status(400).json({ error: 'Title and details are required' });
+  if (!Array.isArray(boq_item_ids) || !boq_item_ids.length) return res.status(400).json({ error: 'At least one BOQ item must be selected' });
 
-    if (!title || !details) {
-      return res.status(400).json({ error: 'Status and details are required' });
-    }
+  const timestamp = new Date().toISOString();
+  const progress_status = 'Pending';
 
-    // progress_status fixed to 'For Payment'
-    const progress_status = 'For Payment';
-    const timestamp = new Date().toISOString();
+  // Step 1: Insert milestone
+  const milestoneQuery = `
+    INSERT INTO milestones
+    (project_id, timestamp, title, details, start_date, due_date, progress_status)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+  db.query(milestoneQuery, [project_id, timestamp, title, details, start_date || null, due_date || null, progress_status], (err, result) => {
+    if (err) return res.status(500).json({ error: 'Failed to create milestone' });
 
-    const paymentAmount = payment_amount ? parseFloat(payment_amount) : 0.0;
-    const budgetAmount = budget_amount ? parseFloat(budget_amount) : 0.0;
+    const milestoneId = result.insertId;
+    const milestoneBoqIds = [];
 
-    // If file was uploaded, get relative path for DB
-    const estimatedCostPdfPath = req.file ? `/uploads/${req.file.filename}` : null;
+    // Step 2: Insert BOQ items one by one
+    const insertBoqItem = (index) => {
+      if (index >= boq_item_ids.length) {
+        // All BOQ items inserted, now insert MTOs
+        insertMTOs();
+        return;
+      }
 
-    const query = `
-      INSERT INTO milestones
-      (project_id, timestamp, title, details, progress_status, payment_amount, budget_amount, due_date, start_date, completion_date, estimated_cost_pdf)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+      const boqId = boq_item_ids[index];
+      const junctionQuery = `INSERT INTO milestone_boq (milestone_id, boq_id) VALUES (?, ?)`;
+      db.query(junctionQuery, [milestoneId, boqId], (err2, junctionResult) => {
+        if (err2) return res.status(500).json({ error: 'Failed to link BOQ items' });
 
-    db.query(
-      query,
-      [
-        projectId,
-        timestamp,
-        title,
-        details,
-        progress_status,
-        paymentAmount,
-        budgetAmount,
-        due_date || null,
-        start_date || null,
-        completion_date || null,
-        estimatedCostPdfPath,
-      ],
-      (err, result) => {
-        if (err) {
-          console.error('Error creating milestone:', err);
-          return res.status(500).json({ error: 'Failed to create milestone' });
+        milestoneBoqIds.push({ boq_id: boqId, milestone_boq_id: junctionResult.insertId });
+        insertBoqItem(index + 1);
+      });
+    };
+
+    insertBoqItem(0);
+
+    // Step 3: Insert MTO items
+    const insertMTOs = () => {
+      if (!mto_items || Object.keys(mto_items).length === 0) {
+        return res.status(201).json({ message: 'Milestone created successfully (no MTO)', milestoneId });
+      }
+
+      let insertedCount = 0;
+
+      milestoneBoqIds.forEach(({ boq_id, milestone_boq_id }) => {
+        const itemsForBoq = mto_items[boq_id]; // get array from object
+        if (!itemsForBoq || !itemsForBoq.length) {
+          insertedCount++;
+          if (insertedCount === milestoneBoqIds.length) {
+            return res.status(201).json({ message: 'Milestone and MTO created successfully', milestoneId });
+          }
+          return;
         }
 
-        res.status(201).json({
-          message: 'Milestone created successfully',
-          milestoneId: result.insertId,
-          estimated_cost_pdf: estimatedCostPdfPath,
+        const mtoValues = itemsForBoq.map(item => [
+          milestone_boq_id,
+          item.description,
+          item.unit,
+          item.quantity,
+          item.unit_cost
+        ]);
+
+        const mtoQuery = `
+          INSERT INTO milestone_mto
+          (milestone_boq_id, description, unit, quantity, unit_cost)
+          VALUES ?
+        `;
+
+        db.query(mtoQuery, [mtoValues], (errMto) => {
+          if (errMto) return res.status(500).json({ error: 'Failed to create MTO items' });
+
+          insertedCount++;
+          if (insertedCount === milestoneBoqIds.length) {
+            return res.status(201).json({ message: 'Milestone and MTO created successfully', milestoneId });
+          }
         });
-      }
-    );
+      });
+    };
   });
 };
+
+
+
 
 
 const getMilestonesForPaymentByProject = (req, res) => {

@@ -573,12 +573,33 @@ const createMilestone = (req, res) => {
     });
 };
 
+const getBoqByProject = (req, res) => {
+  const { projectId } = req.params;
+
+  if (!projectId) {
+    return res.status(400).json({ message: 'Project ID is required' });
+  }
+
+  const query = `
+    SELECT *
+    FROM boq
+    WHERE project_id = ?
+    ORDER BY id ASC
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error('Error fetching BOQ items:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    res.status(200).json(results);
+  });
+};
 
 
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
-
-  createMilestone
+  createMilestone, getBoqByProject
 };

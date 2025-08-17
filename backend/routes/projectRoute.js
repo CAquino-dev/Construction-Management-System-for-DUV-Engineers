@@ -4,7 +4,7 @@ const router = express.Router();
 const { getEstimate, getMilestones, createExpense, 
     getExpenses, getPendingExpenses, updateEngineerApproval, 
     updateMilestoneStatus, createProjectWithClient, getContractById,
-    createMilestone} = require('../controller/projectController');  // Importing the controller
+    createMilestone, getBoqByProject} = require('../controller/projectController');  // Importing the controller
 
 // POST route for calculating the project estimate
 router.post('/estimate', getEstimate);
@@ -17,6 +17,7 @@ router.put('/project/expenses/:expenseId/engineer-approval', updateEngineerAppro
 router.post('/project/milestones/:id/status', updateMilestoneStatus);
 router.post('/createProject', createProjectWithClient)
 router.get("/:contractId", getContractById);
+router.get("/:projectId/boq", getBoqByProject);
 
 
 

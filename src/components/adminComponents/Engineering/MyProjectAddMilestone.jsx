@@ -1,37 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from '@phosphor-icons/react';
 import ConfirmationModal from '../ConfirmationModal';
 
 export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
-  const [dueDate, setDueDate] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [items, setItems] = useState([{ item_name: '', category: 'Materials', quantity: '' }]);
+  const [dueDate, setDueDate] = useState('');
+  const [boqs, setBoqs] = useState([]);
+  const [selectedBoqs, setSelectedBoqs] = useState([]);
+  const [mto, setMto] = useState({}); // { boqId: [{ material, quantity, unit_cost }] }
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...items];
-    newItems[index][field] = value;
-    setItems(newItems);
-  };
-
-  const addItemRow = () => {
-    setItems([...items, { item_name: '', category: 'Materials', quantity: '' }]);
-  };
-
-  const removeItemRow = (index) => {
-    setItems(items.filter((_, i) => i !== index));
-  };
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/${project.id}/boq`)
+      .then(res => res.json())
+      .then(data => setBoqs(data))
+      .catch(err => console.error('Error fetching BOQ items:', err));
+  }, [project.id]);
 
   const validateForm = () => {
     if (!title.trim() || !details.trim()) {
       alert('Please fill in milestone title and details.');
       return false;
     }
-    if (!items.length || items.some(item => !item.item_name.trim() || !item.category.trim() || !item.quantity)) {
-      alert('Please fill in all item details.');
+    if (!selectedBoqs.length) {
+      alert('Please select at least one BOQ item.');
       return false;
+    }
+    // Check that each selected BOQ has MTO items
+    for (let boqId of selectedBoqs) {
+      if (!mto[boqId] || !mto[boqId].length) {
+        alert('Please add MTO items for each selected BOQ.');
+        return false;
+      }
     }
     return true;
   };
@@ -45,16 +47,15 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
       details,
       start_date: startDate || '',
       due_date: dueDate || '',
-      items: items.map(i => ({
-        item_name: i.item_name,
-        category: i.category,
-        quantity: Number(i.quantity)
-      }))
+      boq_item_ids: selectedBoqs,
+      mto_items: mto,
     };
+
+    console.log("payload:", payload)
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/createMilestone`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/createMilestones/${project.id}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -77,6 +78,29 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
     setIsConfirmationModalOpen(false);
   };
 
+  const addMtoItem = (boqId) => {
+    setMto(prev => ({
+      ...prev,
+      [boqId]: [...(prev[boqId] || []), { description: '', unit: '', quantity: '', unit_cost: '' }]
+    }));
+  };
+
+  const updateMtoItem = (boqId, index, field, value) => {
+    setMto(prev => ({
+      ...prev,
+      [boqId]: prev[boqId].map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeMtoItem = (boqId, index) => {
+    setMto(prev => ({
+      ...prev,
+      [boqId]: prev[boqId].filter((_, i) => i !== index)
+    }));
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[90%] sm:max-w-[800px] h-auto sm:h-[600px] overflow-y-auto flex flex-col relative">
@@ -86,6 +110,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
 
         <h2 className="text-xl font-semibold mb-4">Add Milestone</h2>
 
+        {/* Title */}
         <label className="block text-sm font-semibold mb-2">Milestone Title</label>
         <input
           type="text"
@@ -95,14 +120,16 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
           className="block w-full text-sm border p-2 mb-4"
         />
 
+        {/* Details */}
         <label className="block text-sm font-semibold mb-2">Details</label>
         <textarea
           placeholder="Enter milestone details"
           value={details}
           onChange={(e) => setDetails(e.target.value)}
-          className="block w-full text-sm border p-2 mb-4 h-24"
+          className="block w-full text-sm border p-2 mb-4 h-40 resize-y"
         />
 
+        {/* Dates */}
         <label className="block text-sm font-semibold mb-2">Start Date</label>
         <input
           type="date"
@@ -119,54 +146,90 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
           className="block w-full text-sm border p-2 mb-4"
         />
 
-        <h3 className="text-lg font-semibold mb-2">Milestone Items</h3>
-        {items.map((item, index) => (
-          <div key={index} className="flex gap-2 mb-2">
-            <input
-              type="text"
-              placeholder="Item Name"
-              value={item.item_name}
-              onChange={(e) => handleItemChange(index, 'item_name', e.target.value)}
-              className="flex-1 border p-2 text-sm"
-            />
-            <select
-              value={item.category}
-              onChange={(e) => handleItemChange(index, 'category', e.target.value)}
-              className="flex-1 border p-2 text-sm"
-            >
-              <option value="Materials">Materials</option>
-              <option value="Labor">Labor</option>
-              <option value="Equipment">Equipment</option>
-              <option value="Misc">Misc</option>
-            </select>
-            <input
-              type="number"
-              placeholder="Quantity"
-              value={item.quantity}
-              onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-              className="w-24 border p-2 text-sm"
-            />
-            {items.length > 1 && (
-              <button
-                onClick={() => removeItemRow(index)}
-                className="bg-red-500 text-white px-2 rounded"
-              >
-                X
-              </button>
-            )}
-          </div>
-        ))}
-        <button
-          onClick={addItemRow}
-          className="bg-green-500 text-white py-1 px-3 rounded text-sm mb-4"
-        >
-          + Add Item
-        </button>
+        {/* BOQ Items Selection */}
+        <h3 className="text-lg font-semibold mb-2">Select BOQ Items</h3>
+        {boqs.length ? (
+          boqs.map((boq) => (
+            <div key={boq.id} className="mb-4 border p-2 rounded">
+              <label className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  value={boq.id}
+                  checked={selectedBoqs.includes(boq.id)}
+                  onChange={(e) => {
+                    const id = boq.id;
+                    setSelectedBoqs(prev =>
+                      e.target.checked ? [...prev, id] : prev.filter(i => i !== id)
+                    );
+                  }}
+                  className="mr-2"
+                />
+                <span>{boq.description} ({boq.unit}, {boq.quantity})</span>
+              </label>
 
-        <div className="flex justify-end space-x-4">
+              {/* MTO Section */}
+              {selectedBoqs.includes(boq.id) && (
+                <div className="pl-6 border-l-2 border-gray-300">
+                  <h4 className="font-semibold mb-2">MTO Items</h4>
+                  {(mto[boq.id] || []).map((item, index) => (
+                    <div key={index} className="flex items-center mb-2 space-x-2">
+                      <input
+                        type="text"
+                        placeholder="description"
+                        value={item.description}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'description', e.target.value)}
+                        className="border p-1 text-sm w-32"
+                      />
+                      <input
+                        type="text"
+                        placeholder="unit"
+                        value={item.unit}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'unit', e.target.value)}
+                        className="border p-1 text-sm w-32"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Quantity"
+                        value={item.quantity}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'quantity', e.target.value)}
+                        className="border p-1 text-sm w-20"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Unit Cost"
+                        value={item.unit_cost}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'unit_cost', e.target.value)}
+                        className="border p-1 text-sm w-24"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMtoItem(boq.id, index)}
+                        className="text-red-500 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addMtoItem(boq.id)}
+                    className="text-blue-500 text-sm mt-1"
+                  >
+                    + Add MTO Item
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-gray-500">No BOQ items found for this project.</p>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end space-x-4 mt-4">
           <button
             onClick={() => setIsConfirmationModalOpen(true)}
-            className="bg-blue-500 text-white py-2 px-4 rounded mr-2"
+            className="bg-blue-500 text-white py-2 px-4 rounded"
           >
             Save
           </button>
