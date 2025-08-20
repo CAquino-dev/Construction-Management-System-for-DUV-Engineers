@@ -58,4 +58,21 @@ const getEmployeesByDepartment = (req, res) => {
     });
 }
 
-module.exports = { getEmployees, getEmployeesByDepartment };
+const getAllUsers = (req, res) => {
+  const query = `
+    SELECT 
+      u.id, u.full_name, u.email, u.phone, u.address, u.role_id, p.role_name AS role
+    FROM users u
+    LEFT JOIN permissions p ON u.role_id = p.id
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching users:", err);
+      return res.status(500).json({ error: "Failed to fetch users" });
+    }
+    res.status(200).json(results);
+  });
+};
+
+module.exports = { getEmployees, getEmployeesByDepartment, getAllUsers  };

@@ -391,17 +391,41 @@ const updateFinanceApprovalStatus = (req, res) => {
 };
 
 const getContracts = (req, res) => {
-  
-  const query = "SELECT * FROM contracts WHERE approval_status = 'pending'";
+  const query = `
+    SELECT 
+      contracts.id AS contract_id,
+      contracts.contract_file_url,
+      contracts.contract_signed_at,
+      contracts.status AS contract_status,
+      contracts.created_at AS contract_created_at,
+      contracts.access_link,
+      contracts.approval_status,
+
+      proposals.title AS proposal_title,
+      proposals.budget_estimate,
+      proposals.timeline_estimate,
+      proposals.scope_of_work,
+      proposals.status AS proposal_status,
+
+      leads.client_name,
+      leads.email AS client_email,
+      leads.phone_number AS client_phone,
+      leads.project_interest
+    FROM contracts
+    JOIN proposals ON contracts.proposal_id = proposals.id
+    JOIN leads ON proposals.lead_id = leads.id
+    WHERE contracts.approval_status = 'pending'
+  `;
 
   db.query(query, (err, results) => {
-      if (err) {
+    if (err) {
       console.error('Error fetching contracts:', err);
-      return res.status(500).json({ error: 'Failed to fetch approved expenses' });
+      return res.status(500).json({ error: 'Failed to fetch contracts' });
     }
     res.json(results);
-  })
+  });
 };
+
 
 const approveContract = (req, res) => {
   const contractId = req.params.id;

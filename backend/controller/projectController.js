@@ -1,5 +1,6 @@
 // controllers/projectController.js
 const db = require('../config/db');  // Importing the MySQL connection
+const bcrypt = require("bcrypt");
 
 const calculateEstimate = async (data) => {
   const { projectType, materialType, sizeInSqm, location, budget } = data;  // Get projectType, materialType, area in sqm, location, and budget
@@ -73,22 +74,36 @@ const getMilestones = (req, res) => {
 
   const query = `
     SELECT
-      id,
-      project_id,
-      timestamp,
-      status,
-      details,
-      project_photo,
-      progress_status,
-      payment_amount,
-      budget_amount,
-      due_date,
-      start_date,
-      completion_date,
-      estimated_cost_pdf   -- <-- add this field
-    FROM milestones
-    WHERE project_id = ?
-    ORDER BY timestamp DESC
+      m.id AS milestone_id,
+      m.project_id,
+      m.timestamp,
+      m.title,
+      m.details,
+      m.status,
+      m.start_date,
+      m.due_date,
+
+      mb.id AS milestone_boq_id,
+      b.id AS boq_id,
+      b.item_no,
+      b.description AS boq_description,
+      b.unit AS boq_unit,
+      b.quantity AS boq_quantity,
+      b.unit_cost AS boq_unit_cost,
+      b.total_cost AS boq_total_cost,
+
+      mm.id AS mto_id,
+      mm.description AS mto_description,
+      mm.unit AS mto_unit,
+      mm.quantity AS mto_quantity,
+      mm.unit_cost AS mto_unit_cost,
+      mm.total_cost AS mto_total_cost
+    FROM milestones m
+    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+    LEFT JOIN boq b ON mb.boq_id = b.id
+    LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+    WHERE m.project_id = ?
+    ORDER BY m.timestamp DESC, m.id, mb.id, mm.id
   `;
 
   db.query(query, [projectId], (err, results) => {
@@ -97,20 +112,62 @@ const getMilestones = (req, res) => {
       return res.status(500).json({ error: "Failed to fetch milestones" });
     }
 
-    // Optional: Convert relative path to full URL for frontend use
-    const host = req.get('host'); // e.g. 'localhost:5000'
-    const protocol = req.protocol; // 'http' or 'https'
+    const milestonesMap = new Map();
 
-    const updatedResults = results.map(milestone => {
-      if (milestone.estimated_cost_pdf) {
-        milestone.estimated_cost_pdf = `${protocol}://${host}${milestone.estimated_cost_pdf}`;
+    results.forEach(row => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          id: row.milestone_id,
+          project_id: row.project_id,
+          timestamp: row.timestamp,
+          title: row.title,
+          details: row.details,
+          status: row.status,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          boq_items: []
+        });
       }
-      return milestone;
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      if (row.milestone_boq_id) {
+        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+
+        if (!boqItem) {
+          boqItem = {
+            milestone_boq_id: row.milestone_boq_id,
+            boq_id: row.boq_id,
+            item_no: row.item_no,
+            description: row.boq_description,
+            unit: row.boq_unit,
+            quantity: row.boq_quantity,
+            unit_cost: row.boq_unit_cost,
+            total_cost: row.boq_total_cost,
+            mto_items: []
+          };
+          milestone.boq_items.push(boqItem);
+        }
+
+        if (row.mto_id) {
+          boqItem.mto_items.push({
+            mto_id: row.mto_id,
+            description: row.mto_description,
+            unit: row.mto_unit,
+            quantity: row.mto_quantity,
+            unit_cost: row.mto_unit_cost,
+            total_cost: row.mto_total_cost
+          });
+        }
+      }
     });
 
-    res.json({ milestones: updatedResults });
+    const milestones = Array.from(milestonesMap.values());
+    res.json({ milestones });
   });
 };
+
+
 
 
 const createExpense = (req, res) => {
@@ -308,6 +365,262 @@ const updateMilestoneStatus = (req, res) => {
   });
 };
 
+const createProjectWithClient = (req, res) => {
+  const {
+    client_name,
+    client_email,
+    client_phone,
+    client_address,
+    projectManagerId,
+    project_name,
+    description,
+    start_date,
+    end_date,
+    budget,
+    cost_breakdown,
+    location,
+    payment_schedule,
+    project_type,
+    assigned_users, // array of { user_id, role_in_project }
+    boq_items // array of { item_name, description, unit, quantity, unit_price }
+  } = req.body;
+
+  const defaultPassword = "client123"; 
+  const saltRounds = 10;
+
+  bcrypt.hash(defaultPassword, saltRounds, (err, hashPassword) => {
+    if (err) return res.status(500).json({ error: "Error hashing password" });
+
+    const insertClientQuery = `
+      INSERT INTO users (full_name, email, phone, address, password, role_id, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'Active', NOW())
+    `;
+
+    db.query(
+      insertClientQuery,
+      [client_name, client_email, client_phone, client_address, hashPassword, null],
+      (err, clientResult) => {
+        if (err) {
+          console.error("Error inserting client:", err);
+          return res.status(500).json({ error: "Failed to insert client" });
+        }
+
+        const clientId = clientResult.insertId;
+
+        const insertProjectQuery = `
+          INSERT INTO engineer_projects (
+            client_id, engineer_id, project_manager_id, project_name, description, start_date, end_date,
+            status, budget, cost_breakdown, location, payment_schedule,
+            project_type, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+
+        db.query(
+          insertProjectQuery,
+          [
+            clientId,
+            assigned_users.find(u => u.role_in_project === "engineer")?.user_id || null,
+            projectManagerId,
+            project_name,
+            description,
+            start_date,
+            end_date,
+            budget,
+            cost_breakdown,
+            location,
+            payment_schedule,
+            project_type
+          ],
+          (err, projectResult) => {
+            if (err) {
+              console.error("Error inserting project:", err);
+              return res.status(500).json({ error: "Failed to insert project" });
+            }
+
+            const projectId = projectResult.insertId;
+
+            if (!Array.isArray(assigned_users)) {
+              return res.status(400).json({ error: "assigned_users must be an array" });
+            }
+
+            // ✅ Insert assignments
+            const assignments = [
+              ...assigned_users.map((user) => [
+                projectId,
+                user.user_id,
+                user.role_in_project,
+                new Date()
+              ]),
+              [projectId, projectManagerId, "project_manager", new Date()]
+            ];
+
+            const assignmentQuery = `
+              INSERT INTO project_assignments (project_id, user_id, role_in_project, assigned_at)
+              VALUES ?
+            `;
+
+            db.query(assignmentQuery, [assignments], (err) => {
+              if (err) {
+                console.error("Error inserting project assignments:", err);
+                return res.status(500).json({ error: "Failed to assign users" });
+              }
+
+              // ✅ Insert BOQ items if provided
+              if (Array.isArray(boq_items) && boq_items.length > 0) {
+                console.log("📦 Received BOQ Items:", boq_items); // Debug incoming BOQ data
+
+                const boqValues = boq_items.map(item => [
+                  projectId,
+                  item.item_no,
+                  item.description || null,
+                  item.unit,
+                  item.quantity,
+                  item.unit_cost,
+                  item.quantity * item.unit_cost, // total cost
+                  new Date()
+                ]);
+
+                const boqQuery = `
+                  INSERT INTO boq (project_id, item_no, description, unit, quantity, unit_cost, total_cost, created_at)
+                  VALUES ?
+                `;
+
+                db.query(boqQuery, [boqValues], (err) => {
+                  if (err) {
+                    console.error("Error inserting BOQ items:", err);
+                    return res.status(500).json({ error: "Failed to insert BOQ items" });
+                  }
+
+                  return res.status(200).json({
+                    message: "Project, client, and BOQ created successfully",
+                    project_id: projectId
+                  });
+                });
+              } else {
+                return res.status(200).json({
+                  message: "Project and client created successfully (no BOQ provided)",
+                  project_id: projectId
+                });
+              }
+            });
+          }
+        );
+      }
+    );
+  });
+};
 
 
-module.exports = { getEstimate, getMilestones, createExpense, getExpenses, getPendingExpenses, updateEngineerApproval, updateMilestoneStatus };
+
+
+const getContractById = (req, res) => {
+  const contractId = req.params.contractId;
+
+  const query = `
+    SELECT 
+      c.*, 
+      p.title AS proposal_title, 
+      p.budget_estimate, 
+      p.timeline_estimate,
+      l.client_name AS client_name,
+      l.email AS client_email,
+      l.phone_number AS client_phone
+    FROM contracts c
+    JOIN proposals p ON c.proposal_id = p.id
+    JOIN leads l ON p.lead_id = l.id
+    WHERE c.id = ?
+  `;
+
+  db.query(query, [contractId], (err, results) => {
+    if (err) {
+      console.error("Error fetching contract:", err);
+      return res.status(500).json({ error: "Failed to fetch contract details" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
+    res.json(results[0]);
+  });
+};
+
+const createMilestone = (req, res) => {
+    const { project_id, title, details, start_date, due_date, items } = req.body;
+
+    if (!project_id || !title || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'Missing required fields or items' });
+    }
+
+    // Step 1: Insert milestone
+    const milestoneQuery = `
+        INSERT INTO milestones (project_id, title, details, start_date, due_date, status) 
+        VALUES (?, ?, ?, ?, ?, 'Draft')
+    `;
+
+    db.query(milestoneQuery, [project_id, title, details, start_date, due_date], (err, milestoneResult) => {
+        if (err) {
+            console.error('Error inserting milestone:', err);
+            return res.status(500).json({ error: 'Database error inserting milestone' });
+        }
+
+        const milestoneId = milestoneResult.insertId;
+
+        // Step 2: Insert milestone items (no unit_cost yet)
+        const itemQuery = `
+            INSERT INTO milestone_items (milestone_id, item_name, category, quantity, unit_cost) 
+            VALUES ?
+        `;
+
+        const itemValues = items.map(item => [
+            milestoneId,
+            item.item_name,
+            item.category,
+            item.quantity,
+            null // unit_cost is NULL until project manager estimates it
+        ]);
+
+        db.query(itemQuery, [itemValues], (err2, itemResult) => {
+            if (err2) {
+                console.error('Error inserting milestone items:', err2);
+                return res.status(500).json({ error: 'Database error inserting items' });
+            }
+
+            return res.status(201).json({
+                message: 'Milestone created successfully. Items pending cost estimation by Project Manager.',
+                milestone_id: milestoneId
+            });
+        });
+    });
+};
+
+const getBoqByProject = (req, res) => {
+  const { projectId } = req.params;
+
+  if (!projectId) {
+    return res.status(400).json({ message: 'Project ID is required' });
+  }
+
+  const query = `
+    SELECT *
+    FROM boq
+    WHERE project_id = ?
+    ORDER BY id ASC
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error('Error fetching BOQ items:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+    res.status(200).json(results);
+  });
+};
+
+
+
+module.exports = { getEstimate, getMilestones, createExpense, 
+  getExpenses, getPendingExpenses, updateEngineerApproval, 
+  updateMilestoneStatus, createProjectWithClient, getContractById,
+  createMilestone, getBoqByProject
+};

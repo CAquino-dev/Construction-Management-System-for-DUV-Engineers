@@ -1,80 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from '@phosphor-icons/react';
 import ConfirmationModal from '../ConfirmationModal';
 
 export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
-  const [status, setStatus] = useState('');
+  const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [budgetAmount, setBudgetAmount] = useState('');
-  const [dueDate, setDueDate] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [completionDate, setCompletionDate] = useState('');
-  const [pdfFile, setPdfFile] = useState(null); // <-- added state for PDF file
+  const [dueDate, setDueDate] = useState('');
+  const [boqs, setBoqs] = useState([]);
+  const [selectedBoqs, setSelectedBoqs] = useState([]);
+  const [mto, setMto] = useState({}); // { boqId: [{ material, quantity, unit_cost }] }
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
-  const handleSave = () => {
-    if (!status.trim() || !details.trim()) {
-      alert('Please fill in both milestone title and details.');
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/${project.id}/boq`)
+      .then(res => res.json())
+      .then(data => setBoqs(data))
+      .catch(err => console.error('Error fetching BOQ items:', err));
+  }, [project.id]);
+
+  const validateForm = () => {
+    if (!title.trim() || !details.trim()) {
+      alert('Please fill in milestone title and details.');
       return false;
     }
-    if (paymentAmount && isNaN(paymentAmount)) {
-      alert('Please enter a valid number for Payment Amount');
+    if (!selectedBoqs.length) {
+      alert('Please select at least one BOQ item.');
       return false;
     }
-    if (budgetAmount && isNaN(budgetAmount)) {
-      alert('Please enter a valid number for Budget Amount');
-      return false;
-    }
-    // Optional: check if file is PDF
-    if (pdfFile && pdfFile.type !== 'application/pdf') {
-      alert('Only PDF files are allowed.');
-      return false;
+    // Check that each selected BOQ has MTO items
+    for (let boqId of selectedBoqs) {
+      if (!mto[boqId] || !mto[boqId].length) {
+        alert('Please add MTO items for each selected BOQ.');
+        return false;
+      }
     }
     return true;
   };
 
   const handleConfirmation = async () => {
-    if (!handleSave()) return;
+    if (!validateForm()) return;
 
-    const formData = new FormData();
-    formData.append('status', status);
-    formData.append('details', details);
-    formData.append('payment_amount', paymentAmount || '0');
-    formData.append('budget_amount', budgetAmount || '0');
-    formData.append('due_date', dueDate || '');
-    formData.append('start_date', startDate || '');
-    formData.append('completion_date', completionDate || '');
-    if (pdfFile) {
-      formData.append('estimated_cost_pdf', pdfFile);
-    }
+    const payload = {
+      project_id: project.id,
+      title,
+      details,
+      start_date: startDate || '',
+      due_date: dueDate || '',
+      boq_item_ids: selectedBoqs,
+      mto_items: mto,
+    };
 
-    for (const pair of formData.entries()) {
-  console.log(pair[0] + ':', pair[1]);
-}
+    console.log("payload:", payload)
 
     try {
       const response = await fetch(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/createMilestones/${project.id}`,
         {
           method: 'POST',
-          // Notice: no 'Content-Type' header for multipart form data, browser sets it automatically
-          body: formData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
         }
       );
 
       if (response.ok) {
+        const data = await response.json();
         alert('Milestone Added Successfully');
-        onSave(await response.json()); // pass back the saved milestone data
+        onSave(data);
       } else {
         alert('An error occurred while adding the milestone');
       }
     } catch (error) {
-      console.error('Error message:', error);
+      console.error('Error:', error);
       alert('Error submitting milestone');
     }
 
     setIsConfirmationModalOpen(false);
+  };
+
+  const addMtoItem = (boqId) => {
+    setMto(prev => ({
+      ...prev,
+      [boqId]: [...(prev[boqId] || []), { description: '', unit: '', quantity: '', unit_cost: '' }]
+    }));
+  };
+
+  const updateMtoItem = (boqId, index, field, value) => {
+    setMto(prev => ({
+      ...prev,
+      [boqId]: prev[boqId].map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const removeMtoItem = (boqId, index) => {
+    setMto(prev => ({
+      ...prev,
+      [boqId]: prev[boqId].filter((_, i) => i !== index)
+    }));
   };
 
   return (
@@ -86,77 +110,127 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
 
         <h2 className="text-xl font-semibold mb-4">Add Milestone</h2>
 
-        <div>
-          {/* existing inputs ... */}
-          <label className="block text-sm font-semibold mb-2">Attach Estimated Cost (PDF)</label>
-          <input
-            name='estimated_cost_pdf'
-            type="file"
-            accept="application/pdf"
-            onChange={(e) => setPdfFile(e.target.files[0])}
-            className="block mb-4"
-          />
-          {/* existing inputs continue... */}
-          <label className="block text-sm font-semibold mb-2">Milestone Title</label>
-          <input
-            type="text"
-            placeholder="Enter milestone title"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          <label className="block text-sm font-semibold mb-2">Details</label>
-          <textarea
-            placeholder="Enter milestone details"
-            value={details}
-            onChange={(e) => setDetails(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4 h-24"
-          />
-          <label className="block text-sm font-semibold mb-2">Payment Amount (₱)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Enter expected payment amount"
-            value={paymentAmount}
-            onChange={(e) => setPaymentAmount(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          <label className="block text-sm font-semibold mb-2">Budget Amount (₱)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Enter budget amount"
-            value={budgetAmount}
-            onChange={(e) => setBudgetAmount(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          <label className="block text-sm font-semibold mb-2">Due Date</label>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          <label className="block text-sm font-semibold mb-2">Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-          <label className="block text-sm font-semibold mb-2">Completion Date</label>
-          <input
-            type="date"
-            value={completionDate}
-            onChange={(e) => setCompletionDate(e.target.value)}
-            className="block w-full text-sm border p-2 mb-4"
-          />
-        </div>
+        {/* Title */}
+        <label className="block text-sm font-semibold mb-2">Milestone Title</label>
+        <input
+          type="text"
+          placeholder="Enter milestone title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="block w-full text-sm border p-2 mb-4"
+        />
 
-        <div className="flex justify-end space-x-4">
-          <button onClick={() => setIsConfirmationModalOpen(true)} className="bg-blue-500 text-white py-2 px-4 rounded mr-2">
+        {/* Details */}
+        <label className="block text-sm font-semibold mb-2">Details</label>
+        <textarea
+          placeholder="Enter milestone details"
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          className="block w-full text-sm border p-2 mb-4 h-40 resize-y"
+        />
+
+        {/* Dates */}
+        <label className="block text-sm font-semibold mb-2">Start Date</label>
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="block w-full text-sm border p-2 mb-4"
+        />
+
+        <label className="block text-sm font-semibold mb-2">Due Date</label>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="block w-full text-sm border p-2 mb-4"
+        />
+
+        {/* BOQ Items Selection */}
+        <h3 className="text-lg font-semibold mb-2">Select BOQ Items</h3>
+        {boqs.length ? (
+          boqs.map((boq) => (
+            <div key={boq.id} className="mb-4 border p-2 rounded">
+              <label className="flex items-center mb-2">
+                <input
+                  type="checkbox"
+                  value={boq.id}
+                  checked={selectedBoqs.includes(boq.id)}
+                  onChange={(e) => {
+                    const id = boq.id;
+                    setSelectedBoqs(prev =>
+                      e.target.checked ? [...prev, id] : prev.filter(i => i !== id)
+                    );
+                  }}
+                  className="mr-2"
+                />
+                <span>{boq.description} ({boq.unit}, {boq.quantity})</span>
+              </label>
+
+              {/* MTO Section */}
+              {selectedBoqs.includes(boq.id) && (
+                <div className="pl-6 border-l-2 border-gray-300">
+                  <h4 className="font-semibold mb-2">MTO Items</h4>
+                  {(mto[boq.id] || []).map((item, index) => (
+                    <div key={index} className="flex items-center mb-2 space-x-2">
+                      <input
+                        type="text"
+                        placeholder="description"
+                        value={item.description}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'description', e.target.value)}
+                        className="border p-1 text-sm w-32"
+                      />
+                      <input
+                        type="text"
+                        placeholder="unit"
+                        value={item.unit}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'unit', e.target.value)}
+                        className="border p-1 text-sm w-32"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Quantity"
+                        value={item.quantity}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'quantity', e.target.value)}
+                        className="border p-1 text-sm w-20"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Unit Cost"
+                        value={item.unit_cost}
+                        onChange={(e) => updateMtoItem(boq.id, index, 'unit_cost', e.target.value)}
+                        className="border p-1 text-sm w-24"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMtoItem(boq.id, index)}
+                        className="text-red-500 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addMtoItem(boq.id)}
+                    className="text-blue-500 text-sm mt-1"
+                  >
+                    + Add MTO Item
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-gray-500">No BOQ items found for this project.</p>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end space-x-4 mt-4">
+          <button
+            onClick={() => setIsConfirmationModalOpen(true)}
+            className="bg-blue-500 text-white py-2 px-4 rounded"
+          >
             Save
           </button>
           <button onClick={onCancel} className="bg-gray-500 text-white py-2 px-4 rounded">

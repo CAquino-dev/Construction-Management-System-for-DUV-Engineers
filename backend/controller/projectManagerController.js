@@ -457,7 +457,31 @@ const uploadClientSignature = (req, res) => {
 };
 
 const getApprovedContracts = (req, res) => {
-  const query = "SELECT * FROM contracts WHERE approval_status = 'approved'";
+  const query = `
+    SELECT 
+      contracts.id AS contract_id,
+      contracts.status AS contract_status,
+      contracts.contract_file_url,
+      contracts.contract_signed_at,
+      contracts.created_at AS contract_created_at,
+      contracts.access_link,
+      contracts.approval_status,
+
+      proposals.title AS proposal_title,
+      proposals.budget_estimate,
+      proposals.timeline_estimate,
+      proposals.scope_of_work,
+      proposals.status AS proposal_status,
+
+      leads.client_name,
+      leads.email AS client_email,
+      leads.phone_number AS client_phone,
+      leads.project_interest
+    FROM contracts
+    JOIN proposals ON contracts.proposal_id = proposals.id
+    JOIN leads ON proposals.lead_id = leads.id
+    WHERE contracts.approval_status = 'approved'
+  `;
 
   db.query(query, (err, results) => {
     if (err) {
@@ -465,10 +489,9 @@ const getApprovedContracts = (req, res) => {
       return res.status(500).json({ error: "Failed to fetch approved contracts" });
     }
 
-    // Ensure file URLs are absolute
     const contracts = results.map(contract => ({
       ...contract,
-      contract_file_url: contract.contract_file_url.startsWith("http")
+      contract_file_url: contract.contract_file_url?.startsWith("http")
         ? contract.contract_file_url
         : `${req.protocol}://${req.get("host")}${contract.contract_file_url}`
     }));
@@ -476,7 +499,6 @@ const getApprovedContracts = (req, res) => {
     res.json(contracts);
   });
 };
-
 
 const sendContractToClient = (req, res) => {
   const contractId = req.params.id;
