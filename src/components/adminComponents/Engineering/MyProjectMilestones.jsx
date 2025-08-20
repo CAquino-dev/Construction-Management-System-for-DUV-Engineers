@@ -16,6 +16,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
 
+  const permissions = JSON.parse(localStorage.getItem('permissions'))
+  console.log(permissions.role_name)
+
   useEffect(() => {
     const getMilestones = async () => {
       try {
@@ -56,12 +59,13 @@ export const MyProjectMilestones = ({ selectedProject }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
         <h4 className="text-lg font-semibold">Milestones</h4>
+        {permissions.role_name === "Engineer" && 
         <button
           onClick={openModal}
           className="bg-[#4c735c] text-white px-6 py-3 text-sm rounded-md mt-4 sm:mt-0"
         >
           Add Milestone
-        </button>
+        </button>}
       </div>
 
       {/* Status legend */}

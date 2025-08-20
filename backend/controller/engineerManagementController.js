@@ -241,15 +241,15 @@ const createMilestone = (req, res) => {
   if (!Array.isArray(boq_item_ids) || !boq_item_ids.length) return res.status(400).json({ error: 'At least one BOQ item must be selected' });
 
   const timestamp = new Date().toISOString();
-  const progress_status = 'Pending';
+  const status = 'For Review';
 
   // Step 1: Insert milestone
   const milestoneQuery = `
     INSERT INTO milestones
-    (project_id, timestamp, title, details, start_date, due_date, progress_status)
+    (project_id, timestamp, title, details, start_date, due_date, status)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
-  db.query(milestoneQuery, [project_id, timestamp, title, details, start_date || null, due_date || null, progress_status], (err, result) => {
+  db.query(milestoneQuery, [project_id, timestamp, title, details, start_date || null, due_date || null, status], (err, result) => {
     if (err) return res.status(500).json({ error: 'Failed to create milestone' });
 
     const milestoneId = result.insertId;
@@ -387,6 +387,8 @@ const completeMilestone = (req, res) => {
     });
   });
 };
+
+
 
 
   
