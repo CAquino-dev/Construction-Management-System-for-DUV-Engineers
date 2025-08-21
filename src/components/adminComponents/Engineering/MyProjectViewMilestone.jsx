@@ -6,7 +6,10 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState(null);
   const [items, setItems] = useState(milestone.boq_items || []);
-  const [selectedBoq, setSelectedBoq] = useState(null); // BOQ selected for MTO modal
+  const [selectedBoq, setSelectedBoq] = useState(null);
+
+  const permissions = JSON.parse(localStorage.getItem('permissions'));
+  const canModifyMto = permissions?.can_modify_mto === 'Y';
 
   const openFullscreen = (image) => {
     setFullscreenImage(image);
@@ -35,6 +38,45 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       return sum + qty * unit;
     }, 0);
   };
+
+  // Handle inline MTO edits
+  const handleMtoChange = (index, field, value) => {
+    const updatedItems = [...selectedBoq.mto_items];
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    setSelectedBoq({ ...selectedBoq, mto_items: updatedItems });
+  };
+
+  // Add new MTO item
+  const addMtoItem = () => {
+    const newItem = { description: '', unit: '', quantity: 0, unit_cost: 0 };
+    setSelectedBoq({
+      ...selectedBoq,
+      mto_items: [...(selectedBoq.mto_items || []), newItem],
+    });
+  };
+
+const updateMto = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/mto`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        milestone_boq_id: selectedBoq.milestone_boq_id,
+        mto_items: selectedBoq.mto_items,
+        milestone_status: 'PM Approved', // or "Updated"
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Failed to update MTO");
+
+    alert("MTO updated successfully ✅");
+    setSelectedBoq(null); // close modal
+  } catch (error) {
+    console.error("Update MTO failed:", error);
+    alert("Error: " + error.message);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
@@ -131,10 +173,52 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   {selectedBoq.mto_items && selectedBoq.mto_items.length > 0 ? (
                     selectedBoq.mto_items.map((mto, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-3 py-1">{mto.description}</td>
-                        <td className="border border-gray-300 px-3 py-1">{mto.unit}</td>
-                        <td className="border border-gray-300 px-3 py-1 text-right">{mto.quantity}</td>
-                        <td className="border border-gray-300 px-3 py-1 text-right">{mto.unit_cost}</td>
+                        <td className="border border-gray-300 px-3 py-1">
+                          {canModifyMto ? (
+                            <input
+                              className="w-full border px-1 py-0.5 text-sm"
+                              value={mto.description}
+                              onChange={(e) => handleMtoChange(idx, 'description', e.target.value)}
+                            />
+                          ) : (
+                            mto.description
+                          )}
+                        </td>
+                        <td className="border border-gray-300 px-3 py-1">
+                          {canModifyMto ? (
+                            <input
+                              className="w-full border px-1 py-0.5 text-sm"
+                              value={mto.unit}
+                              onChange={(e) => handleMtoChange(idx, 'unit', e.target.value)}
+                            />
+                          ) : (
+                            mto.unit
+                          )}
+                        </td>
+                        <td className="border border-gray-300 px-3 py-1 text-right">
+                          {canModifyMto ? (
+                            <input
+                              type="number"
+                              className="w-20 border px-1 py-0.5 text-sm text-right"
+                              value={mto.quantity}
+                              onChange={(e) => handleMtoChange(idx, 'quantity', e.target.value)}
+                            />
+                          ) : (
+                            mto.quantity
+                          )}
+                        </td>
+                        <td className="border border-gray-300 px-3 py-1 text-right">
+                          {canModifyMto ? (
+                            <input
+                              type="number"
+                              className="w-20 border px-1 py-0.5 text-sm text-right"
+                              value={mto.unit_cost}
+                              onChange={(e) => handleMtoChange(idx, 'unit_cost', e.target.value)}
+                            />
+                          ) : (
+                            mto.unit_cost
+                          )}
+                        </td>
                         <td className="border border-gray-300 px-3 py-1 text-right">
                           {(mto.quantity * mto.unit_cost).toFixed(2)}
                         </td>
@@ -149,6 +233,15 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   )}
                 </tbody>
               </table>
+
+              {canModifyMto && (
+                <button
+                  onClick={addMtoItem}
+                  className="mb-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                >
+                  + Add MTO Item
+                </button>
+              )}
 
               {/* Totals with Circular Chart */}
               <div className="mt-2 p-3 rounded border bg-gray-50 flex flex-col sm:flex-row items-center gap-6">
@@ -190,6 +283,11 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   </PieChart>
                   <p className="text-center text-sm font-semibold mt-2">Budget Usage</p>
                 </div>
+
+            <button onClick={updateMto} className="px-4 py-2 bg-[#4c735c] text-white rounded-md hover:bg-[#3a5b47]">
+              Confirm
+            </button>   
+
               </div>
             </div>
           </div>

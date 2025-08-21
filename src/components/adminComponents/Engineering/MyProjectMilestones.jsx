@@ -6,8 +6,8 @@ import { MyProjectViewMilestone } from './MyProjectViewMilestone';
 const STATUS_COLORS = {
   Draft: 'bg-gray-400',
   'For Review': 'bg-yellow-400',
-  Approved: 'bg-green-500',
-  Rejected: 'bg-red-500',
+  'PM Approved': 'bg-green-500',
+  'PM Rejected': 'bg-red-500',
 };
 
 export const MyProjectMilestones = ({ selectedProject }) => {
@@ -85,7 +85,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
             <div className="flex items-center mb-2">
               <div
                 className={`w-3 h-3 rounded-full mr-2 ${
-                  STATUS_COLORS[milestone.progress_status] || 'bg-gray-300'
+                  STATUS_COLORS[milestone.status] || 'bg-gray-300'
                 }`}
               />
               <p className="text-sm text-gray-600 mr-2">
