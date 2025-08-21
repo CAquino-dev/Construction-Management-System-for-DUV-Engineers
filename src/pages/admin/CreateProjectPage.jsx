@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const CreateProjectPage = () => {
   const { contractId } = useParams();
@@ -65,7 +66,10 @@ const CreateProjectPage = () => {
   };
 
   const addBoqRow = () => {
-    setBoqItems([...boqItems, { item_no: "", description: "", unit: "", quantity: "", unit_cost: "" }]);
+    setBoqItems([
+      ...boqItems,
+      { item_no: "", description: "", unit: "", quantity: "", unit_cost: "" },
+    ]);
   };
 
   const removeBoqRow = (index) => {
@@ -75,7 +79,7 @@ const CreateProjectPage = () => {
   };
 
   const handleSubmit = async () => {
-    const userId = localStorage.getItem("userId")
+    const userId = localStorage.getItem("userId");
     if (
       !form.engineer_id ||
       !form.foreman_id ||
@@ -83,7 +87,7 @@ const CreateProjectPage = () => {
       !form.start_date ||
       !form.end_date
     ) {
-      alert("Please complete all required fields.");
+      toast.error("Please complete all required fields.");
       return;
     }
 
@@ -109,11 +113,11 @@ const CreateProjectPage = () => {
       ],
 
       boq_items: boqItems.map((item, index) => ({
-      item_no: index + 1, // number, not empty string
-      description: item.description,
-      unit: item.unit,
-      quantity: parseFloat(item.quantity),
-      unit_cost: parseFloat(item.unit_cost)
+        item_no: index + 1, // number, not empty string
+        description: item.description,
+        unit: item.unit,
+        quantity: parseFloat(item.quantity),
+        unit_cost: parseFloat(item.unit_cost),
       })), // attach BOQ to body
     };
 
@@ -131,14 +135,14 @@ const CreateProjectPage = () => {
       const result = await res.json();
 
       if (!res.ok) {
-        alert(result.error || "Failed to create project");
+        toast.error(result.error || "Failed to create project");
       } else {
-        alert("Project created successfully!");
+        toast.success("Project created successfully!");
         // navigate("/project");
       }
     } catch (err) {
       console.error("Error submitting project:", err);
-      alert("Something went wrong.");
+      toast.error("Something went wrong.");
     }
   };
 
@@ -147,18 +151,31 @@ const CreateProjectPage = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold mb-4">Create Engineer Project</h2>
-
+    <div className="max-w-4xl mx-auto p-6">
       {/* Contract Overview */}
-      <div className="border p-4 rounded bg-gray-50 mb-6">
+      <div className="border p-4 rounded mb-6 bg-white shadow rounded-lg">
         <h3 className="text-lg font-semibold mb-2">Contract Details</h3>
-        <p><strong>Proposal Title:</strong> {contract.proposal_title}</p>
-        <p><strong>Client Name:</strong> {contract.client_name}</p>
-        <p><strong>Budget:</strong> ₱{parseFloat(contract.budget_estimate).toLocaleString()}</p>
-        <p><strong>Timeline:</strong> {contract.timeline_estimate}</p>
-        <p><strong>Status:</strong> <span className="capitalize">{contract.status}</span></p>
-        <p><strong>Signed At:</strong> {new Date(contract.contract_signed_at).toLocaleString()}</p>
+        <p>
+          <strong>Proposal Title:</strong> {contract.proposal_title}
+        </p>
+        <p>
+          <strong>Client Name:</strong> {contract.client_name}
+        </p>
+        <p>
+          <strong>Budget:</strong> ₱
+          {parseFloat(contract.budget_estimate).toLocaleString()}
+        </p>
+        <p>
+          <strong>Timeline:</strong> {contract.timeline_estimate}
+        </p>
+        <p>
+          <strong>Status:</strong>{" "}
+          <span className="capitalize">{contract.status}</span>
+        </p>
+        <p>
+          <strong>Signed At:</strong>{" "}
+          {new Date(contract.contract_signed_at).toLocaleString()}
+        </p>
         {contract.contract_file_url && (
           <p>
             <a
@@ -174,7 +191,8 @@ const CreateProjectPage = () => {
       </div>
 
       {/* Project Form */}
-      <div className="space-y-4">
+      <div className="space-y-4 bg-white shadow rounded-lg p-4">
+        <h2 className="text-2xl font-bold mb-4">Create Engineer Project</h2>
         <div>
           <label className="block font-medium">Project Name</label>
           <input
@@ -182,7 +200,7 @@ const CreateProjectPage = () => {
             name="project_name"
             value={form.project_name}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className="border rounded-lg p-2 w-full bg-gray-100"
           />
         </div>
 
@@ -194,7 +212,7 @@ const CreateProjectPage = () => {
               name="start_date"
               value={form.start_date}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              className="border rounded-lg p-2 w-full bg-gray-100"
             />
           </div>
           <div>
@@ -204,7 +222,7 @@ const CreateProjectPage = () => {
               name="end_date"
               value={form.end_date}
               onChange={handleChange}
-              className="w-full border px-3 py-2 rounded"
+              className="border rounded-lg p-2 w-full bg-gray-100"
             />
           </div>
         </div>
@@ -216,7 +234,7 @@ const CreateProjectPage = () => {
             name="location"
             value={form.location}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className="border rounded-lg p-2 w-full bg-gray-100"
           />
         </div>
 
@@ -226,7 +244,7 @@ const CreateProjectPage = () => {
             name="engineer_id"
             value={form.engineer_id}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className="border rounded-lg p-2 w-full bg-gray-100"
           >
             <option value="">Select Engineer</option>
             {users
@@ -245,7 +263,7 @@ const CreateProjectPage = () => {
             name="foreman_id"
             value={form.foreman_id}
             onChange={handleChange}
-            className="w-full border px-3 py-2 rounded"
+            className="border rounded-lg p-2 w-full bg-gray-100"
           >
             <option value="">Select Foreman</option>
             {users
@@ -260,7 +278,9 @@ const CreateProjectPage = () => {
 
         {/* BOQ Section */}
         <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-2">Bill of Quantities (BOQ)</h3>
+          <h3 className="text-lg font-semibold mb-2">
+            Bill of Quantities (BOQ)
+          </h3>
           <table className="w-full border">
             <thead className="bg-gray-100">
               <tr>
@@ -280,32 +300,40 @@ const CreateProjectPage = () => {
                     <input
                       type="text"
                       value={item.description}
-                      onChange={(e) => handleBoqChange(index, "description", e.target.value)}
-                      className="w-full border px-2 py-1 rounded"
+                      onChange={(e) =>
+                        handleBoqChange(index, "description", e.target.value)
+                      }
+                      className="border rounded-lg p-2 w-full bg-gray-100"
                     />
                   </td>
                   <td className="border px-2 py-1">
                     <input
                       type="text"
                       value={item.unit}
-                      onChange={(e) => handleBoqChange(index, "unit", e.target.value)}
-                      className="w-full border px-2 py-1 rounded"
+                      onChange={(e) =>
+                        handleBoqChange(index, "unit", e.target.value)
+                      }
+                      className="border rounded-lg p-2 w-full bg-gray-100"
                     />
                   </td>
                   <td className="border px-2 py-1">
                     <input
                       type="number"
                       value={item.quantity}
-                      onChange={(e) => handleBoqChange(index, "quantity", e.target.value)}
-                      className="w-full border px-2 py-1 rounded"
+                      onChange={(e) =>
+                        handleBoqChange(index, "quantity", e.target.value)
+                      }
+                      className="border rounded-lg p-2 w-full bg-gray-100"
                     />
                   </td>
                   <td className="border px-2 py-1">
                     <input
                       type="number"
                       value={item.unit_cost}
-                      onChange={(e) => handleBoqChange(index, "unit_cost", e.target.value)}
-                      className="w-full border px-2 py-1 rounded"
+                      onChange={(e) =>
+                        handleBoqChange(index, "unit_cost", e.target.value)
+                      }
+                      className="border rounded-lg p-2 w-full bg-gray-100"
                     />
                   </td>
                   <td className="border px-2 py-1 text-center">
@@ -332,7 +360,7 @@ const CreateProjectPage = () => {
 
         <button
           onClick={handleSubmit}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-6"
+          className="bg-[#4c735c] text-white px-4 py-2 rounded hover:bg-[#4c735c]/80 cursor-pointer mt-6"
         >
           Create Project
         </button>
