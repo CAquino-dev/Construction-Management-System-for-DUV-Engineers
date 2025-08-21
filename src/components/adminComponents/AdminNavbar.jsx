@@ -16,6 +16,7 @@ import {
   CaretDown,
   HardHat,
   Clock,
+  Briefcase,
 } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
@@ -30,6 +31,7 @@ const AdminNavbar = ({ children }) => {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isEngineerOpen, setIsEngineerOpen] = useState(false); // Engineer dropdown state
   const [isSiteManagerOpen, setIsSiteManagerOpen] = useState(false); // Site Manager dropdown state
+  const [isSalesOpen, setIsSalesOpen] = useState(false);
   const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
   const location = useLocation();
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ const AdminNavbar = ({ children }) => {
   const toggleHrDropdown = () => setIsHrOpen(!isHrOpen);
   const toggleFinanceDropdown = () => setIsFinanceOpen(!isFinanceOpen);
   const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
+  const toggleSalesDropdown = () => setIsSalesOpen(!isSalesOpen);
   const toggleSiteManagerDropdown = () =>
     setIsSiteManagerOpen(!isSiteManagerOpen);
 
@@ -57,31 +60,6 @@ const AdminNavbar = ({ children }) => {
       name: "Attendance Monitoring",
       icon: <Clock size={20} />,
       href: "/admin-dashboard/AttendanceMonitoring",
-    },
-    {
-      name: "Appointment Requests",
-      icon: <UserCircleCheck size={20} />,
-      href: "/admin-dashboard/appointment",
-    },
-    {
-      name: "Lead",
-      icon: <UserCircleCheck size={20} />,
-      href: "/admin-dashboard/sales/lead",
-    },
-    {
-      name: "Proposal",
-      icon: <UserCircleCheck size={20} />,
-      href: "/admin-dashboard/site-manager/proposal",
-    },
-    {
-      name: "Contracts",
-      icon: <UserCircleCheck size={20} />,
-      href: "/admin-dashboard/finance/view-contracts",
-    },
-    {
-      name: "Approved Contracts",
-      icon: <UserCircleCheck size={20} />,
-      href: "project-manager/approved-contracts",
     },
   ];
 
@@ -188,6 +166,51 @@ const AdminNavbar = ({ children }) => {
                   </Link>
                 </li>
               ))}
+            {/* Collapsible Sales Section */}
+            <li>
+              <button
+                onClick={toggleSalesDropdown}
+                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+              >
+                <span className="flex items-center gap-3 font-semibold">
+                  <User size={20} /> Sales
+                </span>
+                <CaretDown
+                  size={20}
+                  className={`transform transition-all ${
+                    isSalesOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isSalesOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/appointment"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/appointment"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Appointment Request
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/sales/lead"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/sales/lead"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Lead
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
             {/* Collapsible Site manager Section */}
             <li>
               {permissions.can_view_sitemanager === "Y" && (
@@ -196,7 +219,7 @@ const AdminNavbar = ({ children }) => {
                   className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
                 >
                   <span className="flex items-center gap-3 font-semibold">
-                    <UserCircleGear size={20} /> Site Manager
+                    <Briefcase size={20} /> Project Manager
                   </span>
                   <CaretDown
                     size={20}
@@ -232,6 +255,45 @@ const AdminNavbar = ({ children }) => {
                       }`}
                     >
                       Add Client
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/site-manager/proposal"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/proposal"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Proposal
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/finance/view-contracts"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/view-contracts"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Contracts
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/project-manager/approved-contracts"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/project-manager/approved-contracts"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Approved Contracts
                     </Link>
                   </li>
                 </ul>
