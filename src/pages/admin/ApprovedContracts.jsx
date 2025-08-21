@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const ApprovedContracts = () => {
   const navigate = useNavigate(); // ✅ move here
@@ -42,9 +43,9 @@ const ApprovedContracts = () => {
       const result = await res.json();
 
       if (!res.ok) {
-        alert(`Error: ${result.error || "Failed to send to client."}`);
+        toast.error(`Error: ${result.error || "Failed to send to client."}`);
       } else {
-        alert("Contract sent to client successfully.");
+        toast.success("Contract sent to client successfully.");
         fetchApprovedContracts();
       }
     } catch (err) {
@@ -79,7 +80,7 @@ const ApprovedContracts = () => {
             onClick={() => setViewMode("pending")}
             className={`px-4 py-2 rounded ${
               viewMode === "pending"
-                ? "bg-blue-600 text-white"
+                ? "bg-[#4c735c] text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
           >
@@ -89,7 +90,7 @@ const ApprovedContracts = () => {
             onClick={() => setViewMode("signed")}
             className={`px-4 py-2 rounded ${
               viewMode === "signed"
-                ? "bg-blue-600 text-white"
+                ? "bg-[#4c735c]  text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
           >
@@ -126,9 +127,7 @@ const ApprovedContracts = () => {
                     <p>
                       <strong>Signed At:</strong>{" "}
                       {contract.contract_signed_at
-                        ? new Date(
-                            contract.contract_signed_at
-                          ).toLocaleString()
+                        ? new Date(contract.contract_signed_at).toLocaleString()
                         : "Not signed"}
                     </p>
                   </div>
@@ -137,18 +136,14 @@ const ApprovedContracts = () => {
                   <div className="space-y-1">
                     <hr className="my-2" />
                     <p>
-                      <strong>Proposal Title:</strong>{" "}
-                      {contract.proposal_title}
+                      <strong>Proposal Title:</strong> {contract.proposal_title}
                     </p>
                     <p>
                       <strong>Budget Estimate:</strong> ₱
-                      {parseFloat(
-                        contract.budget_estimate
-                      ).toLocaleString()}
+                      {parseFloat(contract.budget_estimate).toLocaleString()}
                     </p>
                     <p>
-                      <strong>Timeline:</strong>{" "}
-                      {contract.timeline_estimate}
+                      <strong>Timeline:</strong> {contract.timeline_estimate}
                     </p>
                   </div>
 
@@ -210,22 +205,23 @@ const ApprovedContracts = () => {
                             : "Send to Client"}
                         </button>
                       ) : (
-                        <span className="text-green-600 font-medium">
-                          Already Signed
-                        </span>
+                        <div className="text-green-600 font-medium mr-2 flex items-center">
+                          <span>Already Signed</span>
+                        </div>
                       )}
 
                       {viewMode === "signed" && (
-                          <button
-                            onClick={() =>
-                              navigate(`/admin-dashboard/project/create/${contract.contract_id}`)
-                            }
-                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                          >
-                            Create Project
-                          </button>
-                        )}
-
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `/admin-dashboard/project/create/${contract.contract_id}`
+                            )
+                          }
+                          className="bg-[#4c735c] text-white px-4 py-2 rounded hover:bg-[#4c735c]/80 transition cursor-pointer"
+                        >
+                          Create Project
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
