@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const Lead = () => {
   const [formData, setFormData] = useState({
@@ -55,7 +56,23 @@ const Lead = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Lead Added Successfully");
+        toast.success("Lead Added Successfully");
+
+        setFormData({
+          client_name: "",
+          email: "",
+          phone_number: "",
+          project_interest: "",
+          budget: "",
+          timeline: "",
+        });
+
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/getLeads`
+        );
+        const data = await response.json();
+
+        setLeads(data);
       } else {
         alert("An error occurred while adding the Lead");
       }
@@ -66,7 +83,7 @@ const Lead = () => {
 
   return (
     <div className="sm:h-screen">
-      <div className="flex flex-row gap-4 justify-center h-3/5">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center h-3/5">
         {/* Left Panel */}
         <div className="sm:w-6/11 p-4 rounded shadow bg-white">
           <h2 className="text-2xl font-bold mb-4">Capture Lead</h2>
