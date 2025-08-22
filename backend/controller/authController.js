@@ -31,6 +31,104 @@ const registerUser = async (req, res) => {
     }
 }
 //working
+// const Login = (req, res) => {
+//   const { email, password } = req.body;
+
+//   if (!email || !password) {
+//     return res.status(400).json({ error: "All fields are required" });
+//   }
+
+//   const query = "SELECT * FROM users WHERE email = ?";
+//   db.query(query, [email], async (err, results) => {
+//     if (err) return res.status(500).json({ error: "Database error!" });
+
+//     if (results.length === 0) {
+//       return res.status(401).json({ error: "Invalid email or password" });
+//     }
+
+//     const user = results[0];
+//     const isMatch = await bcrypt.compare(password, user.password);
+
+//     if (!isMatch) {
+//       return res.status(401).json({ error: "Invalid email or password" });
+//     }
+
+//     if (user.role_id) {
+//       const permissionQuery = "SELECT permission_key, value FROM user_permissions WHERE user_id = ?";
+
+//       db.query(permissionQuery, [user.id], (permErr, permResults) => {
+//         if (permErr) {
+//           console.error("Error fetching permissions:", permErr);
+//           return res.status(500).json({ error: "Error fetching permissions" });
+//         }
+
+//         let permissions = null;
+
+//         if (permResults && permResults.length > 0) {
+//           permissions = {};
+//           permResults.forEach(p => {
+//             permissions[p.permission_key] = p.value;
+//           });
+//           sendLoginResponse();
+//         } else {
+//           // No custom permissions, fallback to role defaults
+//           const roleQuery = "SELECT * FROM roles WHERE role_id = ?";
+//           db.query(roleQuery, [user.role_id], (roleErr, roleResults) => {
+//             if (roleErr || roleResults.length === 0) {
+//               console.error("Error fetching role defaults:", roleErr);
+//               return res.status(500).json({ error: "Error fetching role defaults" });
+//             }
+
+//             // Build permissions object from role columns (excluding id and name)
+//             const role = roleResults[0];
+//             permissions = {};
+//             Object.keys(role).forEach(key => {
+//               if (!["role_id", "role_name"].includes(key)) {
+//                 permissions[key] = role[key];
+//               }
+//             });
+
+//             sendLoginResponse();
+//           });
+//         }
+
+//         function sendLoginResponse() {
+//           const payload = {
+//             userId: user.id,
+//             userType: "Employee",
+//             permissions
+//           };
+//           const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+//           res.json({
+//             message: "Login successful",
+//             userId: user.id,
+//             userType: "Employee",
+//             permissions,
+//             token
+//           });
+//         }
+//       });
+//     } else {
+//       // Client user (no role)
+//       const payload = {
+//         userId: user.id,
+//         userType: "Client",
+//         permissions: null
+//       };
+//       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+//       res.json({
+//         message: "Login successful",
+//         userId: user.id,
+//         userType: "Client",
+//         permissions: null,
+//         token
+//       });
+//     }
+//   });
+// };
+
 const Login = (req, res) => {
     const { email, password } = req.body;
 
@@ -84,6 +182,8 @@ const Login = (req, res) => {
         });
     });
 };
+
+
 
 
 
