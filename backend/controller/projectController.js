@@ -97,7 +97,11 @@ const getMilestones = (req, res) => {
       mm.unit AS mto_unit,
       mm.quantity AS mto_quantity,
       mm.unit_cost AS mto_unit_cost,
-      mm.total_cost AS mto_total_cost
+      mm.total_cost AS mto_total_cost,
+
+      -- add task progress info
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id) AS total_tasks,
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id AND t.status = 'Completed') AS completed_tasks
     FROM milestones m
     LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
     LEFT JOIN boq b ON mb.boq_id = b.id
@@ -116,6 +120,12 @@ const getMilestones = (req, res) => {
 
     results.forEach(row => {
       if (!milestonesMap.has(row.milestone_id)) {
+        // calculate milestone progress
+        let progress = 0;
+        if (row.total_tasks > 0) {
+          progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
+        }
+
         milestonesMap.set(row.milestone_id, {
           id: row.milestone_id,
           project_id: row.project_id,
@@ -125,6 +135,7 @@ const getMilestones = (req, res) => {
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
+          progress,   // ✅ milestone progress %
           boq_items: []
         });
       }
@@ -166,6 +177,7 @@ const getMilestones = (req, res) => {
     res.json({ milestones });
   });
 };
+
 
 
 
@@ -617,10 +629,137 @@ const getBoqByProject = (req, res) => {
   });
 };
 
+const getTasks = (req, res) => {
+  const { milestoneId } = req.params;
+
+  const milestoneQuery = "SELECT * FROM milestones WHERE id = ?";
+  const tasksQuery = "SELECT * FROM milestone_tasks WHERE milestone_id = ?";
+  
+  db.query(milestoneQuery, [milestoneId], (err, milestoneResult) => {
+    if (err) return res.status(500).json({ error: "Server error" });
+
+    if (milestoneResult.length === 0) {
+    return res.status(404).json({ error: "Milestone not found" });
+    }
+
+    db.query(tasksQuery, [milestoneId], (err, tasksResult) => {
+      if (err) return res.status(500).json({ error: "Server error" });
+
+      res.json({
+        milestone: milestoneResult[0],
+        tasks: tasksResult,
+      })
+    })
+  })
+}
+
+const addTask = (req, res) => {
+  const { milestoneId } = req.params;
+  const { 
+    title, 
+    details, 
+    start_date, 
+    due_date, 
+    status = "Pending",   // can still default if not provided
+    priority,             // must come from frontend 
+    assigned_to = null 
+  } = req.body;
+
+  // Ensure priority is provided
+  if (!priority) {
+    return res.status(400).json({ error: "Priority is required (Low, Medium, High)" });
+  }
+
+  const query = `
+    INSERT INTO milestone_tasks 
+    (milestone_id, title, details, start_date, due_date, status, priority, assigned_to) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    query,
+    [milestoneId, title, details, start_date, due_date, status, priority, assigned_to],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Failed to add task" });
+
+      res.json({
+        id: result.insertId,
+        milestone_id: milestoneId,
+        title,
+        details,
+        start_date,
+        due_date,
+        status,
+        priority,
+        assigned_to,
+      });
+    }
+  );
+};
+
+// Update a task
+const updateTask = (req, res) => {
+  const { taskId } = req.params; // coming from /api/project/updateTask/:taskId
+  const { title, details, start_date, due_date, priority, status } = req.body;
+
+  const query = `
+    UPDATE milestone_tasks
+    SET title = ?, details = ?, start_date = ?, due_date = ?, priority = ?, status = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    query,
+    [title, details, start_date, due_date, priority, status, taskId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating task:", err);
+        return res.status(500).json({ error: "Failed to update task" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      res.json({
+        message: "Task updated successfully",
+        task: {
+          id: taskId,
+          title,
+          details,
+          start_date,
+          due_date,
+          priority,
+          status,
+        },
+      });
+    }
+  );
+};
+
+const deleteTask = (req, res) => {
+  const { taskId } = req.params;
+
+  const query = "DELETE FROM milestone_tasks WHERE id = ?";
+
+  db.query(query, [taskId], (err, result) => {
+    if (err) {
+      console.error("Error deleting task:", err);
+      return res.status(500).json({ error: "Failed to delete task" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+     res.json({ message: "Task deleted successfully", taskId });
+  })
+}
 
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
-  createMilestone, getBoqByProject
+  createMilestone, getBoqByProject, getTasks, addTask, updateTask,
+  deleteTask
 };

@@ -143,7 +143,7 @@ export const MilestoneClient = ({ selectedProject }) => {
                     onClick={() => openViewModal(milestone)}
                     className="text-[#4c735c] underline cursor-pointer mt-1"
                   >
-                    View Attachments
+                    View Milestone
                   </button>
                 </div>
               </div>

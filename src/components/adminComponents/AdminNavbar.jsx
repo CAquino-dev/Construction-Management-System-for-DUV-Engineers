@@ -272,19 +272,6 @@ const AdminNavbar = ({ children }) => {
                   </li>
                   <li>
                     <Link
-                      to="/admin-dashboard/finance/view-contracts"
-                      className={`block p-2 rounded-lg cursor-pointer ${
-                        location.pathname ===
-                        "/admin-dashboard/finance/view-contracts"
-                          ? "bg-[#5A8366] text-white"
-                          : "hover:bg-[#5A8366]"
-                      }`}
-                    >
-                      Contracts
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
                       to="/admin-dashboard/project-manager/approved-contracts"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
@@ -380,6 +367,19 @@ const AdminNavbar = ({ children }) => {
                       }`}
                     >
                       HR Payroll (Approved Records of CEO)
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/finance/view-contracts"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/view-contracts"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Contracts
                     </Link>
                   </li>
                   <li>

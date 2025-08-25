@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MyProjectAddMilestone } from './MyProjectAddMilestone';
 import { MyProjectViewMilestone } from './MyProjectViewMilestone';
 
@@ -16,8 +17,8 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
 
-  const permissions = JSON.parse(localStorage.getItem('permissions'))
-  console.log(permissions.role_name)
+  const permissions = JSON.parse(localStorage.getItem('permissions'));
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getMilestones = async () => {
@@ -49,61 +50,98 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const addMilestone = (newMilestone) => {
     setMilestonesList((prev) => [
       ...prev,
-      { ...newMilestone, timestamp: new Date().toISOString() },
+      { ...newMilestone, timestamp: new Date().toISOString(), progress: 0 },
     ]);
     closeModal();
   };
 
+  const goToTaskBreakdown = (milestone) => {
+    navigate(
+      `/admin-dashboard/project/${selectedProject.id}/milestone/${milestone.id}/tasks`
+    );
+  };
+
   return (
-    <div>
+    <div className="p-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-        <h4 className="text-lg font-semibold">Milestones</h4>
-        {permissions.role_name === "Engineer" && 
-        <button
-          onClick={openModal}
-          className="bg-[#4c735c] text-white px-6 py-3 text-sm rounded-md mt-4 sm:mt-0"
-        >
-          Add Milestone
-        </button>}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+        <h4 className="text-xl font-bold text-gray-800">Milestones</h4>
+        {permissions.role_name === 'Engineer' && (
+          <button
+            onClick={openModal}
+            className="bg-[#4c735c] text-white px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
+          >
+            + Add Milestone
+          </button>
+        )}
       </div>
 
       {/* Status legend */}
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-6 mb-6">
         {Object.entries(STATUS_COLORS).map(([status, color]) => (
-          <div key={status} className="flex items-center">
-            <div className={`w-3 h-3 rounded-full mr-2 ${color}`} />
-            <p className="font-semibold">{status}</p>
+          <div key={status} className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${color}`} />
+            <p className="text-sm text-gray-700 font-medium">{status}</p>
           </div>
         ))}
       </div>
 
       {/* Milestone list */}
-      <div className="border-l-2 border-gray-300 pl-6">
+      <div className="space-y-6">
         {milestonesList.map((milestone) => (
-          <div key={milestone.id} className="mb-6">
-            <div className="flex items-center mb-2">
+          <div
+            key={milestone.id}
+            className="bg-white shadow-md rounded-xl p-6 border border-gray-200"
+          >
+            {/* Status + Date */}
+            <div className="flex items-center gap-2 mb-2">
               <div
-                className={`w-3 h-3 rounded-full mr-2 ${
+                className={`w-3 h-3 rounded-full ${
                   STATUS_COLORS[milestone.status] || 'bg-gray-300'
                 }`}
               />
-              <p className="text-sm text-gray-600 mr-2">
+              <p className="text-xs text-gray-500">
                 {new Date(milestone.timestamp).toLocaleDateString()}
               </p>
             </div>
 
-            <h3 className="text-lg font-semibold text-gray-800">
+            {/* Title & Details */}
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
               {milestone.title}
             </h3>
             <p className="text-sm text-gray-600">{milestone.details}</p>
 
-            <button
-              onClick={() => openViewModal(milestone)}
-              className="text-[#4c735c] underline cursor-pointer"
-            >
-              View Attachments
-            </button>
+            {/* Progress Bar */}
+            <div className="mt-4">
+              <div className="flex justify-between mb-1">
+                <span className="text-xs text-gray-500">Progress</span>
+                <span className="text-xs text-gray-700 font-medium">
+                  {milestone.progress || 0}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div
+                  className="bg-[#4c735c] h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${milestone.progress || 0}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-4 mt-4">
+              <button
+                onClick={() => openViewModal(milestone)}
+                className="text-[#4c735c] font-medium hover:underline"
+              >
+                View Milestone
+              </button>
+              <button
+                onClick={() => goToTaskBreakdown(milestone)}
+                className="text-blue-600 font-medium hover:underline"
+              >
+                Go to Task Breakdown
+              </button>
+            </div>
           </div>
         ))}
       </div>

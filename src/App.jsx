@@ -46,6 +46,7 @@ import ProposalRespond from "./pages/userPages/ProposalRespond";
 import ContractRespond from "./pages/userPages/ContractRespond";
 import ApprovedContracts from "./pages/admin/ApprovedContracts";
 import CreateProjectPage from "./pages/admin/CreateProjectPage";
+import { MyProjectTaskBreakdown } from "./pages/admin/MyProjectTaskBreakdown";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -143,6 +144,10 @@ const App = () => {
             <Route
               path="project/create/:contractId"
               element={<CreateProjectPage />}
+            />
+            <Route
+              path="project/:id/milestone/:milestoneId/tasks"
+              element={<MyProjectTaskBreakdown />}
             />
           </Route>
         </Routes>
