@@ -1,6 +1,38 @@
 // controllers/projectController.js
 const db = require('../config/db');  // Importing the MySQL connection
 const bcrypt = require("bcrypt");
+const multer = require("multer");
+const path = require('path');
+const fs = require('fs');
+
+const uploadDir = path.join(__dirname, '../uploads/reports')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
+  }
+});
+
+const uploadReportsPDF = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  }
+}).single('report_file'); // Name should match frontend
+
 
 const calculateEstimate = async (data) => {
   const { projectType, materialType, sizeInSqm, location, budget } = data;  // Get projectType, materialType, area in sqm, location, and budget
@@ -756,10 +788,72 @@ const deleteTask = (req, res) => {
   })
 }
 
+const getReports = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = 'SELECT * FROM reports WHERE project_id = ?';
+
+  db.query(query, [projectId], (err, results) => {
+    if(err){
+      console.error('Error fetching tasks', err);
+      return res.status(500).json({ error: "Failed to get tasks" })
+    }
+
+    res.json(results);
+  })
+}
+
+const submitReport = (req, res) => {
+  uploadReportsPDF(req, res, (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(400).json({ error: err.message || "File upload failed" });
+    }
+
+    const { projectId } = req.params;
+    const { title, summary, created_by } = req.body;
+
+    if (!projectId || !title || !created_by) {
+      return res.status(400).json({ error: "projectId, title, and created_by are required" });
+    }
+
+    const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO reports (project_id, title, summary, file_url, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, NOW())
+    `;
+
+    db.query(
+      query,
+      [projectId, title, summary || null, fileUrl, created_by],
+      (err, result) => {
+        if (err) {
+          console.error("Error inserting report:", err);
+          return res.status(500).json({ error: "Database error inserting report" });
+        }
+
+        return res.status(201).json({
+          message: "Report submitted successfully",
+          report: {
+            id: result.insertId,
+            project_id: projectId,
+            title,
+            summary,
+            file_url: fileUrl,
+            created_by,
+            created_at: new Date(),
+          },
+        });
+      }
+    );
+  });
+};
+
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
-  deleteTask
+  deleteTask, getReports, submitReport
 };
