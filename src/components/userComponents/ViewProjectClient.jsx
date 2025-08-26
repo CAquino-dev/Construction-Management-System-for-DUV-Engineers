@@ -8,6 +8,7 @@ import { SupplyClient } from './SupplyClient';
 import duvLogo from '../../assets/duvLogo.jpg'
 import { ClientLegals } from './ClientLegals';
 import { ChatClient } from './ChatClient';
+import { ReportsClient } from './ReportsClient';
 
 const FinancePaymentEntry = ({ selectedProject }) => {
   const [projects, setProjects] = useState([]);
@@ -247,6 +248,16 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
           Milestones
         </button>
         <button
+          onClick={() => handleTabClick('reports')}
+          className={`text-lg font-medium cursor-pointer p-2 ${
+            activeTab === 'reports'
+              ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+              : 'text-gray-500'
+          }`}
+        >
+          Reports
+        </button>
+        <button
           onClick={() => handleTabClick('legals')}
           className={`text-lg font-medium cursor-pointer p-2 ${
             activeTab === 'legals'
@@ -322,6 +333,12 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
               <div className='p-4'>
                   <h4 className='text-lg font-semibold'>Legals Documents</h4>
                   <ClientLegals selectedProject={selectedProject} />
+              </div>
+          )}
+          {activeTab === 'reports' && (
+              <div className='p-4'>
+                  <h4 className='text-lg font-semibold'>Project Reports</h4>
+                  <ReportsClient selectedProject={selectedProject} />
               </div>
           )}
 
