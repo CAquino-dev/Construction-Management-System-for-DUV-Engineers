@@ -1,8 +1,23 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 export const ViewForemanProject = ({ project, onBack }) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [tasks, setTasks] = useState([]);
+
+  const userId = localStorage.getItem('userId');
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/project/foremanTasks/${userId}`);
+      if(res.ok){
+        const data = await res.json();  
+        setTasks(data);
+      }
+    };
+
+    fetchTasks();
+  },[])
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -75,28 +90,60 @@ export const ViewForemanProject = ({ project, onBack }) => {
 
         {activeTab === "tasks" && (
           <div>
-            <h2 className="text-xl font-semibold mb-4">Assigned Tasks</h2>
-            <ul className="space-y-2">
-              {project?.tasks?.map((task) => (
-                <li
+            <h2 className="text-2xl font-bold mb-6">Assigned Tasks</h2>
+            <div className="space-y-4">
+              {tasks?.map((task) => (
+                <div
                   key={task.id}
-                  className="p-3 border rounded-lg flex justify-between items-center"
+                  className="p-4 bg-white border rounded-2xl shadow-sm hover:shadow-md transition flex flex-col gap-3"
                 >
-                  <span>{task.name}</span>
-                  <span
-                    className={`px-3 py-1 text-sm rounded-full ${
-                      task.status === "Completed"
-                        ? "bg-green-200 text-green-800"
-                        : "bg-yellow-200 text-yellow-800"
-                    }`}
-                  >
-                    {task.status}
-                  </span>
-                </li>
+                  {/* Top Row: Title + Priority */}
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-gray-800">{task.title}</h3>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        task.priority === "High"
+                          ? "bg-red-100 text-red-600"
+                          : task.priority === "Medium"
+                          ? "bg-yellow-100 text-yellow-600"
+                          : "bg-green-100 text-green-600"
+                      }`}
+                    >
+                      {task.priority}
+                    </span>
+                  </div>
+
+                  {/* Details */}
+                  <p className="text-gray-600 text-sm">{task.details}</p>
+
+                  {/* Dates + Status */}
+                  <div className="flex flex-wrap justify-between text-sm text-gray-500">
+                    <span>
+                      <strong className="font-medium text-gray-700">Start:</strong>{" "}
+                      {new Date(task.start_date).toLocaleDateString()}
+                    </span>
+                    <span>
+                      <strong className="font-medium text-gray-700">Due:</strong>{" "}
+                      {new Date(task.due_date).toLocaleDateString()}
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        task.status === "Completed"
+                          ? "bg-green-100 text-green-700"
+                          : task.status === "In Progress"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {task.status}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
+
 
         {activeTab === "materials" && (
           <div>
