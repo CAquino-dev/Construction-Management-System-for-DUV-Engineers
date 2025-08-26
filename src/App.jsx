@@ -118,7 +118,7 @@ const App = () => {
               path="finance/budget-supply-request"
               element={<FinanceBudgetSupplyRequest />}
             />
-            <Route path="site-manager/projects" element={<Projects />} />
+            <Route path="projects" element={<Projects />} />
             <Route path="engineer/my-project" element={<MyProject />} />
             <Route path="employees" element={<EmployeeManagement />} />
             <Route path="inventory" element={<Inventory />} />
