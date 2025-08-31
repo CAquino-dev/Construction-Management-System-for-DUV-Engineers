@@ -15,7 +15,6 @@ export const MyProjectTaskBreakdown = () => {
     due_date: "",
     status: "Pending",
     priority: "Medium",
-    assigned_to: "",
   });
 
   const [editTaskData, setEditTaskData] = useState(null);
@@ -65,7 +64,6 @@ export const MyProjectTaskBreakdown = () => {
         due_date: "",
         status: "Pending",
         priority: "Medium",
-        assigned_to: "",
       });
       setIsAddingTask(false);
     } catch (err) {
@@ -250,13 +248,6 @@ export const MyProjectTaskBreakdown = () => {
                   <span className="font-medium">Priority:</span> {task.priority}
                 </p>
 
-                {task.assigned_to && (
-                  <p className="text-xs text-gray-600">
-                    <span className="font-medium">Assigned to:</span>{" "}
-                    {task.assigned_to}
-                  </p>
-                )}
-
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleEditTask(task)}
@@ -330,15 +321,6 @@ export const MyProjectTaskBreakdown = () => {
               <option value="Medium">Medium</option>
               <option value="High">High</option>
             </select>
-            <input
-              type="text"
-              placeholder="Assigned to (Engineer ID or Name)"
-              value={newTask.assigned_to}
-              onChange={(e) =>
-                setNewTask({ ...newTask, assigned_to: e.target.value })
-              }
-              className="w-full p-2 border rounded"
-            />
             <div className="flex gap-2">
               <button
                 onClick={handleAddTask}

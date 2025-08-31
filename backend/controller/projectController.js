@@ -692,42 +692,65 @@ const addTask = (req, res) => {
     details, 
     start_date, 
     due_date, 
-    status = "Pending",   // can still default if not provided
-    priority,             // must come from frontend 
-    assigned_to = null 
+    status = "Pending", 
+    priority
   } = req.body;
 
-  // Ensure priority is provided
   if (!priority) {
     return res.status(400).json({ error: "Priority is required (Low, Medium, High)" });
   }
 
-  const query = `
-    INSERT INTO milestone_tasks 
-    (milestone_id, title, details, start_date, due_date, status, priority, assigned_to) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  // Step 1: Find the project and its foreman
+  const foremanQuery = `
+    SELECT pa.user_id AS foreman_id
+    FROM milestones m
+    JOIN project_assignments pa ON m.project_id = pa.project_id
+    WHERE m.id = ? AND pa.role_in_project = 'Foreman'
+    LIMIT 1
   `;
 
-  db.query(
-    query,
-    [milestoneId, title, details, start_date, due_date, status, priority, assigned_to],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: "Failed to add task" });
-
-      res.json({
-        id: result.insertId,
-        milestone_id: milestoneId,
-        title,
-        details,
-        start_date,
-        due_date,
-        status,
-        priority,
-        assigned_to,
-      });
+  db.query(foremanQuery, [milestoneId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch foreman" });
     }
-  );
+
+    if (result.length === 0) {
+      return res.status(400).json({ error: "No foreman assigned to this project" });
+    }
+
+    const foremanId = result[0].foreman_id;
+
+    // Step 2: Insert the new task assigned to the foreman
+    const insertQuery = `
+      INSERT INTO milestone_tasks 
+      (milestone_id, title, details, start_date, due_date, status, priority, assigned_to) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      insertQuery,
+      [milestoneId, title, details, start_date, due_date, status, priority, foremanId],
+      (err, insertResult) => {
+        if (err) {
+          return res.status(500).json({ error: "Failed to add task" });
+        }
+
+        res.json({
+          id: insertResult.insertId,
+          milestone_id: milestoneId,
+          title,
+          details,
+          start_date,
+          due_date,
+          status,
+          priority,
+          assigned_to: foremanId,
+        });
+      }
+    );
+  });
 };
+
 
 // Update a task
 const updateTask = (req, res) => {
@@ -850,24 +873,10 @@ const submitReport = (req, res) => {
   });
 };
 
-const getForemanTasks = (req, res) => {
-  const { foremanId } = req.params;
-
-  const query = 'SELECT * FROM milestone_tasks WHERE assigned_to = ?'
-
-  db.query(query, [foremanId], (err, results) => {
-    if(err){
-      console.error({ error: "Failed to fetch foreman tasks" })
-    }
-
-    res.json(results);
-  })
-};
-
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
-  deleteTask, getReports, submitReport, getForemanTasks
+  deleteTask, getReports, submitReport
 };

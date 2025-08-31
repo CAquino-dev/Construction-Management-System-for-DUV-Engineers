@@ -11,13 +11,6 @@ export const Projects = () => {
   const userId = localStorage.getItem('userId');
   const role = localStorage.getItem('role');
 
-  console.log("ROLE:", role, "LEN:", role.length);
-  if(role === "Foreman"){
-    console.log('F:', role)
-  } else {
-    console.log('nope:', role)
-  }
-
   useEffect(() => {
     const fetchEngineerProjects = async () => {
       try {
