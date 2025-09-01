@@ -8,6 +8,8 @@ const AddWorkerModal = ({ team, onClose, onSave }) => {
     status: "active",
   });
 
+  console.log(team.id);
+
   const handleChange = (e) => {
     setWorker({ ...worker, [e.target.name]: e.target.value });
   };
@@ -35,7 +37,7 @@ const handleSubmit = async (e) => {
     const data = await res.json();
 
     // Pass the worker back with teamId and backend id
-    onSave({ ...data, team_id: team_id });
+    onSave({ ...data, team_id: team.id });
 
     // Reset form
     setWorker({

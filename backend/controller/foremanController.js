@@ -1,20 +1,5 @@
 const db = require('../config/db');
 
-// const getForemanTasks = (req, res) => {
-//   const { foremanId } = req.params;
-
-//   const query = 'SELECT * FROM milestone_tasks WHERE assigned_to = ?'
-
-//   db.query(query, [foremanId], (err, results) => {
-//     if(err){
-//       console.error({ error: "Failed to fetch foreman tasks" })
-//     }
-
-//     res.json(results);
-//   })
-// };
-
-
 const getForemanTasks = (req, res) => {
   const { foremanId } = req.params;
 

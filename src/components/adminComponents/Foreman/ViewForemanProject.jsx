@@ -3,6 +3,9 @@ import { ArrowLeft } from "lucide-react";
 import TaskModal from "./TaskModal";
 import AddTeamModal from "./AddTeamModal";      // ⬅️ your modal
 import AddWorkerModal from "./AddWorkerModal";  // ⬅️ your modal
+import Gantt from "frappe-gantt";
+import { useRef } from "react";
+
 
 // Main Component
 export const ViewForemanProject = ({ selectedProject, onBack }) => {
@@ -16,7 +19,28 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   const [selectedTeam, setSelectedTeam] = useState(null); // team to add worker into
   const [teams, setTeams] = useState([]);
 
+  const ganttRef = useRef(null);
+
   const userId = localStorage.getItem("userId");
+
+  useEffect(() => {
+  if (activeTab === "timeline" && ganttRef.current && milestones.length > 0) {
+    const ganttTasks = milestones.flatMap((ms) =>
+      ms.tasks.map((task) => ({
+        id: task.task_id,
+        name: task.title,
+        start: task.start_date,
+        end: task.due_date,
+        progress: task.status === "Completed" ? 100 : 50, // adjust logic
+      }))
+    );
+
+    new Gantt(ganttRef.current, ganttTasks, {
+      view_mode: "Day",
+      date_format: "YYYY-MM-DD",
+    });
+  }
+}, [activeTab, milestones]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -117,7 +141,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
       {/* Tab Navigation */}
       <div className="flex gap-4 mb-6">
-        {["overview", "tasks", "workers"].map((tab) => (
+        {["overview", "tasks", "workers", "timeline"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -131,6 +155,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </button>
         ))}
       </div>
+
 
       {/* Tab Content */}
       <div className="bg-white p-6 rounded-xl shadow-md">
@@ -295,11 +320,21 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         )}
       </div>
 
+      {activeTab === "timeline" && (
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">Project Timeline</h2>
+          <div
+            ref={ganttRef}
+            className="w-full h-[80vh] gantt-container"
+          ></div>
+        </div>
+      )}
+
       {/* Task Modal */}
       {expandedTask && (
         <TaskModal
           task={expandedTask}
-          workers={selectedProject?.workers || []}
+          teams={teams}
           onClose={() => setExpandedTask(null)}
           onSave={handleSaveTask}
         />

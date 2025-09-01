@@ -1,30 +1,30 @@
 import React, { useEffect, useState } from "react";
 
-const TaskModal = ({ task, project, onClose }) => {
+const TaskModal = ({ task, teams, project, onClose }) => {
   const [status, setStatus] = useState(task.status);
   const [assignedTeam, setAssignedTeam] = useState(task.assigned_team || []);
   const [materials, setMaterials] = useState([]);
 
   useEffect(() => {
     const getMaterials = async () => {
-      
       try {
-        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getMaterials/${task.task_id}`);
-        if(res.ok){
+        const res = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getMaterials/${task.task_id}`
+        );
+        if (res.ok) {
           const data = await res.json();
           setMaterials(data);
         }
       } catch (error) {
-         console.error("Error fetching materials:", error);
+        console.error("Error fetching materials:", error);
       }
-    }
+    };
 
     getMaterials();
-  })
-  
+  }, [task.task_id]);
 
   const handleSave = () => {
-    // Call API to update task status + assigned workers
+    // Call API to update task status + assigned teams
     console.log("Updated task:", {
       id: task.task_id,
       status,
@@ -74,7 +74,7 @@ const TaskModal = ({ task, project, onClose }) => {
           </select>
         </div>
 
-        {/* Worker assignment */}
+        {/* Team assignment */}
         <div className="mb-4">
           <label className="block text-gray-700 font-medium mb-1">
             Assign Team
@@ -89,9 +89,9 @@ const TaskModal = ({ task, project, onClose }) => {
             }
             className="w-full border rounded-lg p-2"
           >
-            {project?.workers?.map((worker) => (
-              <option key={worker.id} value={worker.id}>
-                {worker.name} ({worker.role})
+            {teams?.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.team_name}
               </option>
             ))}
           </select>
