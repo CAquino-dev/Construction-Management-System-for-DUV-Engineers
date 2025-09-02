@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 
 const TaskModal = ({ task, teams, project, onClose }) => {
   const [status, setStatus] = useState(task.status);
-  const [assignedTeam, setAssignedTeam] = useState(task.assigned_team || []);
   const [materials, setMaterials] = useState([]);
+  const [file, setFile] = useState(null);
 
   useEffect(() => {
     const getMaterials = async () => {
@@ -23,13 +23,37 @@ const TaskModal = ({ task, teams, project, onClose }) => {
     getMaterials();
   }, [task.task_id]);
 
-  const handleSave = () => {
-    // Call API to update task status + assigned teams
-    console.log("Updated task:", {
-      id: task.task_id,
-      status,
-      assignedTeam,
-    });
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+  const handleSave = async () => {
+    // Build form data for file + other updates
+    const formData = new FormData();
+    formData.append("id", task.task_id);
+
+    if (file) {
+      formData.append("file", file);
+    }
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/tasks/updateTask`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (res.ok) {
+        console.log("Task updated successfully!");
+      } else {
+        console.error("Failed to update task.");
+      }
+    } catch (error) {
+      console.error("Error saving task:", error);
+    }
+
     onClose();
   };
 
@@ -74,32 +98,6 @@ const TaskModal = ({ task, teams, project, onClose }) => {
           </select>
         </div>
 
-        {/* Team assignment */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-1">
-            Assign Team
-          </label>
-          <select
-            multiple
-            value={assignedTeam}
-            onChange={(e) =>
-              setAssignedTeam(
-                Array.from(e.target.selectedOptions, (opt) => opt.value)
-              )
-            }
-            className="w-full border rounded-lg p-2"
-          >
-            {teams?.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.team_name}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            Hold CTRL (Windows) or CMD (Mac) to select multiple
-          </p>
-        </div>
-
         {/* Materials */}
         <div className="mb-4">
           <h3 className="font-semibold text-gray-700 mb-2">Materials</h3>
@@ -119,6 +117,23 @@ const TaskModal = ({ task, teams, project, onClose }) => {
             </ul>
           ) : (
             <p className="text-sm text-gray-500">No materials listed.</p>
+          )}
+        </div>
+
+        {/* File Upload */}
+        <div className="mb-4">
+          <label className="block text-gray-700 font-medium mb-1">
+            Upload File
+          </label>
+          <input
+            type="file"
+            onChange={handleFileChange}
+            className="w-full border rounded-lg p-2"
+          />
+          {file && (
+            <p className="text-sm text-gray-500 mt-1">
+              Selected: {file.name}
+            </p>
           )}
         </div>
 

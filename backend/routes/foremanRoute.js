@@ -2,12 +2,14 @@ const express = require("express");
 const router = express.Router();
 
 const { getForemanTasks, getForemanMaterials, getForemanTeam, 
-    addTeam, addWorker } = require('../controller/foremanController');
+    addTeam, addWorker, assignTeam, foremanReport } = require('../controller/foremanController');
 
 router.get('/getTasks/:foremanId', getForemanTasks);
 router.get('/getMaterials/:taskId', getForemanMaterials);
 router.get('/getTeams/:foremanId', getForemanTeam);
 router.post('/addTeam/:foremanId', addTeam);
 router.post('/addWorker/:teamId', addWorker);
+router.post('/assignTeam', assignTeam);
+router.post('/foremanReport', foremanReport);
 
 module.exports = router;

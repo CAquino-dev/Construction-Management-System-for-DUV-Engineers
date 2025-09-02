@@ -1,23 +1,28 @@
 const db = require('../config/db');
+const multer = require("multer");
+const path = require('path');
+const fs = require('fs');
 
 const getForemanTasks = (req, res) => {
   const { foremanId } = req.params;
 
   const query = `
     SELECT
-      mt.id as task_id,
-      mt.title as task_title,
+      mt.id AS task_id,
+      mt.title AS task_title,
       mt.details,
       mt.start_date,
       mt.due_date,
       mt.status,
       mt.priority,
-      m.id as milestone_id,
-      m.title as milestone_title
+      m.id AS milestone_id,
+      m.title AS milestone_title,
+      ta.team_id
     FROM milestone_tasks mt
-    JOIN milestones m on mt.milestone_id = m.id
+    JOIN milestones m ON mt.milestone_id = m.id
+    LEFT JOIN team_assignments ta ON ta.task_id = mt.id
     WHERE mt.assigned_to = ?
-    ORDER BY m.id, mt.id
+    ORDER BY m.id, mt.id;
   `;
 
   db.query(query, [foremanId], (err, results) => {
@@ -44,13 +49,15 @@ const getForemanTasks = (req, res) => {
         start_date: row.start_date,
         due_date: row.due_date,
         status: row.status,
-        priority: row.priority
+        priority: row.priority,
+        team_id: row.team_id // ✅ include team assignment
       });
     });
 
     res.json(Object.values(milestones));
   });
 };
+
 
 const getForemanMaterials = (req, res) => {
   const { taskId } = req.params;
@@ -178,5 +185,102 @@ const addWorker = (req, res) => {
   })
 }
 
+const assignTeam = (req, res) => {
+  const { 
+  taskId,
+  teamId
+  } = req.body;
+  
+  const query = 'INSERT INTO team_assignments(team_id, task_id) VALUES(?,?)';
 
-module.exports = { getForemanTasks, getForemanMaterials, addTeam, getForemanTeam, addWorker }
+  db.query(query, [teamId, taskId], (err, results) => {
+    if(err){
+      console.error("error creating worker", err);
+      return res.status(500).json({ error: "Failed to create worker" });
+    }
+
+  return res.json({
+    id: results.insertId,
+    team_id: teamId, 
+    task_id: taskId,
+  });
+
+  });
+}
+
+const uploadDir = path.join(__dirname, '../uploads/reports')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
+  }
+});
+
+const uploadReportsPDF = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  }
+}).single('report_file'); // Name should match frontend
+
+const foremanReport = (req, res) => {
+  uploadReportsPDF(req, res, (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(400).json({ error: err.message || "File upload failed" });
+    }
+
+    const { title, taskId, summary, created_by } = req.body;
+
+    if (!taskId || !title || !created_by) {
+      return res.status(400).json({ error: "taskId, title, and created_by are required" });
+    }
+
+    const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO reports (task_id, title, summary, file_url, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, NOW())
+    `;
+
+    db.query(
+      query,
+      [taskId, title, summary || null, fileUrl, created_by],
+      (err, result) => {
+        if (err) {
+          console.error("Error inserting report:", err);
+          return res.status(500).json({ error: "Database error inserting report" });
+        }
+
+        return res.status(201).json({
+          message: "Report submitted successfully",
+          report: {
+            id: result.insertId,
+            task_id: taskId,
+            title,
+            summary,
+            file_url: fileUrl,
+            created_by,
+            created_at: new Date(),
+          },
+        });
+      }
+    );
+  });
+};
+
+
+module.exports = { getForemanTasks, getForemanMaterials, addTeam, getForemanTeam, addWorker, assignTeam, foremanReport }

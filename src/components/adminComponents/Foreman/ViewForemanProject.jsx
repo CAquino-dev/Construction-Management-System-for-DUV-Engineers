@@ -23,24 +23,34 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
   const userId = localStorage.getItem("userId");
 
-  useEffect(() => {
-  if (activeTab === "timeline" && ganttRef.current && milestones.length > 0) {
-    const ganttTasks = milestones.flatMap((ms) =>
-      ms.tasks.map((task) => ({
-        id: task.task_id,
-        name: task.title,
-        start: task.start_date,
-        end: task.due_date,
-        progress: task.status === "Completed" ? 100 : 50, // adjust logic
-      }))
-    );
+  // ⬇️ holds unsaved team selections per taskId
+  const [draftTeamByTask, setDraftTeamByTask] = useState({});
 
-    new Gantt(ganttRef.current, ganttTasks, {
-      view_mode: "Day",
-      date_format: "YYYY-MM-DD",
-    });
-  }
-}, [activeTab, milestones]);
+  const [report, setReport] = useState({
+    title: "",
+    summary: "",
+    task_id: "",
+    file: null,
+  })
+
+  useEffect(() => {
+    if (activeTab === "timeline" && ganttRef.current && milestones.length > 0) {
+      const ganttTasks = milestones.flatMap((ms) =>
+        ms.tasks.map((task) => ({
+          id: task.task_id,
+          name: task.title,
+          start: task.start_date,
+          end: task.due_date,
+          progress: task.status === "Completed" ? 100 : 50, // adjust logic
+        }))
+      );
+
+      new Gantt(ganttRef.current, ganttTasks, {
+        view_mode: "Day",
+        date_format: "YYYY-MM-DD",
+      });
+    }
+  }, [activeTab, milestones]);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -59,15 +69,17 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
     const fetchTeams = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTeams/${userId}`)
+        const res = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTeams/${userId}`
+        );
         if (res.ok) {
           const data = await res.json();
-          setTeams(data.teams); 
+          setTeams(data.teams);
         }
       } catch (error) {
-         console.error("Error fetching tasks:", error);
+        console.error("Error fetching tasks:", error);
       }
-    }
+    };
 
     fetchTeams();
     fetchTasks();
@@ -86,6 +98,89 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         ),
       }))
     );
+  };
+
+  // set ONLY draft selection; do NOT write into task.team_id yet
+  const handleAssignTeam = (taskId, teamId) => {
+    setDraftTeamByTask((prev) => ({ ...prev, [taskId]: teamId }));
+  };
+
+  const handleSaveAssignment = async (taskId, teamId) => {
+    const toSave = parseInt(teamId, 10);
+    if (!toSave) {
+      console.warn("No team selected to assign.");
+      return;
+    }
+
+    console.log("Sending:", taskId, toSave);
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/assignTeam`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId: taskId, teamId: toSave }),
+        }
+      );
+
+      if (res.ok) {
+        console.log(`Team ${toSave} assigned to Task ${taskId}`);
+
+        // commit to local state: set task.team_id, clear draft
+        setMilestones((prevMilestones) =>
+          prevMilestones.map((ms) => ({
+            ...ms,
+            tasks: ms.tasks.map((t) =>
+              t.task_id === taskId ? { ...t, team_id: toSave } : t
+            ),
+          }))
+        );
+        setDraftTeamByTask((prev) => {
+          const next = { ...prev };
+          delete next[taskId];
+          return next;
+        });
+      } else {
+        console.error("Failed to assign team");
+      }
+    } catch (err) {
+      console.error("Error assigning team:", err);
+    }
+  };
+
+  const handleSubmitReport = async (e) => {
+     e.preventDefault(); 
+
+    try {
+      const formData = new FormData();
+      formData.append("title", report.title);
+      formData.append("summary", report.summary);
+      formData.append("taskId", report.task_id);
+      formData.append("created_by", userId);
+      if (report.file) {
+        formData.append("report_file", report.file); // field name must match backend multer field
+      }
+
+      // To console everything inside FormData:
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/foremanReport`,
+      {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const createdReport = await res.json();
+        setReport({ title: "", summary: "", task_id: "", file: null });
+      } else {
+        console.error("Failed to submit report");
+      }
+    } catch (error) {
+       console.error("Error submitting report:", err);
+    }
   };
 
   return (
@@ -141,7 +236,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
       {/* Tab Navigation */}
       <div className="flex gap-4 mb-6">
-        {["overview", "tasks", "workers", "timeline"].map((tab) => (
+        {["overview", "tasks", "workers", "timeline", "reports"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -155,7 +250,6 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </button>
         ))}
       </div>
-
 
       {/* Tab Content */}
       <div className="bg-white p-6 rounded-xl shadow-md">
@@ -184,61 +278,116 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
                 {/* Tasks inside milestone */}
                 <div className="space-y-4">
-                  {ms.tasks.map((task) => (
-                    <div
-                      key={task.task_id}
-                      onClick={() => setExpandedTask(task)}
-                      className="p-4 bg-white border rounded-2xl shadow-sm hover:shadow-md transition flex flex-col gap-3 cursor-pointer"
-                    >
-                      {/* Top Row: Title + Priority */}
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-lg font-semibold text-gray-800">
-                          {task.title}
-                        </h4>
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            task.priority === "High"
-                              ? "bg-red-100 text-red-600"
-                              : task.priority === "Medium"
-                              ? "bg-yellow-100 text-yellow-600"
-                              : "bg-green-100 text-green-600"
-                          }`}
-                        >
-                          {task.priority}
-                        </span>
-                      </div>
+                  {ms.tasks.map((task) => {
+                    const assigned = task.team_id !== null && task.team_id !== undefined;
+                    const draftVal = draftTeamByTask[task.task_id] ?? "";
+                    const selectValue = assigned
+                      ? String(task.team_id) // show assigned in the disabled select
+                      : String(draftVal);
 
-                      {/* Details */}
-                      <p className="text-gray-600 text-sm">{task.details}</p>
+                    return (
+                      <div
+                        key={task.task_id}
+                        onClick={() => setExpandedTask(task)}
+                        className="p-4 bg-white border rounded-2xl shadow-sm hover:shadow-md transition flex flex-col gap-3 cursor-pointer"
+                      >
+                        {/* Top Row: Title + Priority */}
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-lg font-semibold text-gray-800">
+                            {task.title}
+                          </h4>
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              task.priority === "High"
+                                ? "bg-red-100 text-red-600"
+                                : task.priority === "Medium"
+                                ? "bg-yellow-100 text-yellow-600"
+                                : "bg-green-100 text-green-600"
+                            }`}
+                          >
+                            {task.priority}
+                          </span>
+                        </div>
 
-                      {/* Dates + Status */}
-                      <div className="flex flex-wrap justify-between text-sm text-gray-500">
-                        <span>
-                          <strong className="font-medium text-gray-700">
-                            Start:
-                          </strong>{" "}
-                          {new Date(task.start_date).toLocaleDateString()}
-                        </span>
-                        <span>
-                          <strong className="font-medium text-gray-700">
-                            Due:
-                          </strong>{" "}
-                          {new Date(task.due_date).toLocaleDateString()}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            task.status === "Completed"
-                              ? "bg-green-100 text-green-700"
-                              : task.status === "In Progress"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
+                        {/* Details */}
+                        <p className="text-gray-600 text-sm">{task.details}</p>
+
+                        {/* Dates + Status */}
+                        <div className="flex flex-wrap justify-between text-sm text-gray-500">
+                          <span>
+                            <strong className="font-medium text-gray-700">
+                              Start:
+                            </strong>{" "}
+                            {new Date(task.start_date).toLocaleDateString()}
+                          </span>
+                          <span>
+                            <strong className="font-medium text-gray-700">
+                              Due:
+                            </strong>{" "}
+                            {new Date(task.due_date).toLocaleDateString()}
+                          </span>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              task.status === "Completed"
+                                ? "bg-green-100 text-green-700"
+                                : task.status === "In Progress"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {task.status}
+                          </span>
+                        </div>
+
+                        {/* Assign Team */}
+                        <div
+                          className="flex items-center gap-2 mt-3"
+                          onClick={(e) => e.stopPropagation()} // prevent modal when interacting here
                         >
-                          {task.status}
-                        </span>
+                          <select
+                            className="border rounded-lg px-2 py-1 text-sm"
+                            value={selectValue}
+                            onChange={(e) =>
+                              handleAssignTeam(task.task_id, e.target.value)
+                            }
+                            disabled={assigned} // disable if already assigned
+                          >
+                            <option value="">-- Assign Team --</option>
+                            {teams.map((team) => (
+                              <option key={team.id} value={team.id}>
+                                {team.team_name}
+                              </option>
+                            ))}
+                          </select>
+
+                          <button
+                            className={`px-3 py-1 rounded-lg text-sm ${
+                              assigned
+                                ? "bg-gray-400 text-white cursor-not-allowed"
+                                : draftVal
+                                ? "bg-blue-600 text-white hover:bg-blue-700"
+                                : "bg-gray-300 text-gray-700 cursor-not-allowed"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!assigned && draftVal) {
+                                handleSaveAssignment(task.task_id, draftVal);
+                              }
+                            }}
+                            disabled={assigned || !draftVal}
+                          >
+                            {assigned ? "Assigned" : "Save"}
+                          </button>
+
+                          {assigned && (
+                            <span className="text-xs text-gray-600">
+                              Assigned to team ID {task.team_id}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -318,17 +467,90 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
             </div>
           </div>
         )}
-      </div>
 
       {activeTab === "timeline" && (
         <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">Project Timeline</h2>
+          <h2 className="text-2xl font-bold mb-6 text-gray-800">
+            Project Timeline
+          </h2>
           <div
             ref={ganttRef}
             className="w-full h-[80vh] gantt-container"
           ></div>
         </div>
       )}
+
+        {activeTab === "reports" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Task
+                </label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={report.task_id}
+                  onChange={(e) => setReport({ ...report, task_id: e.target.value  })}
+                >
+                  <option value="">-- Select Task --</option>
+                  {milestones.flatMap((ms) =>
+                    ms.tasks.map((task) => (
+                      <option key={task.task_id} value={task.task_id}>
+                        {ms.milestone_title} - {task.title}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={report.title}
+                  onChange={(e) => setReport({ ...report, title: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Details / Summary
+                </label>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2"
+                  rows="4"
+                  value={report.summary}
+                  onChange={(e) => setReport({ ...report, summary: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  File Upload
+                </label>
+                <input
+                  name="report_file"
+                  type="file"
+                  className="w-full"
+                  onChange={(e) => setReport({ ...report, file: e.target.files[0]})}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Submit Report
+              </button>
+            </form>
+          </div>
+        )}
+
+      </div>
 
       {/* Task Modal */}
       {expandedTask && (
