@@ -15,7 +15,8 @@ const paymentRoutes = require('./routes/paymentRoute')
 const messageRoutes = require('./routes/messageRoute');
 const salesRoutes = require('./routes/salesRoute');
 const projectManagerRoutes = require('./routes/projectManagerRoute');
-const chatRoute = require('./routes/chatRoute')
+const chatRoute = require('./routes/chatRoute');
+const foremanRoute = require('./routes/foremanRoute');
  
 require("./config/db"); // Ensure database connects
 
@@ -49,6 +50,7 @@ app.use("/api/chat", messageRoutes);
 app.use("/api/sales", salesRoutes);
 app.use("/api/projectManager", projectManagerRoutes);
 app.use("/api/chatAi", chatRoute);
+app.use("/api/foreman", foremanRoute);
 
 app.get("/", (req, res) => {
     res.send("API is running!");

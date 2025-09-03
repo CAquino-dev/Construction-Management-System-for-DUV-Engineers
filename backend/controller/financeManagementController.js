@@ -365,30 +365,36 @@ const getAllExpensesApprovedByEngineer = (req, res) => {
 
 // PATCH /api/project/expenses/:id/finance-approval
 const updateFinanceApprovalStatus = (req, res) => {
-  const expenseId = req.params.id;
-  const { status } = req.body;
+  const milestoneId = req.params.id;
+  const { status, financeId } = req.body;
 
   if (!status || !['Pending', 'Approved', 'Rejected'].includes(status)) {
     return res.status(400).json({ error: "Invalid or missing status" });
   }
 
+  // If status is "Pending", reset approval date
+  const approvalDate = status === 'Pending' ? null : new Date();
+
   const query = `
-    UPDATE expenses
-    SET finance_approval_status = ?
-    WHERE expense_id = ?
+    UPDATE milestones
+    SET finance_approval_status = ?, 
+        finance_approved_by = ?, 
+        finance_approval_date = ?
+    WHERE id = ?
   `;
 
-  db.query(query, [status, expenseId], (err, result) => {
+  db.query(query, [status, financeId, approvalDate, milestoneId], (err, result) => {
     if (err) {
       console.error("Error updating finance approval status:", err);
       return res.status(500).json({ error: "Failed to update finance approval status" });
     }
     if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Expense not found" });
+      return res.status(404).json({ error: "Milestone not found" });
     }
     res.json({ message: "Finance approval status updated successfully" });
   });
 };
+
 
 const getContracts = (req, res) => {
   const query = `
@@ -456,7 +462,149 @@ const rejectContract = (req, res) => {
   });
 };
 
+// const getPmApprovedMilestones = (req, res) => {
+//   const query = 
+//     `    SELECT
+//       m.id AS milestone_id,
+//       m.project_id,
+//       m.timestamp,
+//       m.title,
+//       m.details,
+//       m.status,
+//       m.start_date,
+//       m.due_date,
 
+//       mb.id AS milestone_boq_id,
+//       b.id AS boq_id,
+//       b.item_no,
+//       b.description AS boq_description,
+//       b.unit AS boq_unit,
+//       b.quantity AS boq_quantity,
+//       b.unit_cost AS boq_unit_cost,
+//       b.total_cost AS boq_total_cost,
+
+//       mm.id AS mto_id,
+//       mm.description AS mto_description,
+//       mm.unit AS mto_unit,
+//       mm.quantity AS mto_quantity,
+//       mm.unit_cost AS mto_unit_cost,
+//       mm.total_cost AS mto_total_cost
+//     FROM milestones m
+//     LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+//     LEFT JOIN boq b ON mb.boq_id = b.id
+//     LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+//     WHERE m.status = 'PM Approved'
+//        AND m.finance_approval_status = 'Pending'
+//      ORDER BY m.due_date ASC`;
+
+//   db.query(query, (err, results) => {
+//     if (err) {
+//       console.error("Error fetching PM approved milestones:", err);
+//       return res.status(500).json({ success: false, error: "Failed Fetching PM approved milestones" });
+//     }
+//     res.status(200).json({
+//       success: true,
+//       milestones: results
+//     });
+//   });
+// };
+
+const getPmApprovedMilestones = (req, res) => {
+
+  const query = 
+    `    SELECT
+      m.id AS milestone_id,
+      m.project_id,
+      m.timestamp,
+      m.title,
+      m.details,
+      m.status,
+      m.start_date,
+      m.due_date,
+
+      mb.id AS milestone_boq_id,
+      b.id AS boq_id,
+      b.item_no,
+      b.description AS boq_description,
+      b.unit AS boq_unit,
+      b.quantity AS boq_quantity,
+      b.unit_cost AS boq_unit_cost,
+      b.total_cost AS boq_total_cost,
+
+      mm.id AS mto_id,
+      mm.description AS mto_description,
+      mm.unit AS mto_unit,
+      mm.quantity AS mto_quantity,
+      mm.unit_cost AS mto_unit_cost,
+      mm.total_cost AS mto_total_cost
+    FROM milestones m
+    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+    LEFT JOIN boq b ON mb.boq_id = b.id
+    LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+    WHERE m.status = 'PM Approved'
+       AND m.finance_approval_status = 'Pending'
+     ORDER BY m.due_date ASC`;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching milestones:", err);
+      return res.status(500).json({ error: "Failed to fetch milestones" });
+    }
+
+    const milestonesMap = new Map();
+
+    results.forEach(row => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          id: row.milestone_id,
+          project_id: row.project_id,
+          timestamp: row.timestamp,
+          title: row.title,
+          details: row.details,
+          status: row.status,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          boq_items: []
+        });
+      }
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      if (row.milestone_boq_id) {
+        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+
+        if (!boqItem) {
+          boqItem = {
+            milestone_boq_id: row.milestone_boq_id,
+            boq_id: row.boq_id,
+            item_no: row.item_no,
+            description: row.boq_description,
+            unit: row.boq_unit,
+            quantity: row.boq_quantity,
+            unit_cost: row.boq_unit_cost,
+            total_cost: row.boq_total_cost,
+            mto_items: []
+          };
+          milestone.boq_items.push(boqItem);
+        }
+
+        if (row.mto_id) {
+          boqItem.mto_items.push({
+            mto_id: row.mto_id,
+            description: row.mto_description,
+            unit: row.mto_unit,
+            quantity: row.mto_quantity,
+            unit_cost: row.mto_unit_cost,
+            total_cost: row.mto_total_cost
+          });
+        }
+      }
+    });
+
+    const milestones = Array.from(milestonesMap.values());
+    res.json({ milestones });
+  });
+};
 
  
 
@@ -465,5 +613,5 @@ module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
-  approveContract, rejectContract
+  approveContract, rejectContract, getPmApprovedMilestones
  };

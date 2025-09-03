@@ -1,6 +1,38 @@
 // controllers/projectController.js
 const db = require('../config/db');  // Importing the MySQL connection
 const bcrypt = require("bcrypt");
+const multer = require("multer");
+const path = require('path');
+const fs = require('fs');
+
+const uploadDir = path.join(__dirname, '../uploads/reports')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
+  }
+});
+
+const uploadReportsPDF = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  }
+}).single('report_file'); // Name should match frontend
+
 
 const calculateEstimate = async (data) => {
   const { projectType, materialType, sizeInSqm, location, budget } = data;  // Get projectType, materialType, area in sqm, location, and budget
@@ -97,7 +129,11 @@ const getMilestones = (req, res) => {
       mm.unit AS mto_unit,
       mm.quantity AS mto_quantity,
       mm.unit_cost AS mto_unit_cost,
-      mm.total_cost AS mto_total_cost
+      mm.total_cost AS mto_total_cost,
+
+      -- add task progress info
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id) AS total_tasks,
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id AND t.status = 'Completed') AS completed_tasks
     FROM milestones m
     LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
     LEFT JOIN boq b ON mb.boq_id = b.id
@@ -116,6 +152,12 @@ const getMilestones = (req, res) => {
 
     results.forEach(row => {
       if (!milestonesMap.has(row.milestone_id)) {
+        // calculate milestone progress
+        let progress = 0;
+        if (row.total_tasks > 0) {
+          progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
+        }
+
         milestonesMap.set(row.milestone_id, {
           id: row.milestone_id,
           project_id: row.project_id,
@@ -125,6 +167,7 @@ const getMilestones = (req, res) => {
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
+          progress,   // ✅ milestone progress %
           boq_items: []
         });
       }
@@ -166,6 +209,7 @@ const getMilestones = (req, res) => {
     res.json({ milestones });
   });
 };
+
 
 
 
@@ -617,10 +661,222 @@ const getBoqByProject = (req, res) => {
   });
 };
 
+const getTasks = (req, res) => {
+  const { milestoneId } = req.params;
+
+  const milestoneQuery = "SELECT * FROM milestones WHERE id = ?";
+  const tasksQuery = "SELECT * FROM milestone_tasks WHERE milestone_id = ?";
+  
+  db.query(milestoneQuery, [milestoneId], (err, milestoneResult) => {
+    if (err) return res.status(500).json({ error: "Server error" });
+
+    if (milestoneResult.length === 0) {
+    return res.status(404).json({ error: "Milestone not found" });
+    }
+
+    db.query(tasksQuery, [milestoneId], (err, tasksResult) => {
+      if (err) return res.status(500).json({ error: "Server error" });
+
+      res.json({
+        milestone: milestoneResult[0],
+        tasks: tasksResult,
+      })
+    })
+  })
+}
+
+const addTask = (req, res) => {
+  const { milestoneId } = req.params;
+  const { 
+    title, 
+    details, 
+    start_date, 
+    due_date, 
+    status = "Pending", 
+    priority
+  } = req.body;
+
+  if (!priority) {
+    return res.status(400).json({ error: "Priority is required (Low, Medium, High)" });
+  }
+
+  // Step 1: Find the project and its foreman
+  const foremanQuery = `
+    SELECT pa.user_id AS foreman_id
+    FROM milestones m
+    JOIN project_assignments pa ON m.project_id = pa.project_id
+    WHERE m.id = ? AND pa.role_in_project = 'Foreman'
+    LIMIT 1
+  `;
+
+  db.query(foremanQuery, [milestoneId], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to fetch foreman" });
+    }
+
+    if (result.length === 0) {
+      return res.status(400).json({ error: "No foreman assigned to this project" });
+    }
+
+    const foremanId = result[0].foreman_id;
+
+    // Step 2: Insert the new task assigned to the foreman
+    const insertQuery = `
+      INSERT INTO milestone_tasks 
+      (milestone_id, title, details, start_date, due_date, status, priority, assigned_to) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      insertQuery,
+      [milestoneId, title, details, start_date, due_date, status, priority, foremanId],
+      (err, insertResult) => {
+        if (err) {
+          return res.status(500).json({ error: "Failed to add task" });
+        }
+
+        res.json({
+          id: insertResult.insertId,
+          milestone_id: milestoneId,
+          title,
+          details,
+          start_date,
+          due_date,
+          status,
+          priority,
+          assigned_to: foremanId,
+        });
+      }
+    );
+  });
+};
+
+
+// Update a task
+const updateTask = (req, res) => {
+  const { taskId } = req.params; // coming from /api/project/updateTask/:taskId
+  const { title, details, start_date, due_date, priority, status } = req.body;
+
+  const query = `
+    UPDATE milestone_tasks
+    SET title = ?, details = ?, start_date = ?, due_date = ?, priority = ?, status = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    query,
+    [title, details, start_date, due_date, priority, status, taskId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating task:", err);
+        return res.status(500).json({ error: "Failed to update task" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      res.json({
+        message: "Task updated successfully",
+        task: {
+          id: taskId,
+          title,
+          details,
+          start_date,
+          due_date,
+          priority,
+          status,
+        },
+      });
+    }
+  );
+};
+
+const deleteTask = (req, res) => {
+  const { taskId } = req.params;
+
+  const query = "DELETE FROM milestone_tasks WHERE id = ?";
+
+  db.query(query, [taskId], (err, result) => {
+    if (err) {
+      console.error("Error deleting task:", err);
+      return res.status(500).json({ error: "Failed to delete task" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+     res.json({ message: "Task deleted successfully", taskId });
+  })
+}
+
+const getReports = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = 'SELECT * FROM reports WHERE project_id = ?';
+
+  db.query(query, [projectId], (err, results) => {
+    if(err){
+      console.error('Error fetching tasks', err);
+      return res.status(500).json({ error: "Failed to get tasks" })
+    }
+
+    res.json(results);
+  })
+}
+
+const submitReport = (req, res) => {
+  uploadReportsPDF(req, res, (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(400).json({ error: err.message || "File upload failed" });
+    }
+
+    const { projectId } = req.params;
+    const { title, summary, created_by } = req.body;
+
+    if (!projectId || !title || !created_by) {
+      return res.status(400).json({ error: "projectId, title, and created_by are required" });
+    }
+
+    const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO reports (project_id, title, summary, file_url, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, NOW())
+    `;
+
+    db.query(
+      query,
+      [projectId, title, summary || null, fileUrl, created_by],
+      (err, result) => {
+        if (err) {
+          console.error("Error inserting report:", err);
+          return res.status(500).json({ error: "Database error inserting report" });
+        }
+
+        return res.status(201).json({
+          message: "Report submitted successfully",
+          report: {
+            id: result.insertId,
+            project_id: projectId,
+            title,
+            summary,
+            file_url: fileUrl,
+            created_by,
+            created_at: new Date(),
+          },
+        });
+      }
+    );
+  });
+};
 
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
-  createMilestone, getBoqByProject
+  createMilestone, getBoqByProject, getTasks, addTask, updateTask,
+  deleteTask, getReports, submitReport
 };

@@ -32,6 +32,7 @@ const AdminNavbar = ({ children }) => {
   const [isEngineerOpen, setIsEngineerOpen] = useState(false); // Engineer dropdown state
   const [isSiteManagerOpen, setIsSiteManagerOpen] = useState(false); // Site Manager dropdown state
   const [isSalesOpen, setIsSalesOpen] = useState(false);
+  const [isForemanOpen, setIsForemanOpen] = useState(false);
   const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ const AdminNavbar = ({ children }) => {
   const toggleFinanceDropdown = () => setIsFinanceOpen(!isFinanceOpen);
   const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
   const toggleSalesDropdown = () => setIsSalesOpen(!isSalesOpen);
+  const toggleForemanDropdown = () => setIsForemanOpen(!isForemanOpen);
   const toggleSiteManagerDropdown = () =>
     setIsSiteManagerOpen(!isSiteManagerOpen);
 
@@ -211,6 +213,40 @@ const AdminNavbar = ({ children }) => {
                 </ul>
               )}
             </li>
+            {/* Collapsible Foreman Section */}
+            <li>
+              <button
+                onClick={toggleForemanDropdown}
+                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+              >
+                <span className="flex items-center gap-3 font-semibold">
+                  <HardHat size={20} /> Foreman
+                </span>
+                <CaretDown
+                  size={20}
+                  className={`transform transition-all ${
+                    isForemanOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isForemanOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/projects"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/projects"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Projects
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
             {/* Collapsible Site manager Section */}
             <li>
               {permissions.can_view_sitemanager === "Y" && (
@@ -233,7 +269,7 @@ const AdminNavbar = ({ children }) => {
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
                     <Link
-                      to="/admin-dashboard/site-manager/projects"
+                      to="/admin-dashboard/projects"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
                         "/admin-dashboard/site-manager/projects"
@@ -268,19 +304,6 @@ const AdminNavbar = ({ children }) => {
                       }`}
                     >
                       Proposal
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/admin-dashboard/finance/view-contracts"
-                      className={`block p-2 rounded-lg cursor-pointer ${
-                        location.pathname ===
-                        "/admin-dashboard/finance/view-contracts"
-                          ? "bg-[#5A8366] text-white"
-                          : "hover:bg-[#5A8366]"
-                      }`}
-                    >
-                      Contracts
                     </Link>
                   </li>
                   <li>
@@ -322,15 +345,15 @@ const AdminNavbar = ({ children }) => {
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
                     <Link
-                      to="/admin-dashboard/engineer/my-project"
+                      to="/admin-dashboard/projects"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
-                        "/admin-dashboard/engineer/my-project"
+                        "/admin-dashboard/site-manager/projects"
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
                     >
-                      My Project
+                      Projects
                     </Link>
                   </li>
                 </ul>
@@ -384,6 +407,19 @@ const AdminNavbar = ({ children }) => {
                   </li>
                   <li>
                     <Link
+                      to="/admin-dashboard/finance/view-contracts"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/view-contracts"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Contracts
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
                       to="/admin-dashboard/finance/budget-supply-request"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
@@ -392,7 +428,7 @@ const AdminNavbar = ({ children }) => {
                           : "hover:bg-[#5A8366]"
                       }`}
                     >
-                      Budget Supply Request
+                      Budget Review
                     </Link>
                   </li>
                   <li>

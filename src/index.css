@@ -169,3 +169,19 @@ body{
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden; /* hide everything */
+  }
+  .print-container, .print-container * {
+    visibility: visible; /* show only card area */
+  }
+  .print-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+}
+

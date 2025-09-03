@@ -1,22 +1,12 @@
 import React, { useState } from 'react';
 import { X } from '@phosphor-icons/react';
-import { PieChart, Pie, Cell, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, Legend, ResponsiveContainer } from 'recharts';
 
 export const MyProjectViewMilestone = ({ milestone, onClose }) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenImage, setFullscreenImage] = useState(null);
   const [items, setItems] = useState(milestone.boq_items || []);
-  const [selectedBoq, setSelectedBoq] = useState(null); // BOQ selected for MTO modal
-
-  const openFullscreen = (image) => {
-    setFullscreenImage(image);
-    setIsFullscreen(true);
-  };
-
-  const closeFullscreen = () => {
-    setIsFullscreen(false);
-    setFullscreenImage(null);
-  };
+  const [selectedBoq, setSelectedBoq] = useState(null);
+  const permissions = JSON.parse(localStorage.getItem('permissions'));
+  const canModifyMto = permissions?.can_modify_mto === 'Y';
 
   const formatDate = (dateStr) => {
     if (!dateStr) return 'N/A';
@@ -27,20 +17,70 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     }
   };
 
-  // Calculate totals for MTO items
-  const calculateMtoTotals = (mtoItems = []) => {
-    return mtoItems.reduce((sum, item) => {
+  // --- Calculations ---
+  const calculateMtoTotals = (mtoItems = []) =>
+    mtoItems.reduce((sum, item) => {
       const qty = parseFloat(item.quantity) || 0;
       const unit = parseFloat(item.unit_cost) || 0;
       return sum + qty * unit;
     }, 0);
+
+  // Prepare comparison data for charts
+  const comparisonData = items.map((boq) => {
+    const boqBudget = parseFloat(boq.quantity) * parseFloat(boq.unit_cost);
+    const mtoTotal = calculateMtoTotals(boq.mto_items);
+    return {
+      name: boq.description,
+      BOQ: boqBudget,
+      MTO: mtoTotal,
+    };
+  });
+
+  // --- Handle MTO updates ---
+  const handleMtoChange = (index, field, value) => {
+    const updatedItems = [...selectedBoq.mto_items];
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    setSelectedBoq({ ...selectedBoq, mto_items: updatedItems });
+  };
+
+  const addMtoItem = () => {
+    const newItem = { description: '', unit: '', quantity: 0, unit_cost: 0 };
+    setSelectedBoq({
+      ...selectedBoq,
+      mto_items: [...(selectedBoq.mto_items || []), newItem],
+    });
+  };
+
+  const updateMto = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/mto`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            milestone_boq_id: selectedBoq.milestone_boq_id,
+            mto_items: selectedBoq.mto_items,
+            milestone_status: 'PM Approved',
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to update MTO');
+
+      alert('MTO updated successfully ✅');
+      setSelectedBoq(null);
+    } catch (error) {
+      console.error('Update MTO failed:', error);
+      alert('Error: ' + error.message);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[90%] sm:max-w-[800px] h-auto sm:h-[600px] overflow-y-auto flex flex-col relative">
-        
-        {/* Close Button */}
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[90%] sm:max-w-[900px] h-auto sm:h-[90%] overflow-y-auto flex flex-col relative">
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-gray-600 text-xl hover:text-red-500 cursor-pointer"
@@ -55,11 +95,38 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
         <p className="text-xl font-bold mb-1">{milestone.title}</p>
         <p className="text-md mb-4 whitespace-pre-line">{milestone.details}</p>
 
+        {/* Dates & Status */}
         <div className="mb-4 space-y-1">
-          <p><span className="font-semibold">Status:</span> <span className="capitalize">{milestone.status || 'N/A'}</span></p>
-          <p><span className="font-semibold">Due Date:</span> {formatDate(milestone.due_date)}</p>
-          <p><span className="font-semibold">Start Date:</span> {formatDate(milestone.start_date)}</p>
+          <p>
+            <span className="font-semibold">Status:</span>{' '}
+            <span className="capitalize">{milestone.status || 'N/A'}</span>
+          </p>
+          <p>
+            <span className="font-semibold">Due Date:</span> {formatDate(milestone.due_date)}
+          </p>
+          <p>
+            <span className="font-semibold">Start Date:</span> {formatDate(milestone.start_date)}
+          </p>
         </div>
+
+        {/* --- Data Analysis Section --- */}
+        {comparisonData.length > 0 && (
+          <div className="my-6">
+            <h3 className="text-lg font-semibold mb-2">BOQ vs MTO Analysis</h3>
+            <div className="w-full h-64">
+              <ResponsiveContainer>
+                <BarChart data={comparisonData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="BOQ" fill="#4c6ef5" />
+                  <Bar dataKey="MTO" fill="#f59f00" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* BOQ Items */}
         <div className="mt-6">
@@ -68,23 +135,23 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
             <table className="min-w-full border border-gray-300">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-3 py-1 text-left">Description</th>
-                  <th className="border border-gray-300 px-3 py-1 text-left">Unit</th>
-                  <th className="border border-gray-300 px-3 py-1 text-right">Quantity</th>
-                  <th className="border border-gray-300 px-3 py-1 text-right">Unit Cost</th>
-                  <th className="border border-gray-300 px-3 py-1 text-right">Total Cost</th>
-                  <th className="border border-gray-300 px-3 py-1 text-center">Actions</th>
+                  <th className="border px-3 py-1 text-left">Description</th>
+                  <th className="border px-3 py-1 text-left">Unit</th>
+                  <th className="border px-3 py-1 text-right">Quantity</th>
+                  <th className="border px-3 py-1 text-right">Unit Cost</th>
+                  <th className="border px-3 py-1 text-right">Total Cost</th>
+                  <th className="border px-3 py-1 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-3 py-1">{item.description}</td>
-                    <td className="border border-gray-300 px-3 py-1">{item.unit}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right">{item.quantity}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right">{item.unit_cost}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-right">{item.total_cost || 0}</td>
-                    <td className="border border-gray-300 px-3 py-1 text-center">
+                    <td className="border px-3 py-1">{item.description}</td>
+                    <td className="border px-3 py-1">{item.unit}</td>
+                    <td className="border px-3 py-1 text-right">{item.quantity}</td>
+                    <td className="border px-3 py-1 text-right">{item.unit_cost}</td>
+                    <td className="border px-3 py-1 text-right">{item.total_cost || 0}</td>
+                    <td className="border px-3 py-1 text-center">
                       <button
                         className="text-blue-600 hover:underline text-sm"
                         onClick={() => setSelectedBoq(item)}
@@ -120,22 +187,72 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
               <table className="min-w-full border border-gray-300 mb-4">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-3 py-1 text-left">Material</th>
-                    <th className="border border-gray-300 px-3 py-1 text-left">Unit</th>
-                    <th className="border border-gray-300 px-3 py-1 text-right">Quantity</th>
-                    <th className="border border-gray-300 px-3 py-1 text-right">Unit Cost</th>
-                    <th className="border border-gray-300 px-3 py-1 text-right">Total</th>
+                    <th className="border px-3 py-1 text-left">Material</th>
+                    <th className="border px-3 py-1 text-left">Unit</th>
+                    <th className="border px-3 py-1 text-right">Quantity</th>
+                    <th className="border px-3 py-1 text-right">Unit Cost</th>
+                    <th className="border px-3 py-1 text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {selectedBoq.mto_items && selectedBoq.mto_items.length > 0 ? (
                     selectedBoq.mto_items.map((mto, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-3 py-1">{mto.description}</td>
-                        <td className="border border-gray-300 px-3 py-1">{mto.unit}</td>
-                        <td className="border border-gray-300 px-3 py-1 text-right">{mto.quantity}</td>
-                        <td className="border border-gray-300 px-3 py-1 text-right">{mto.unit_cost}</td>
-                        <td className="border border-gray-300 px-3 py-1 text-right">
+                        <td className="border px-3 py-1">
+                          {canModifyMto ? (
+                            <input
+                              className="w-full border px-1 py-0.5 text-sm"
+                              value={mto.description}
+                              onChange={(e) =>
+                                handleMtoChange(idx, 'description', e.target.value)
+                              }
+                            />
+                          ) : (
+                            mto.description
+                          )}
+                        </td>
+                        <td className="border px-3 py-1">
+                          {canModifyMto ? (
+                            <input
+                              className="w-full border px-1 py-0.5 text-sm"
+                              value={mto.unit}
+                              onChange={(e) =>
+                                handleMtoChange(idx, 'unit', e.target.value)
+                              }
+                            />
+                          ) : (
+                            mto.unit
+                          )}
+                        </td>
+                        <td className="border px-3 py-1 text-right">
+                          {canModifyMto ? (
+                            <input
+                              type="number"
+                              className="w-20 border px-1 py-0.5 text-sm text-right"
+                              value={mto.quantity}
+                              onChange={(e) =>
+                                handleMtoChange(idx, 'quantity', e.target.value)
+                              }
+                            />
+                          ) : (
+                            mto.quantity
+                          )}
+                        </td>
+                        <td className="border px-3 py-1 text-right">
+                          {canModifyMto ? (
+                            <input
+                              type="number"
+                              className="w-20 border px-1 py-0.5 text-sm text-right"
+                              value={mto.unit_cost}
+                              onChange={(e) =>
+                                handleMtoChange(idx, 'unit_cost', e.target.value)
+                              }
+                            />
+                          ) : (
+                            mto.unit_cost
+                          )}
+                        </td>
+                        <td className="border px-3 py-1 text-right">
                           {(mto.quantity * mto.unit_cost).toFixed(2)}
                         </td>
                       </tr>
@@ -150,7 +267,16 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                 </tbody>
               </table>
 
-              {/* Totals with Circular Chart */}
+              {canModifyMto && (
+                <button
+                  onClick={addMtoItem}
+                  className="mb-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                >
+                  + Add MTO Item
+                </button>
+              )}
+
+              {/* Totals + Pie Chart */}
               <div className="mt-2 p-3 rounded border bg-gray-50 flex flex-col sm:flex-row items-center gap-6">
                 <div>
                   <p>
@@ -162,21 +288,36 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                     {calculateMtoTotals(selectedBoq.mto_items).toFixed(2)}
                   </p>
                   <p className="mt-1">
-                    {calculateMtoTotals(selectedBoq.mto_items) <= selectedBoq.quantity * selectedBoq.unit_cost ? (
-                      <span className="text-green-600 font-semibold">✅ Within Budget</span>
+                    {calculateMtoTotals(selectedBoq.mto_items) <=
+                    selectedBoq.quantity * selectedBoq.unit_cost ? (
+                      <span className="text-green-600 font-semibold">
+                        ✅ Within Budget
+                      </span>
                     ) : (
-                      <span className="text-red-600 font-semibold">⚠️ Over Budget</span>
+                      <span className="text-red-600 font-semibold">
+                        ⚠️ Over Budget
+                      </span>
                     )}
                   </p>
                 </div>
 
-                {/* Circle Progress */}
+                {/* Pie Chart */}
                 <div>
                   <PieChart width={180} height={180}>
                     <Pie
                       data={[
-                        { name: 'Used', value: calculateMtoTotals(selectedBoq.mto_items) },
-                        { name: 'Remaining', value: Math.max((selectedBoq.quantity * selectedBoq.unit_cost) - calculateMtoTotals(selectedBoq.mto_items), 0) }
+                        {
+                          name: 'Used',
+                          value: calculateMtoTotals(selectedBoq.mto_items),
+                        },
+                        {
+                          name: 'Remaining',
+                          value: Math.max(
+                            selectedBoq.quantity * selectedBoq.unit_cost -
+                              calculateMtoTotals(selectedBoq.mto_items),
+                            0
+                          ),
+                        },
                       ]}
                       innerRadius={60}
                       outerRadius={80}
@@ -188,9 +329,19 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                     </Pie>
                     <Tooltip />
                   </PieChart>
-                  <p className="text-center text-sm font-semibold mt-2">Budget Usage</p>
+                  <p className="text-center text-sm font-semibold mt-2">
+                    Budget Usage
+                  </p>
                 </div>
               </div>
+
+              {/* Confirm */}
+              <button
+                onClick={updateMto}
+                className="mt-4 px-4 py-2 bg-[#4c735c] text-white rounded-md hover:bg-[#3a5b47]"
+              >
+                Confirm
+              </button>
             </div>
           </div>
         )}
