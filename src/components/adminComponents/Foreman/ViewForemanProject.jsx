@@ -5,6 +5,7 @@ import AddTeamModal from "./AddTeamModal";      // ⬅️ your modal
 import AddWorkerModal from "./AddWorkerModal";  // ⬅️ your modal
 import Gantt from "frappe-gantt";
 import { useRef } from "react";
+import { WorkerIDCard } from "./WorkerIDCard";
 
 
 // Main Component
@@ -16,6 +17,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   // modal states
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showAddWorkerModal, setShowAddWorkerModal] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState(null); // team to add worker into
   const [teams, setTeams] = useState([]);
 
@@ -30,6 +32,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     title: "",
     summary: "",
     task_id: "",
+    report_type: "",
     file: null,
   })
 
@@ -157,6 +160,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
       formData.append("title", report.title);
       formData.append("summary", report.summary);
       formData.append("taskId", report.task_id);
+      formData.append("report_type", report.report_type)  ;
       formData.append("created_by", userId);
       if (report.file) {
         formData.append("report_file", report.file); // field name must match backend multer field
@@ -330,7 +334,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                             className={`px-3 py-1 rounded-full text-xs font-semibold ${
                               task.status === "Completed"
                                 ? "bg-green-100 text-green-700"
-                                : task.status === "In Progress"
+                                : task.status === "For Review"
                                 ? "bg-blue-100 text-blue-700"
                                 : "bg-gray-100 text-gray-600"
                             }`}
@@ -454,6 +458,13 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                           >
                             {worker.status}
                           </span>
+                          {/* View ID button */}
+                          <button
+                              onClick={() => setSelectedWorker(worker.id)}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition"
+                            >
+                              View ID
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -480,75 +491,101 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         </div>
       )}
 
-        {activeTab === "reports" && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
-            <form onSubmit={handleSubmitReport} className="space-y-4">
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Task
-                </label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={report.task_id}
-                  onChange={(e) => setReport({ ...report, task_id: e.target.value  })}
-                >
-                  <option value="">-- Select Task --</option>
-                  {milestones.flatMap((ms) =>
-                    ms.tasks.map((task) => (
-                      <option key={task.task_id} value={task.task_id}>
-                        {ms.milestone_title} - {task.title}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={report.title}
-                  onChange={(e) => setReport({ ...report, title: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Details / Summary
-                </label>
-                <textarea
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows="4"
-                  value={report.summary}
-                  onChange={(e) => setReport({ ...report, summary: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  File Upload
-                </label>
-                <input
-                  name="report_file"
-                  type="file"
-                  className="w-full"
-                  onChange={(e) => setReport({ ...report, file: e.target.files[0]})}
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+      {activeTab === "reports" && (
+        <div>
+          <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
+          <form onSubmit={handleSubmitReport} className="space-y-4">
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                Task
+              </label>
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                value={report.task_id}
+                onChange={(e) =>
+                  setReport({ ...report, task_id: e.target.value })
+                }
               >
-                Submit Report
-              </button>
-            </form>
-          </div>
-        )}
+                <option value="">-- Select Task --</option>
+                {milestones.flatMap((ms) =>
+                  ms.tasks.map((task) => (
+                    <option key={task.task_id} value={task.task_id}>
+                      {ms.milestone_title} - {task.title}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                Report Type
+              </label>
+              <select
+                required
+                className="w-full border rounded-lg px-3 py-2"
+                value={report.report_type}
+                onChange={(e) =>
+                  setReport({ ...report, report_type: e.target.value })
+                }
+              >
+                <option value="">-- Select Report Type --</option>
+                <option value="Update">Update</option>
+                <option value="Final">Final</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                Title
+              </label>
+              <input
+                type="text"
+                className="w-full border rounded-lg px-3 py-2"
+                value={report.title}
+                onChange={(e) =>
+                  setReport({ ...report, title: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                Details / Summary
+              </label>
+              <textarea
+                className="w-full border rounded-lg px-3 py-2"
+                rows="4"
+                value={report.summary}
+                onChange={(e) =>
+                  setReport({ ...report, summary: e.target.value })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">
+                File Upload
+              </label>
+              <input
+                name="report_file"
+                type="file"
+                className="w-full"
+                onChange={(e) =>
+                  setReport({ ...report, file: e.target.files[0] })
+                }
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Submit Report
+            </button>
+          </form>
+        </div>
+      )}
 
       </div>
 
@@ -588,6 +625,26 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           }}
         />
       )}
+
+      
+      {/* Worker ID Modal */}
+      {selectedWorker && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full relative">
+            <button
+              onClick={() => setSelectedWorker(null)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            <WorkerIDCard
+              workerId={selectedWorker}
+              onBack={() => setSelectedWorker(null)}
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

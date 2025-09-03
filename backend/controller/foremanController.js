@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const QRCode = require("qrcode");
 const multer = require("multer");
 const path = require('path');
 const fs = require('fs');
@@ -158,32 +159,81 @@ const getForemanTeam = (req, res) => {
 }
 
 const addWorker = (req, res) => {
-  const { teamId } =  req.params;
-  const {
-    name,
-    contact,
-    skill_type,
-    status
-  } = req.body;
-  
-  const query = 'INSERT INTO workers (team_id, name, contact, skill_type, status) VALUES (?, ?, ?, ?, ?)';
+  const { teamId } = req.params;
+  const { name, contact, skill_type, status } = req.body;
+
+  const query =
+    "INSERT INTO workers (team_id, name, contact, skill_type, status) VALUES (?, ?, ?, ?, ?)";
 
   db.query(query, [teamId, name, contact, skill_type, status], (err, results) => {
-    if(err){
+    if (err) {
       console.error("error creating worker", err);
       return res.status(500).json({ error: "Failed to create worker" });
     }
 
-    return res.json({
-      id: results.insertId,
-      team_id: teamId,
-      name,
-      contact,
-      skill_type,
-      status
-    })
-  })
-}
+    const workerId = results.insertId;
+    const qrValue = `WORKER_${workerId}_${Date.now()}`;
+
+    // Generate QR image (base64 or file)
+    QRCode.toDataURL(qrValue, (err, qrImage) => {
+      if (err) {
+        console.error("QR generation error", err);
+        return res.status(500).json({ error: "Failed to generate QR code" });
+      }
+
+      // Save qrValue in DB
+      const updateQuery = "UPDATE workers SET qr_code = ? WHERE id = ?";
+      db.query(updateQuery, [qrValue, workerId], (err2) => {
+        if (err2) {
+          console.error("Error saving QR to worker", err2);
+          return res.status(500).json({ error: "Failed to save QR code" });
+        }
+
+        return res.json({
+          id: workerId,
+          team_id: teamId,
+          name,
+          contact,
+          skill_type,
+          status,
+          qr_code: qrValue,
+          qr_image: qrImage, // this is a base64 PNG you can render directly in frontend <img src={qr_image} />
+        });
+      });
+    });
+  });
+};
+
+const getWorkerById = (req, res) => {
+  const { workerId } = req.params;
+
+  const query = "SELECT * FROM workers WHERE id = ?";
+  db.query(query, [workerId], (err, results) => {
+    if (err) {
+      console.error("Error fetching worker", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Worker not found" });
+    }
+
+    const worker = results[0];
+
+    // Generate QR image from saved qr_code
+    QRCode.toDataURL(worker.qr_code, (err, qrImage) => {
+      if (err) {
+        console.error("QR generation error", err);
+        return res.status(500).json({ error: "Failed to generate QR code" });
+      }
+
+      res.json({
+        ...worker,
+        qr_image: qrImage, // base64 PNG, frontend can show directly
+      });
+    });
+  });
+};
 
 const assignTeam = (req, res) => {
   const { 
@@ -243,7 +293,7 @@ const foremanReport = (req, res) => {
       return res.status(400).json({ error: err.message || "File upload failed" });
     }
 
-    const { title, taskId, summary, created_by } = req.body;
+    const { title, taskId, summary, created_by, report_type } = req.body;
 
     if (!taskId || !title || !created_by) {
       return res.status(400).json({ error: "taskId, title, and created_by are required" });
@@ -251,18 +301,33 @@ const foremanReport = (req, res) => {
 
     const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
 
-    const query = `
-      INSERT INTO reports (task_id, title, summary, file_url, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, NOW())
+    const insertQuery = `
+      INSERT INTO reports (task_id, title, summary, file_url, created_by, report_type, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
 
     db.query(
-      query,
-      [taskId, title, summary || null, fileUrl, created_by],
+      insertQuery,
+      [taskId, title, summary || null, fileUrl, created_by, report_type || "Update"],
       (err, result) => {
         if (err) {
           console.error("Error inserting report:", err);
           return res.status(500).json({ error: "Database error inserting report" });
+        }
+
+        // ✅ If report is Final, update the task status
+        if (report_type === "Final") {
+          const updateTaskQuery = `
+            UPDATE milestone_tasks
+            SET status = 'For Review'
+            WHERE id = ?
+          `;
+          db.query(updateTaskQuery, [taskId], (updateErr) => {
+            if (updateErr) {
+              console.error("Error updating task status:", updateErr);
+              // don’t fail the request, just log
+            }
+          });
         }
 
         return res.status(201).json({
@@ -274,6 +339,7 @@ const foremanReport = (req, res) => {
             summary,
             file_url: fileUrl,
             created_by,
+            report_type: report_type || "Update",
             created_at: new Date(),
           },
         });
@@ -282,5 +348,19 @@ const foremanReport = (req, res) => {
   });
 };
 
+const scanWorker = (req, res) => {
+  const { code } = req.body; // <-- string from body
 
-module.exports = { getForemanTasks, getForemanMaterials, addTeam, getForemanTeam, addWorker, assignTeam, foremanReport }
+  console.log(code);
+
+  const sql = "SELECT * FROM workers WHERE qr_code = ? LIMIT 1";
+  db.query(sql, [code], (err, rows) => {
+    if (err) return res.status(500).json({ error: "DB error" });
+    if (!rows.length) return res.status(404).json({ error: "Worker not found" });
+    res.json(rows[0]);
+  });
+};
+
+
+
+module.exports = { getForemanTasks, getForemanMaterials, addTeam, getForemanTeam, addWorker, assignTeam, foremanReport, getWorkerById, scanWorker }
