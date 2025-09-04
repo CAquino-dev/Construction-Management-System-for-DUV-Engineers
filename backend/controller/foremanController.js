@@ -349,18 +349,83 @@ const foremanReport = (req, res) => {
 };
 
 const scanWorker = (req, res) => {
-  const { code } = req.body; // <-- string from body
+  const { code } = req.body;
 
-  console.log(code);
+  if (!code) {
+    return res.status(400).json({ error: "QR code is required" });
+  }
 
-  const sql = "SELECT * FROM workers WHERE qr_code = ? LIMIT 1";
-  db.query(sql, [code], (err, rows) => {
-    if (err) return res.status(500).json({ error: "DB error" });
-    if (!rows.length) return res.status(404).json({ error: "Worker not found" });
-    res.json(rows[0]);
+  // 1. Find worker by QR code
+  const workerQuery = "SELECT id, name, contact, team_id FROM workers WHERE qr_code = ? LIMIT 1";
+
+  db.query(workerQuery, [code], (err, workers) => {
+    if (err) {
+      console.error("Error finding worker:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (workers.length === 0) {
+      return res.status(404).json({ error: "Worker not found" });
+    }
+
+    const worker = workers[0];
+    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // 2. Check if attendance already exists for today
+    const attendanceQuery = "SELECT * FROM worker_attendance WHERE worker_id = ? AND date = ? LIMIT 1";
+    db.query(attendanceQuery, [worker.id, today], (err, records) => {
+      if (err) {
+        console.error("Error checking attendance:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      if (records.length === 0) {
+        // First scan of the day → insert time_in
+        const insertQuery = "INSERT INTO worker_attendance (worker_id, date, time_in) VALUES (?, ?, NOW())";
+        db.query(insertQuery, [worker.id, today], (err, result) => {
+          if (err) {
+            console.error("Error inserting attendance:", err);
+            return res.status(500).json({ error: "Database error" });
+          }
+
+          return res.json({
+            message: "Time-in recorded",
+            worker,
+            attendance: { date: today, time_in: new Date(), time_out: null },
+          });
+        });
+      } else {
+        const attendance = records[0];
+        if (!attendance.time_out) {
+          // Second scan → update time_out
+          const updateQuery = "UPDATE worker_attendance SET time_out = NOW() WHERE id = ?";
+          db.query(updateQuery, [attendance.id], (err) => {
+            if (err) {
+              console.error("Error updating time_out:", err);
+              return res.status(500).json({ error: "Database error" });
+            }
+
+            return res.json({
+              message: "Time-out recorded",
+              worker,
+              attendance: { ...attendance, time_out: new Date() },
+            });
+          });
+        } else {
+          // Already timed out
+          return res.json({
+            message: "Attendance already completed for today",
+            worker,
+            attendance,
+          });
+        }
+      }
+    });
   });
 };
 
 
 
-module.exports = { getForemanTasks, getForemanMaterials, addTeam, getForemanTeam, addWorker, assignTeam, foremanReport, getWorkerById, scanWorker }
+module.exports = { getForemanTasks, getForemanMaterials, addTeam, 
+  getForemanTeam, addWorker, assignTeam, 
+  foremanReport, getWorkerById, scanWorker }

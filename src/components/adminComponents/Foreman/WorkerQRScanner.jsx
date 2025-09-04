@@ -23,7 +23,7 @@ export const WorkerQRScanner = () => {
           });
         if (!res.ok) throw new Error('Worker not found');
         const data = await res.json();
-        setWorker(data);
+        setWorker({ ...data.worker, statusMessage: data.message });
         setError(null);
       } catch (err) {
         setWorker(null);
@@ -71,6 +71,9 @@ export const WorkerQRScanner = () => {
           <h3 className="text-md font-bold">{worker.name}</h3>
           <p><strong>Contact:</strong> {worker.contact}</p>
           <p><strong>Skill:</strong> {worker.skill_type}</p>
+          <p className="mt-2 text-blue-600 font-semibold">
+            {worker.statusMessage || "Attendance updated"}
+          </p>
         </div>
       )}
     </div>

@@ -134,7 +134,7 @@ export const EngineerReports = ({ selectedProject }) => {
               <p className="text-gray-600 mt-1">{report.summary}</p>
               {report.file_url && (
                 <a
-                  href={report.file_url}
+                  href={`${import.meta.env.VITE_REACT_APP_API_URL}${report.file_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#4c735c] text-sm underline"
