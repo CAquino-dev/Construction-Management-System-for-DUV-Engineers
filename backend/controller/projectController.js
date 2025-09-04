@@ -873,10 +873,37 @@ const submitReport = (req, res) => {
   });
 };
 
+const getMilestoneTaskReports = (req, res) => {
+  const { milestoneId } = req.params;
+
+  const query = `
+    SELECT 
+      r.id,
+      mt.title AS task_title,
+      r.title,
+        r.summary,
+        r.file_url,
+        r.report_type,
+        r.created_at
+    FROM reports r
+    LEFT JOIN milestone_tasks mt on mt.id = r.task_id
+    LEFT JOIN milestones m on m.id = mt.milestone_id
+    WHERE m.id = ?
+  `
+
+  db.query(query, [milestoneId], (err, results) => {
+    if (err) {
+      console.error("Error fetching report:", err);
+      return res.status(500).json({ error: "Error fetching report" });
+    }
+
+    res.json(results);
+  })
+};
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
-  deleteTask, getReports, submitReport
+  deleteTask, getReports, submitReport, getMilestoneTaskReports
 };
