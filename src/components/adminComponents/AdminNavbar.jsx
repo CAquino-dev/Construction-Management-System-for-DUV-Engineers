@@ -244,6 +244,19 @@ const AdminNavbar = ({ children }) => {
                       Projects
                     </Link>
                   </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/foreman/attendance"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/projects/foreman/attendance"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Attendance
+                    </Link>
+                  </li>
                 </ul>
               )}
             </li>
