@@ -448,12 +448,81 @@ const completeMilestone = (req, res) => {
   });
 };
 
+const updateForemanReports = (req, res) => {
+  const { reportId } = req.params;
+  const { status, engineer_id, comment } = req.body;
+
+  const updateReportQuery = `
+    UPDATE reports 
+    SET reviewed_at = NOW(), reviewed_by = ?, review_status = ?, review_comment = ? 
+    WHERE id = ?
+  `;
+
+  // 1. Update the report
+  db.query(updateReportQuery, [engineer_id, status, comment, reportId], (err) => {
+    if (err) {
+      console.error("Error updating report", err);
+      return res.status(500).json({ error: "Failed to update report" });
+    }
+
+    // 2. Fetch the updated report
+    db.query("SELECT * FROM reports WHERE id = ?", [reportId], (err, reportRows) => {
+      if (err) {
+        console.error("Error fetching updated report", err);
+        return res.status(500).json({ error: "Failed to fetch updated report" });
+      }
+
+      if (reportRows.length === 0) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const updatedReport = reportRows[0];
+
+      // 3. If Accepted + Final → update milestone_task
+      if (
+        updatedReport.review_status === "Accepted" &&
+        updatedReport.report_type === "Final"
+      ) {
+        db.query(
+          "UPDATE milestone_tasks SET status = 'Completed' WHERE id = ?",
+          [updatedReport.task_id],
+          (err) => {
+            if (err) {
+              console.error("Error updating milestone task", err);
+              return res.status(500).json({ error: "Failed to update milestone task" });
+            }
+
+            // 4. Fetch updated milestone_task
+            db.query(
+              "SELECT * FROM milestone_tasks WHERE id = ?",
+              [updatedReport.task_id],
+              (err, taskRows) => {
+                if (err) {
+                  console.error("Error fetching updated milestone task", err);
+                  return res
+                    .status(500)
+                    .json({ error: "Failed to fetch updated milestone task" });
+                }
+
+                return res.json({
+                  report: updatedReport,
+                  task: taskRows[0],
+                });
+              }
+            );
+          }
+        );
+      } else {
+        // If no task update is needed, just return the report
+        return res.json({ report: updatedReport });
+      }
+    });
+  });
+};
 
 
-
-  
-
+//UPDATE milestones SET status = ? WHERE id = ?
 
 module.exports = { getEngineers, createProject, getClients, 
                   getClientProject, getEngineerProjects, createMilestone,
-                getMilestonesForPaymentByProject, completeMilestone, updateMtoItems };
+                getMilestonesForPaymentByProject, completeMilestone, updateMtoItems, updateForemanReports };

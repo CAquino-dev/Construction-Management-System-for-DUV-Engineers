@@ -424,8 +424,6 @@ const scanWorker = (req, res) => {
   });
 };
 
-
-
 module.exports = { getForemanTasks, getForemanMaterials, addTeam, 
   getForemanTeam, addWorker, assignTeam, 
   foremanReport, getWorkerById, scanWorker }
