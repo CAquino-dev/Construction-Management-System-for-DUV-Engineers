@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export const MyProjectTaskBreakdown = () => {
+
+  const userId = localStorage.getItem('userId');
+
   const { projectId, milestoneId } = useParams();
   const [milestone, setMilestone] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [reports, setReports] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
-  const [activeTab, setActiveTab] = useState("tasks"); // NEW
+  const [activeTab, setActiveTab] = useState("tasks"); // NEWS
+  const [comment, setComment] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [action, setAction] = useState("");
+  const [reportId, setReportId] = useState("");
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -138,6 +146,31 @@ export const MyProjectTaskBreakdown = () => {
       console.error("Failed to update task", err);
     }
   };
+
+  const openPopup = (action, reportId) => {
+    setIsOpen(true);
+    setAction(action);
+    setReportId(reportId);
+  }
+
+  const handleReport = async () => {
+    try {
+      const res = await axios.put(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/updateForemanReports/${reportId}`, 
+        {
+          status: action,
+          engineer_id: userId,
+          comment: comment
+        }
+      );
+
+      setAction("");
+      setComment("");
+      setReportId("");
+      setIsOpen(false);
+    } catch (err) {
+      console.error("Error handling the report:", err);
+    }
+  } 
 
   return (
     <div className="p-6">
@@ -406,7 +439,9 @@ export const MyProjectTaskBreakdown = () => {
                 key={report.id}
                 className="p-4 border rounded-lg shadow-sm bg-white"
               >
-                <h4 className="font-semibold">{report.task_title}</h4>
+                <h3 className="font-semibold">{report.task_title}</h3>
+                <h4 className=" text-gray-600 font-semibold">{report.title}</h4>
+                <p className="text-sm text-gray-600">report type: {report.report_type}</p>
                 <p className="text-sm text-gray-600">{report.summary}</p>
                 <p className="text-xs text-gray-500">
                   Submitted on:{" "}
@@ -420,9 +455,55 @@ export const MyProjectTaskBreakdown = () => {
                       </a>
                     </div>
                   )}
+                <div className="flex items-center justify-start space-x-2 ">
+                  <button
+                  onClick={() => openPopup("accepted", report.id)}
+                  className="px-2 py-1 bg-green-500 text-white rounded"
+                  >
+                    Accept  
+                  </button>
+                  <button
+                  onClick={() => openPopup("rejected", report.id)}
+                  className="px-2 py-1 bg-red-500 text-white rounded"
+                  >
+                    Reject  
+                  </button>
+                </div>
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">
+              {action === "accept" ? "Accept Report" : "Reject Report"}
+            </h2>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Write your comment..."
+              rows={4}
+            ></textarea>
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReport}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
