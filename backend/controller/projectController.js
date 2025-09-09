@@ -881,14 +881,14 @@ const getMilestoneTaskReports = (req, res) => {
       r.id,
       mt.title AS task_title,
       r.title,
-        r.summary,
-        r.file_url,
-        r.report_type,
-        r.created_at
+      r.summary,
+      r.file_url,
+      r.report_type,
+      r.created_at
     FROM reports r
     LEFT JOIN milestone_tasks mt on mt.id = r.task_id
     LEFT JOIN milestones m on m.id = mt.milestone_id
-    WHERE m.id = ?
+    WHERE m.id = ? AND r.review_status = "pending"
   `
 
   db.query(query, [milestoneId], (err, results) => {
