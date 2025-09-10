@@ -46,6 +46,8 @@ import ProposalRespond from "./pages/userPages/ProposalRespond";
 import ContractRespond from "./pages/userPages/ContractRespond";
 import ApprovedContracts from "./pages/admin/ApprovedContracts";
 import CreateProjectPage from "./pages/admin/CreateProjectPage";
+import { MyProjectTaskBreakdown } from "./pages/admin/MyProjectTaskBreakdown";
+import { AttendancePage } from "./pages/admin/AttendancePage";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ const App = () => {
               path="finance/budget-supply-request"
               element={<FinanceBudgetSupplyRequest />}
             />
-            <Route path="site-manager/projects" element={<Projects />} />
+            <Route path="projects" element={<Projects />} />
             <Route path="engineer/my-project" element={<MyProject />} />
             <Route path="employees" element={<EmployeeManagement />} />
             <Route path="inventory" element={<Inventory />} />
@@ -136,6 +138,7 @@ const App = () => {
             <Route path="site-manager/add-client" element={<AddClient />} />
             <Route path="sales/lead" element={<LeadManagement />} />
             <Route path="site-manager/proposal" element={<Proposal />} />
+            <Route path="foreman/attendance" element={<AttendancePage />} />
             <Route
               path="project-manager/approved-contracts"
               element={<ApprovedContracts />}
@@ -143,6 +146,10 @@ const App = () => {
             <Route
               path="project/create/:contractId"
               element={<CreateProjectPage />}
+            />
+            <Route
+              path="project/:id/milestone/:milestoneId/tasks"
+              element={<MyProjectTaskBreakdown />}
             />
           </Route>
         </Routes>

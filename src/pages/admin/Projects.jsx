@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { MyProjectCard } from '../../components/adminComponents/Engineering/MyProjectCard' // Assuming MyProjectCard is in this directory
 import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject' // Assuming ViewMyProject is in this directory
+import { ViewForemanProject } from '../../components/adminComponents/Foreman/ViewForemanProject';
 import duvLogo from '../../assets/duvLogo.jpg';
 
 export const Projects = () => {
@@ -8,6 +9,7 @@ export const Projects = () => {
   const [projects, setProjects] = useState([]);
 
   const userId = localStorage.getItem('userId');
+  const role = localStorage.getItem('role');
 
   useEffect(() => {
     const fetchEngineerProjects = async () => {
@@ -32,7 +34,19 @@ export const Projects = () => {
   return (
     <div className='container mx-auto p-6 mt-10'>
       {selectedProject ? (
-        <ViewMyProject selectedProject={selectedProject} onBack={() => setSelectedProject(null)} />
+        <>
+          {role === "Foreman" ? (
+            <ViewForemanProject 
+              selectedProject={selectedProject} 
+              onBack={() => setSelectedProject(null)} 
+            />
+          ) : (
+            <ViewMyProject 
+              selectedProject={selectedProject} 
+              onBack={() => setSelectedProject(null)} 
+            />
+          )}
+        </>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {/* Dynamically render MyProjectCard components from projects array */}

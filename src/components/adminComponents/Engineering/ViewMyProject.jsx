@@ -8,6 +8,7 @@ import duvLogo from '../../../assets/duvLogo.jpg';
 import { MyProjectExpenses } from './MyProjectExpenses';
 import { MyprojectSupply } from './MyprojectSupply';
 import { MyProjectChat } from './MyProjectChat';
+import { EngineerReports } from './EngineerReports';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
     const [activeTab, setActiveTab] = useState('projectDetails');
@@ -78,6 +79,16 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                 Milestones
             </button>
             <button 
+                onClick={() => handleTabClick('reports')}
+                className={`text-lg font-medium cursor-pointer p-2 ${
+                    activeTab === 'reports'
+                        ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
+                        : 'text-gray-500 hover:text-[#4c735c]'
+                }`}
+            >
+                Reports
+            </button>            
+            <button 
                 onClick={() => handleTabClick('legals')}
                 className={`text-lg font-medium cursor-pointer p-2 ${
                     activeTab === 'legals'
@@ -134,7 +145,11 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                         <MyProjectMilestones selectedProject={selectedProject} />
                     </div>
                 )}
-
+                {activeTab === 'reports' && (
+                    <div className='p-4'>
+                        <EngineerReports selectedProject={selectedProject} />
+                    </div>
+                )}
                 {activeTab === 'legals' && (
                     <div className='p-4'>
                         <h4 className='text-lg font-semibold'>Legals Documents</h4>

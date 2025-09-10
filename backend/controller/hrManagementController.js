@@ -631,14 +631,6 @@ const updatePayslipStatus = (req, res) => {
   });
 };
 
-
-
-  
-
-
-
-
-
 module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, 
                 getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, 
                 createPayslip, getPayslips, getPayslipById, updatePayslipItemStatus, 

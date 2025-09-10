@@ -321,7 +321,67 @@ const createMilestone = (req, res) => {
 };
 
 
+// Update MTO items for a specific milestone_boq_id
+const updateMtoItems = (req, res) => {
+  const { milestone_boq_id, mto_items, milestone_status } = req.body;
 
+  if (!milestone_boq_id) return res.status(400).json({ error: 'milestone_boq_id is required' });
+  if (!Array.isArray(mto_items)) return res.status(400).json({ error: 'mto_items must be an array' });
+
+  // Step 1: Delete existing MTO items
+  const deleteQuery = `DELETE FROM milestone_mto WHERE milestone_boq_id = ?`;
+  db.query(deleteQuery, [milestone_boq_id], (err) => {
+    if (err) return res.status(500).json({ error: 'Failed to clear old MTO items' });
+
+    // Step 2: Insert updated MTO items (if any)
+    const insertMtoItems = (callback) => {
+      if (mto_items.length === 0) return callback();
+
+      const mtoValues = mto_items.map(item => [
+        milestone_boq_id,
+        item.description,
+        item.unit,
+        item.quantity,
+        item.unit_cost
+      ]);
+
+      const insertQuery = `
+        INSERT INTO milestone_mto
+        (milestone_boq_id, description, unit, quantity, unit_cost)
+        VALUES ?
+      `;
+
+      db.query(insertQuery, [mtoValues], (err2) => {
+        if (err2) return res.status(500).json({ error: 'Failed to insert updated MTO items' });
+        callback();
+      });
+    };
+
+    // Step 3: Update milestone status if provided
+    insertMtoItems(() => {
+      if (!milestone_status) {
+        return res.status(200).json({ message: 'MTO items updated successfully' });
+      }
+
+      // get milestone_id from milestone_boq
+      const milestoneIdQuery = `SELECT milestone_id FROM milestone_boq WHERE id = ?`;
+      db.query(milestoneIdQuery, [milestone_boq_id], (err3, rows) => {
+        if (err3 || rows.length === 0) {
+          return res.status(500).json({ error: 'Failed to find milestone for this BOQ' });
+        }
+
+        const milestoneId = rows[0].milestone_id;
+        const updateStatusQuery = `UPDATE milestones SET status = ? WHERE id = ?`;
+
+        db.query(updateStatusQuery, [milestone_status, milestoneId], (err4) => {
+          if (err4) return res.status(500).json({ error: 'Failed to update milestone status' });
+
+          return res.status(200).json({ message: 'MTO and milestone status updated successfully' });
+        });
+      });
+    });
+  });
+};
 
 
 const getMilestonesForPaymentByProject = (req, res) => {
@@ -388,12 +448,81 @@ const completeMilestone = (req, res) => {
   });
 };
 
+const updateForemanReports = (req, res) => {
+  const { reportId } = req.params;
+  const { status, engineer_id, comment } = req.body;
+
+  const updateReportQuery = `
+    UPDATE reports 
+    SET reviewed_at = NOW(), reviewed_by = ?, review_status = ?, review_comment = ? 
+    WHERE id = ?
+  `;
+
+  // 1. Update the report
+  db.query(updateReportQuery, [engineer_id, status, comment, reportId], (err) => {
+    if (err) {
+      console.error("Error updating report", err);
+      return res.status(500).json({ error: "Failed to update report" });
+    }
+
+    // 2. Fetch the updated report
+    db.query("SELECT * FROM reports WHERE id = ?", [reportId], (err, reportRows) => {
+      if (err) {
+        console.error("Error fetching updated report", err);
+        return res.status(500).json({ error: "Failed to fetch updated report" });
+      }
+
+      if (reportRows.length === 0) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      const updatedReport = reportRows[0];
+
+      // 3. If Accepted + Final → update milestone_task
+      if (
+        updatedReport.review_status === "Accepted" &&
+        updatedReport.report_type === "Final"
+      ) {
+        db.query(
+          "UPDATE milestone_tasks SET status = 'Completed' WHERE id = ?",
+          [updatedReport.task_id],
+          (err) => {
+            if (err) {
+              console.error("Error updating milestone task", err);
+              return res.status(500).json({ error: "Failed to update milestone task" });
+            }
+
+            // 4. Fetch updated milestone_task
+            db.query(
+              "SELECT * FROM milestone_tasks WHERE id = ?",
+              [updatedReport.task_id],
+              (err, taskRows) => {
+                if (err) {
+                  console.error("Error fetching updated milestone task", err);
+                  return res
+                    .status(500)
+                    .json({ error: "Failed to fetch updated milestone task" });
+                }
+
+                return res.json({
+                  report: updatedReport,
+                  task: taskRows[0],
+                });
+              }
+            );
+          }
+        );
+      } else {
+        // If no task update is needed, just return the report
+        return res.json({ report: updatedReport });
+      }
+    });
+  });
+};
 
 
-
-  
-
+//UPDATE milestones SET status = ? WHERE id = ?
 
 module.exports = { getEngineers, createProject, getClients, 
                   getClientProject, getEngineerProjects, createMilestone,
-                getMilestonesForPaymentByProject, completeMilestone };
+                getMilestonesForPaymentByProject, completeMilestone, updateMtoItems, updateForemanReports };
