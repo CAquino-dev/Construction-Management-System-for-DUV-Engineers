@@ -21,6 +21,7 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import { usePermissions } from "../../context/PermissionsContext";
+import ConfirmationModal from "../adminComponents/ConfirmationModal";
 
 const AdminNavbar = ({ children }) => {
   const permissions = JSON.parse(localStorage.getItem("permissions")) || {}; // Default to an empty object if permissions don't exist
@@ -45,6 +46,8 @@ const AdminNavbar = ({ children }) => {
   const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
   const toggleSalesDropdown = () => setIsSalesOpen(!isSalesOpen);
   const toggleForemanDropdown = () => setIsForemanOpen(!isForemanOpen);
+
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const toggleSiteManagerDropdown = () =>
     setIsSiteManagerOpen(!isSiteManagerOpen);
 
@@ -567,12 +570,22 @@ const AdminNavbar = ({ children }) => {
         <div>
           <button
             className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full cursor-pointer"
-            onClick={handleLogout}
+            onClick={() => setIsLogoutModalOpen(true)}
           >
             <SignOut size={22} /> Logout
           </button>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => {
+          setIsLogoutModalOpen(false);
+          handleLogout();
+        }}
+        actionType="Logout"
+      />
 
       {/* Mobile Sidebar */}
       {mobileSidebarOpen && (

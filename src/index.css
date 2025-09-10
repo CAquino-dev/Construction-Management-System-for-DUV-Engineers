@@ -174,14 +174,21 @@ body{
   body * {
     visibility: hidden; /* hide everything */
   }
+
   .print-container, .print-container * {
     visibility: visible; /* show only card area */
   }
+
   .print-container {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
+
+    /* 🔑 Force background colors/images */
+    -webkit-print-color-adjust: exact !important; /* Chrome, Safari */
+    print-color-adjust: exact !important;        /* Firefox */
+    color-adjust: exact !important;              /* Legacy */
   }
 }
 
