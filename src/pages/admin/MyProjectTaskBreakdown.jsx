@@ -3,8 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export const MyProjectTaskBreakdown = () => {
-
-  const userId = localStorage.getItem('userId');
+  const userId = localStorage.getItem("userId");
 
   const { projectId, milestoneId } = useParams();
   const [milestone, setMilestone] = useState(null);
@@ -36,7 +35,9 @@ export const MyProjectTaskBreakdown = () => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestoneTasks/${milestoneId}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/project/getMilestoneTasks/${milestoneId}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -55,7 +56,9 @@ export const MyProjectTaskBreakdown = () => {
     const fetchReports = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestoneTaskReports/${milestoneId}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/project/getMilestoneTaskReports/${milestoneId}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -72,7 +75,9 @@ export const MyProjectTaskBreakdown = () => {
   const handleAddTask = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/addTask/${milestoneId}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/project/addTask/${milestoneId}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -108,7 +113,9 @@ export const MyProjectTaskBreakdown = () => {
   const handleDeleteTask = async (taskId) => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/deleteTask/${taskId}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/project/deleteTask/${taskId}`,
         {
           method: "DELETE",
         }
@@ -125,7 +132,9 @@ export const MyProjectTaskBreakdown = () => {
   const handleUpdateTask = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/updateTask/${editingTaskId}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/project/updateTask/${editingTaskId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -151,15 +160,18 @@ export const MyProjectTaskBreakdown = () => {
     setIsOpen(true);
     setAction(action);
     setReportId(reportId);
-  }
+  };
 
   const handleReport = async () => {
     try {
-      const res = await axios.put(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/updateForemanReports/${reportId}`, 
+      const res = await axios.put(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/engr/updateForemanReports/${reportId}`,
         {
           status: action,
           engineer_id: userId,
-          comment: comment
+          comment: comment,
         }
       );
 
@@ -170,7 +182,7 @@ export const MyProjectTaskBreakdown = () => {
     } catch (err) {
       console.error("Error handling the report:", err);
     }
-  } 
+  };
 
   return (
     <div className="p-6">
@@ -441,32 +453,42 @@ export const MyProjectTaskBreakdown = () => {
               >
                 <h3 className="font-semibold">{report.task_title}</h3>
                 <h4 className=" text-gray-600 font-semibold">{report.title}</h4>
-                <p className="text-sm text-gray-600">report type: {report.report_type}</p>
+                <p className="text-sm text-gray-600">
+                  report type: {report.report_type}
+                </p>
                 <p className="text-sm text-gray-600">{report.summary}</p>
                 <p className="text-xs text-gray-500">
                   Submitted on:{" "}
                   {new Date(report.created_at).toLocaleDateString()}
                 </p>
-                  {report.file_url && (
-                    <div>
-                      <strong>Attached Proposal PDF:</strong><br />
-                      <a href={`${import.meta.env.VITE_REACT_APP_API_URL}${report.file_url}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                        View/Download PDF
-                      </a>
-                    </div>
-                  )}
+                {report.file_url && (
+                  <div>
+                    <strong>Attached Proposal PDF:</strong>
+                    <br />
+                    <a
+                      href={`${import.meta.env.VITE_REACT_APP_API_URL}${
+                        report.file_url
+                      }`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline"
+                    >
+                      View/Download PDF
+                    </a>
+                  </div>
+                )}
                 <div className="flex items-center justify-start space-x-2 ">
                   <button
-                  onClick={() => openPopup("accepted", report.id)}
-                  className="px-2 py-1 bg-green-500 text-white rounded"
+                    onClick={() => openPopup("accepted", report.id)}
+                    className="px-2 py-1 bg-green-500 text-white rounded"
                   >
-                    Accept  
+                    Accept
                   </button>
                   <button
-                  onClick={() => openPopup("rejected", report.id)}
-                  className="px-2 py-1 bg-red-500 text-white rounded"
+                    onClick={() => openPopup("rejected", report.id)}
+                    className="px-2 py-1 bg-red-500 text-white rounded"
                   >
-                    Reject  
+                    Reject
                   </button>
                 </div>
               </div>
@@ -476,7 +498,7 @@ export const MyProjectTaskBreakdown = () => {
       )}
 
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg w-96">
             <h2 className="text-lg font-semibold mb-4">
               {action === "accept" ? "Accept Report" : "Reject Report"}
@@ -498,7 +520,7 @@ export const MyProjectTaskBreakdown = () => {
               </button>
               <button
                 onClick={handleReport}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg"
               >
                 Submit
               </button>
