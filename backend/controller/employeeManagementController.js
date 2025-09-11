@@ -363,4 +363,69 @@ const getPermissions = (req, res) => {
     });
   };
 
-module.exports = { addEmployee, checkIn, checkOut, getPermissions, getDepartments };
+const attendanceStatus = (req, res) => {
+  const { employeeId } = req.params;
+  const today = new Date().toISOString().split("T")[0];
+
+  const sql = `
+    SELECT check_in, check_out 
+    FROM attendance 
+    WHERE employee_id = ? 
+      AND DATE(check_in) = ?
+    LIMIT 1
+  `;
+
+  db.query(sql, [employeeId, today], (err, results) => {
+    if (err) {
+      console.error("Error fetching attendance:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length > 0) {
+      const record = results[0];
+      let elapsedSeconds = 0;
+      let status = "Present";
+
+      if (record.check_in) {
+        const checkInTime = new Date(record.check_in);
+
+        // Calculate elapsed time
+        const checkOutTime = record.check_out ? new Date(record.check_out) : new Date();
+        elapsedSeconds = Math.floor((checkOutTime - checkInTime) / 1000);
+
+        // 🔥 Late if after 9:00 AM
+        const lateThreshold = new Date(checkInTime);
+        lateThreshold.setHours(9, 0, 0, 0);
+
+        if (checkInTime > lateThreshold) {
+          status = "Late";
+        }
+      }
+
+      return res.json({
+        checkedIn: !!record.check_in,
+        checkedOut: !!record.check_out,
+        checkInTime: record.check_in,
+        checkOutTime: record.check_out,
+        elapsedSeconds,
+        status
+      });
+    }
+
+    // 🔥 No attendance record for today
+    const now = new Date();
+    const cutoffHour = 18; // 6:00 PM cutoff
+
+    if (now.getHours() >= cutoffHour) {
+      // End of day and still no check-in → Absent
+      return res.json({ checkedIn: false, checkedOut: false, status: "Absent" });
+    }
+
+    // Still during the day → Not Checked In yet
+    return res.json({ checkedIn: false, checkedOut: false, status: "Not Checked In" });
+  });
+};
+
+
+
+module.exports = { addEmployee, checkIn, checkOut, getPermissions, getDepartments, attendanceStatus };
