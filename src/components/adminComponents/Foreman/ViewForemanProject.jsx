@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import TaskModal from "./TaskModal";
-import AddTeamModal from "./AddTeamModal";      // ⬅️ your modal
-import AddWorkerModal from "./AddWorkerModal";  // ⬅️ your modal
+import AddTeamModal from "./AddTeamModal"; // ⬅️ your modal
+import AddWorkerModal from "./AddWorkerModal"; // ⬅️ your modal
 import Gantt from "frappe-gantt";
 import { useRef } from "react";
 import { WorkerIDCard } from "./WorkerIDCard";
-
 
 // Main Component
 export const ViewForemanProject = ({ selectedProject, onBack }) => {
@@ -34,7 +33,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     task_id: "",
     report_type: "",
     file: null,
-  })
+  });
 
   useEffect(() => {
     if (activeTab === "timeline" && ganttRef.current && milestones.length > 0) {
@@ -59,7 +58,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     const fetchTasks = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTasks/${userId}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/foreman/getTasks/${userId}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -73,7 +74,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     const fetchTeams = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTeams/${userId}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/foreman/getTeams/${userId}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -153,14 +156,14 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   };
 
   const handleSubmitReport = async (e) => {
-     e.preventDefault(); 
+    e.preventDefault();
 
     try {
       const formData = new FormData();
       formData.append("title", report.title);
       formData.append("summary", report.summary);
       formData.append("taskId", report.task_id);
-      formData.append("report_type", report.report_type)  ;
+      formData.append("report_type", report.report_type);
       formData.append("created_by", userId);
       if (report.file) {
         formData.append("report_file", report.file); // field name must match backend multer field
@@ -170,11 +173,13 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
       for (let [key, value] of formData.entries()) {
         console.log(key, value);
       }
-      const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/foremanReport`,
-      {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/foremanReport`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (res.ok) {
         const createdReport = await res.json();
@@ -183,7 +188,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         console.error("Failed to submit report");
       }
     } catch (error) {
-       console.error("Error submitting report:", err);
+      console.error("Error submitting report:", err);
     }
   };
 
@@ -192,7 +197,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
       {/* Back Button */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4"
+        className="flex items-center gap-2 text-[#4c735c] hover:text-blue-800 mb-4"
       >
         <ArrowLeft size={20} />
         <span>Back to Projects</span>
@@ -203,7 +208,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         <h1 className="text-2xl font-bold text-gray-800">
           {selectedProject?.name}
         </h1>
-        <p className="text-gray-600">Site: {selectedProject?.location}</p>
+        <p className="text-gray-600 ">Site: {selectedProject?.location}</p>
         <p className="text-sm text-gray-500">
           Start Date:{" "}
           {new Date(selectedProject?.start_date).toLocaleDateString()}
@@ -246,7 +251,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-lg font-medium transition ${
               activeTab === tab
-                ? "bg-blue-600 text-white"
+                ? "bg-[#4c735c] text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
@@ -283,7 +288,8 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                 {/* Tasks inside milestone */}
                 <div className="space-y-4">
                   {ms.tasks.map((task) => {
-                    const assigned = task.team_id !== null && task.team_id !== undefined;
+                    const assigned =
+                      task.team_id !== null && task.team_id !== undefined;
                     const draftVal = draftTeamByTask[task.task_id] ?? "";
                     const selectValue = assigned
                       ? String(task.team_id) // show assigned in the disabled select
@@ -404,7 +410,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
               <h2 className="text-2xl font-bold">Worker Management</h2>
               <button
                 onClick={() => setShowAddTeamModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg hover:bg-blue-700 transition"
               >
                 + Add Team
               </button>
@@ -427,7 +433,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                         setSelectedTeam(team);
                         setShowAddWorkerModal(true);
                       }}
-                      className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition"
+                      className="px-3 py-1 bg-[#4c735c] text-white text-sm rounded-md hover:bg-green-700 transition"
                     >
                       + Add Worker
                     </button>
@@ -460,10 +466,10 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                           </span>
                           {/* View ID button */}
                           <button
-                              onClick={() => setSelectedWorker(worker.id)}
-                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition"
-                            >
-                              View ID
+                            onClick={() => setSelectedWorker(worker.id)}
+                            className="px-3 py-1 bg-[#4c735c] text-white text-xs rounded-md hover:bg-blue-700 transition"
+                          >
+                            View ID
                           </button>
                         </li>
                       ))}
@@ -479,114 +485,113 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </div>
         )}
 
-      {activeTab === "timeline" && (
-        <div className="bg-white p-6 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Project Timeline
-          </h2>
-          <div
-            ref={ganttRef}
-            className="w-full h-[80vh] gantt-container"
-          ></div>
-        </div>
-      )}
+        {activeTab === "timeline" && (
+          <div className="bg-white p-6 rounded-xl shadow-md">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              Project Timeline
+            </h2>
+            <div
+              ref={ganttRef}
+              className="w-full h-[80vh] gantt-container"
+            ></div>
+          </div>
+        )}
 
-      {activeTab === "reports" && (
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
-          <form onSubmit={handleSubmitReport} className="space-y-4">
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Task
-              </label>
-              <select
-                className="w-full border rounded-lg px-3 py-2"
-                value={report.task_id}
-                onChange={(e) =>
-                  setReport({ ...report, task_id: e.target.value })
-                }
+        {activeTab === "reports" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Task
+                </label>
+                <select
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={report.task_id}
+                  onChange={(e) =>
+                    setReport({ ...report, task_id: e.target.value })
+                  }
+                >
+                  <option value="">-- Select Task --</option>
+                  {milestones.flatMap((ms) =>
+                    ms.tasks.map((task) => (
+                      <option key={task.task_id} value={task.task_id}>
+                        {ms.milestone_title} - {task.title}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Report Type
+                </label>
+                <select
+                  required
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={report.report_type}
+                  onChange={(e) =>
+                    setReport({ ...report, report_type: e.target.value })
+                  }
+                >
+                  <option value="">-- Select Report Type --</option>
+                  <option value="Update">Update</option>
+                  <option value="Final">Final</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={report.title}
+                  onChange={(e) =>
+                    setReport({ ...report, title: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Details / Summary
+                </label>
+                <textarea
+                  className="w-full border rounded-lg px-3 py-2"
+                  rows="4"
+                  value={report.summary}
+                  onChange={(e) =>
+                    setReport({ ...report, summary: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  File Upload
+                </label>
+                <input
+                  name="report_file"
+                  type="file"
+                  className="w-full"
+                  onChange={(e) =>
+                    setReport({ ...report, file: e.target.files[0] })
+                  }
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                <option value="">-- Select Task --</option>
-                {milestones.flatMap((ms) =>
-                  ms.tasks.map((task) => (
-                    <option key={task.task_id} value={task.task_id}>
-                      {ms.milestone_title} - {task.title}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Report Type
-              </label>
-              <select
-                required
-                className="w-full border rounded-lg px-3 py-2"
-                value={report.report_type}
-                onChange={(e) =>
-                  setReport({ ...report, report_type: e.target.value })
-                }
-              >
-                <option value="">-- Select Report Type --</option>
-                <option value="Update">Update</option>
-                <option value="Final">Final</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Title
-              </label>
-              <input
-                type="text"
-                className="w-full border rounded-lg px-3 py-2"
-                value={report.title}
-                onChange={(e) =>
-                  setReport({ ...report, title: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Details / Summary
-              </label>
-              <textarea
-                className="w-full border rounded-lg px-3 py-2"
-                rows="4"
-                value={report.summary}
-                onChange={(e) =>
-                  setReport({ ...report, summary: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                File Upload
-              </label>
-              <input
-                name="report_file"
-                type="file"
-                className="w-full"
-                onChange={(e) =>
-                  setReport({ ...report, file: e.target.files[0] })
-                }
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Submit Report
-            </button>
-          </form>
-        </div>
-      )}
-
+                Submit Report
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Task Modal */}
@@ -626,17 +631,19 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         />
       )}
 
-      
       {/* Worker ID Modal */}
       {selectedWorker && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow-lg max-w-sm w-full relative">
+        <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-10000">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-5xl w-full relative">
+            {/* Close button */}
             <button
               onClick={() => setSelectedWorker(null)}
-              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl"
             >
               ✕
             </button>
+
+            {/* ID Card Component */}
             <WorkerIDCard
               workerId={selectedWorker}
               onBack={() => setSelectedWorker(null)}
@@ -644,7 +651,6 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

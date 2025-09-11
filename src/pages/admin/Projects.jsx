@@ -1,49 +1,51 @@
-import React, { useEffect, useState } from 'react'
-import { MyProjectCard } from '../../components/adminComponents/Engineering/MyProjectCard' // Assuming MyProjectCard is in this directory
-import { ViewMyProject } from '../../components/adminComponents/Engineering/ViewMyProject' // Assuming ViewMyProject is in this directory
-import { ViewForemanProject } from '../../components/adminComponents/Foreman/ViewForemanProject';
-import duvLogo from '../../assets/duvLogo.jpg';
+import React, { useEffect, useState } from "react";
+import { MyProjectCard } from "../../components/adminComponents/Engineering/MyProjectCard"; // Assuming MyProjectCard is in this directory
+import { ViewMyProject } from "../../components/adminComponents/Engineering/ViewMyProject"; // Assuming ViewMyProject is in this directory
+import { ViewForemanProject } from "../../components/adminComponents/Foreman/ViewForemanProject";
+import duvLogo from "../../assets/duvLogo.jpg";
 
 export const Projects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
 
-  const userId = localStorage.getItem('userId');
-  const role = localStorage.getItem('role');
+  const userId = localStorage.getItem("userId");
+  const role = localStorage.getItem("role");
 
   useEffect(() => {
     const fetchEngineerProjects = async () => {
       try {
-        
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineerProjects/${userId}`);
-      if(response.ok){
-      const data = await response.json();
-      setProjects(data.projects)
-      }  else {
-        throw new Error("Failed to fetch projects.");
-      }        
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/engr/getEngineerProjects/${userId}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data.projects);
+        } else {
+          throw new Error("Failed to fetch projects.");
+        }
       } catch (error) {
-       console.error(error) 
+        console.error(error);
       }
     };
 
     fetchEngineerProjects();
-
   }, []);
 
   return (
-    <div className='container mx-auto p-6 mt-10'>
+    <div className="p-4 h-screen">
       {selectedProject ? (
         <>
           {role === "Foreman" ? (
-            <ViewForemanProject 
-              selectedProject={selectedProject} 
-              onBack={() => setSelectedProject(null)} 
+            <ViewForemanProject
+              selectedProject={selectedProject}
+              onBack={() => setSelectedProject(null)}
             />
           ) : (
-            <ViewMyProject 
-              selectedProject={selectedProject} 
-              onBack={() => setSelectedProject(null)} 
+            <ViewMyProject
+              selectedProject={selectedProject}
+              onBack={() => setSelectedProject(null)}
             />
           )}
         </>
@@ -58,5 +60,5 @@ export const Projects = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
