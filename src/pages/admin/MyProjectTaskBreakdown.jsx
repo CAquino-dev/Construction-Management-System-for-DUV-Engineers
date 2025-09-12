@@ -501,7 +501,7 @@ export const MyProjectTaskBreakdown = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50">
           <div className="bg-white p-6 rounded-xl shadow-lg w-96">
             <h2 className="text-lg font-semibold mb-4">
-              {action === "accept" ? "Accept Report" : "Reject Report"}
+              {action === "accepted" ? "Accept Report" : "Reject Report"}
             </h2>
             <textarea
               value={comment}
