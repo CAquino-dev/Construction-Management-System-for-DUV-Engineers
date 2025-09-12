@@ -11,20 +11,21 @@ export const EngineerReports = ({ selectedProject }) => {
     file: null,
   });
 
-  const userId = localStorage.getItem('userId');
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch reports
         const reportsRes = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${selectedProject.id}`
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${
+            selectedProject.id
+          }`
         );
         if (reportsRes.ok) {
           const reportsData = await reportsRes.json();
           setReports(reportsData);
         }
-
       } catch (err) {
         console.error("Error fetching reports/milestones:", err);
       }
@@ -47,7 +48,9 @@ export const EngineerReports = ({ selectedProject }) => {
       }
 
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${selectedProject.id}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${
+          selectedProject.id
+        }`,
         {
           method: "POST",
           body: formData,
@@ -83,7 +86,7 @@ export const EngineerReports = ({ selectedProject }) => {
             onChange={(e) =>
               setNewReport({ ...newReport, title: e.target.value })
             }
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded bg-white"
             placeholder="e.g. Foundation Completion Report"
             required
           />
@@ -96,7 +99,7 @@ export const EngineerReports = ({ selectedProject }) => {
             onChange={(e) =>
               setNewReport({ ...newReport, summary: e.target.value })
             }
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded bg-white"
             rows={4}
             placeholder="Write the progress update here..."
             required
@@ -112,7 +115,7 @@ export const EngineerReports = ({ selectedProject }) => {
             onChange={(e) =>
               setNewReport({ ...newReport, file: e.target.files[0] })
             }
-            className="w-full border p-2 rounded"
+            className="w-full border p-2 rounded bg-white"
           />
         </div>
 
@@ -134,7 +137,9 @@ export const EngineerReports = ({ selectedProject }) => {
               <p className="text-gray-600 mt-1">{report.summary}</p>
               {report.file_url && (
                 <a
-                  href={`${import.meta.env.VITE_REACT_APP_API_URL}${report.file_url}`}
+                  href={`${import.meta.env.VITE_REACT_APP_API_URL}${
+                    report.file_url
+                  }`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#4c735c] text-sm underline"
