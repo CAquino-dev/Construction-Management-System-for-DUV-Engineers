@@ -48,6 +48,7 @@ import ApprovedContracts from "./pages/admin/ApprovedContracts";
 import CreateProjectPage from "./pages/admin/CreateProjectPage";
 import { MyProjectTaskBreakdown } from "./pages/admin/MyProjectTaskBreakdown";
 import { AttendancePage } from "./pages/admin/AttendancePage";
+import EmployeeProfile from "./pages/admin/EmployeeProfile";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -150,6 +151,10 @@ const App = () => {
             <Route
               path="project/:id/milestone/:milestoneId/tasks"
               element={<MyProjectTaskBreakdown />}
+            />
+            <Route
+              path="/admin-dashboard/profile"
+              element={<EmployeeProfile />}
             />
           </Route>
         </Routes>
