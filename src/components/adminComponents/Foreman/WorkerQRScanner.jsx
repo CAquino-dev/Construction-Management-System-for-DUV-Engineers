@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Scanner, useDevices } from "@yudiel/react-qr-scanner";
+import { Toaster } from "../../ui/sonner"; // keep your UI wrapper
+import { toast } from "sonner"; // ✅ import toast from package
 
 export const WorkerQRScanner = () => {
   const devices = useDevices();
@@ -27,9 +29,13 @@ export const WorkerQRScanner = () => {
         const data = await res.json();
         setWorker({ ...data.worker, statusMessage: data.message });
         setError(null);
+
+        toast.success(data.message || "Worker attendance updated!");
       } catch (err) {
         setWorker(null);
         setError(err.message);
+
+        toast.error(err.message || "Scan failed!");
       }
     }
   };
