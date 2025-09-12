@@ -158,51 +158,90 @@ const getForemanTeam = (req, res) => {
   });
 }
 
+const uploadPhotoDir = path.join(__dirname, '../public/workerPhotos');
+if (!fs.existsSync(uploadPhotoDir)) {
+  fs.mkdirSync(uploadPhotoDir, { recursive: true });
+}
+
+const photoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadPhotoDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const fileName = Date.now() + ext;
+    cb(null, fileName);
+  },
+});
+
+const uploadWorkerPhoto = multer({
+  storage: photoStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"));
+    }
+  },
+}).single("photo"); // field name from frontend
+
 const addWorker = (req, res) => {
-  const { teamId } = req.params;
-  const { name, contact, skill_type, status } = req.body;
-
-  const query =
-    "INSERT INTO workers (team_id, name, contact, skill_type, status) VALUES (?, ?, ?, ?, ?)";
-
-  db.query(query, [teamId, name, contact, skill_type, status], (err, results) => {
+  uploadWorkerPhoto(req, res, (err) => {
     if (err) {
-      console.error("error creating worker", err);
-      return res.status(500).json({ error: "Failed to create worker" });
+      console.error("Photo upload error:", err);
+      return res.status(400).json({ error: err.message || "Photo upload failed" });
     }
 
-    const workerId = results.insertId;
-    const qrValue = `WORKER_${workerId}_${Date.now()}`;
+    const { teamId } = req.params;
+    const { name, contact, skill_type, status } = req.body;
 
-    // Generate QR image (base64 or file)
-    QRCode.toDataURL(qrValue, (err, qrImage) => {
+    const photoPath = req.file ? `/workerPhotos/${req.file.filename}` : null;
+
+    const query =
+      "INSERT INTO workers (team_id, name, contact, skill_type, status, photo) VALUES (?, ?, ?, ?, ?, ?)";
+
+    db.query(query, [teamId, name, contact, skill_type, status, photoPath], (err, results) => {
       if (err) {
-        console.error("QR generation error", err);
-        return res.status(500).json({ error: "Failed to generate QR code" });
+        console.error("error creating worker", err);
+        return res.status(500).json({ error: "Failed to create worker" });
       }
 
-      // Save qrValue in DB
-      const updateQuery = "UPDATE workers SET qr_code = ? WHERE id = ?";
-      db.query(updateQuery, [qrValue, workerId], (err2) => {
-        if (err2) {
-          console.error("Error saving QR to worker", err2);
-          return res.status(500).json({ error: "Failed to save QR code" });
+      const workerId = results.insertId;
+      const qrValue = `WORKER_${workerId}_${Date.now()}`;
+
+      // Generate QR image
+      QRCode.toDataURL(qrValue, (err, qrImage) => {
+        if (err) {
+          console.error("QR generation error", err);
+          return res.status(500).json({ error: "Failed to generate QR code" });
         }
 
-        return res.json({
-          id: workerId,
-          team_id: teamId,
-          name,
-          contact,
-          skill_type,
-          status,
-          qr_code: qrValue,
-          qr_image: qrImage, // this is a base64 PNG you can render directly in frontend <img src={qr_image} />
+        // Save QR code in DB
+        const updateQuery = "UPDATE workers SET qr_code = ? WHERE id = ?";
+        db.query(updateQuery, [qrValue, workerId], (err2) => {
+          if (err2) {
+            console.error("Error saving QR to worker", err2);
+            return res.status(500).json({ error: "Failed to save QR code" });
+          }
+
+          return res.json({
+            id: workerId,
+            team_id: teamId,
+            name,
+            contact,
+            skill_type,
+            status,
+            photo: photoPath,
+            qr_code: qrValue,
+            qr_image: qrImage, // base64 PNG, frontend can render
+          });
         });
       });
     });
   });
 };
+
 
 const getWorkerById = (req, res) => {
   const { workerId } = req.params;
