@@ -137,7 +137,13 @@ const AdminNavbar = ({ children }) => {
 
           {profileDropdownOpen && (
             <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
-              <button className="block px-4 py-2 text-black hover:bg-[#3b5d47] w-full">
+              <Link to="/admin-dashboard/profile">
+                <button className="block px-4 py-2 text-black hover:bg-gray-200/80 cursor-pointer w-full">
+                  Profile
+                </button>
+              </Link>
+              <button className="block px-4 py-2 text-black hover:bg-gray-200/80 cursor-pointer w-full">
+                {" "}
                 Logout
               </button>
             </div>
