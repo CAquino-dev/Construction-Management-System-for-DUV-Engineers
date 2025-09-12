@@ -43,7 +43,7 @@ export const WorkerIDCard = ({ workerId }) => {
 
           {/* Worker Photo */}
           <img
-            src={preview}
+            src={`${import.meta.env.VITE_REACT_APP_API_URL}${worker.photo}`}
             alt="Worker"
             className="w-28 h-28 rounded-md object-cover border"
           />
@@ -99,22 +99,6 @@ export const WorkerIDCard = ({ workerId }) => {
 
       {/* Controls (Only for Screen, hidden in Print) */}
       <div className="flex flex-col gap-3 items-center mt-4 print:hidden">
-        {/* Upload New Image */}
-        <label className="flex flex-col items-center gap-2 cursor-pointer">
-          <span className="text-sm font-medium text-gray-700">
-            Upload Worker Photo
-          </span>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageChange}
-          />
-          <div className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
-            Choose File
-          </div>
-        </label>
-
         {/* Print Button */}
         <button
           onClick={() => window.print()}

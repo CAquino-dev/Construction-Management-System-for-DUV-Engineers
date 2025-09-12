@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { Form } from "react-router";
 
 const AddWorkerModal = ({ team, onClose, onSave }) => {
   const [worker, setWorker] = useState({
@@ -7,51 +9,55 @@ const AddWorkerModal = ({ team, onClose, onSave }) => {
     skill_type: "",
     status: "active",
   });
-
-  console.log(team.id);
+  const [photo, setPhoto] = useState();
+  const [preview, setPreview] = useState(null);
 
   const handleChange = (e) => {
     setWorker({ ...worker, [e.target.name]: e.target.value });
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    setPhoto(file);
+    if (file) {
+      setPreview(URL.createObjectURL(file)); // create a temporary preview URL
+    }
   };
 
 const handleSubmit = async (e) => {
   e.preventDefault();
   if (!worker.name.trim()) return;
 
+  const formData = new FormData();
+  formData.append("name", worker.name);
+  formData.append("contact", worker.contact);
+  formData.append("skill_type", worker.skill_type);
+  formData.append("status", worker.status);
+  if (photo) formData.append("photo", photo);
+
   try {
-    const res = await fetch(
+    const res = await axios.post(
       `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/addWorker/${team.id}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(worker),
-      }
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
     );
 
-    if (!res.ok) {
-      throw new Error("Failed to add worker");
-    }
+    alert("Worker added successfully!");
 
-    const data = await res.json();
-
-    // Pass the worker back with teamId and backend id
-    onSave({ ...data, team_id: team.id });
+    // Update parent with the new worker (backend response)
+    onSave({ ...res.data, team_id: team.id });
 
     // Reset form
-    setWorker({
-      name: "",
-      contact: "",
-      skill_type: "",
-      status: "active",
-    });
-
+    setWorker({ name: "", contact: "", skill_type: "", status: "active" });
+    setPhoto(null);
+    setPreview(null);
     onClose();
   } catch (error) {
     console.error("Error adding worker:", error);
+    alert("Failed to add worker. Please try again.");
   }
 };
+
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -114,6 +120,29 @@ const handleSubmit = async (e) => {
               <option value="inactive">Inactive</option>
             </select>
           </div>
+
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              ID Photo
+            </label>
+            <input
+              name="photo"
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="border p-2 w-full"
+            />
+          </div>
+
+          {preview && (
+          <div className="flex justify-center">
+            <img
+              src={preview}
+              alt="Preview"
+              className="w-32 h-32 object-cover rounded-full border"
+            />
+          </div>
+        )}
 
           <div className="flex justify-end gap-2">
             <button
