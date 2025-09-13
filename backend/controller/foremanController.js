@@ -395,7 +395,7 @@ const scanWorker = (req, res) => {
   }
 
   // 1. Find worker by QR code
-  const workerQuery = "SELECT id, name, contact, team_id FROM workers WHERE qr_code = ? LIMIT 1";
+  const workerQuery = "SELECT id, name, photo, contact, team_id FROM workers WHERE qr_code = ? LIMIT 1";
 
   db.query(workerQuery, [code], (err, workers) => {
     if (err) {
@@ -463,6 +463,69 @@ const scanWorker = (req, res) => {
   });
 };
 
+const getForemanWorkers = (req, res) => {
+  const query = `
+    SELECT 
+      w.id, 
+      wt.team_name,
+      w.name, 
+      w.contact, 
+      w.skill_type, 
+      w.status, 
+      w.created_at
+    FROM workers w
+    JOIN worker_teams wt ON wt.id = w.team_id
+    ORDER BY created_at DESC`;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching foreman workers:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    res.status(200).json(results);
+  });
+};
+
+const getForemanReports = (req, res) => {
+  const { foremanId } = req.params;
+
+  const query = `
+    SELECT 
+      r.id,
+      mt.title AS task_title,
+      m.title AS milestone_title,
+      r.title,
+      r.summary,
+      r.file_url,
+      r.report_type,
+      r.created_at,
+      r.review_status,
+      r.review_comment,
+      u.full_name AS foreman_name
+    FROM reports r
+    LEFT JOIN milestone_tasks mt ON mt.id = r.task_id
+    LEFT JOIN milestones m ON m.id = mt.milestone_id
+    LEFT JOIN users u ON u.id = r.created_by
+    WHERE u.id = ?;
+  `;
+
+  db.query(query, [foremanId], (err, results) => {
+    if (err) {
+      console.error("Error fetching foreman reports:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching foreman reports",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      reports: results,
+    });
+  });
+};
+
+
 module.exports = { getForemanTasks, getForemanMaterials, addTeam, 
   getForemanTeam, addWorker, assignTeam, 
-  foremanReport, getWorkerById, scanWorker }
+  foremanReport, getWorkerById, scanWorker, getForemanWorkers, getForemanReports }
