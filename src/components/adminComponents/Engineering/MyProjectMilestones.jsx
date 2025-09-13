@@ -20,6 +20,8 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const permissions = JSON.parse(localStorage.getItem('permissions'));
   const navigate = useNavigate();
 
+  console.log(milestonesList);
+
   useEffect(() => {
     const getMilestones = async () => {
       try {
@@ -135,12 +137,14 @@ export const MyProjectMilestones = ({ selectedProject }) => {
               >
                 View Milestone
               </button>
+              {milestone.status === "PM Approved" && (
               <button
                 onClick={() => goToTaskBreakdown(milestone)}
                 className="text-blue-600 font-medium hover:underline"
               >
                 Go to Task Breakdown
               </button>
+              )}
             </div>
           </div>
         ))}
