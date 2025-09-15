@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FinalModal } from "../../FinalModal";
+import axios from "axios";
 
 const CreateProposal = () => {
   const [leads, setLeads] = useState([]);
@@ -19,6 +19,7 @@ const CreateProposal = () => {
     approvalLink: "",
   });
   const [showFormMobile, setShowFormMobile] = useState(false);
+  const [paymentTerms, setPaymentTerms] = useState([]);
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/getLeads`)
@@ -31,6 +32,19 @@ const CreateProposal = () => {
           approvalLink: "",
         })
       );
+
+      const fetchPaymentTerms = async () => {
+        try {
+          const res = await axios.get(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/getPaymentTerms`);
+          if(res.data){
+            setPaymentTerms(res.data);
+            console.log(res.data);
+          }         
+        } catch (error) {
+           console.error("Error fetching attendance:", error);
+        }
+      };
+      fetchPaymentTerms();
   }, []);
 
   const handleLeadSelect = (lead) => {
@@ -86,8 +100,13 @@ const CreateProposal = () => {
     data.append("scope_of_work", JSON.stringify(formData.scope_of_work));
     data.append("budget_estimate", formData.budget_estimate);
     data.append("timeline_estimate", formData.timeline_estimate);
-    data.append("payment_terms", formData.payment_terms);
+    data.append("payment_term_id", formData.payment_terms); // the ID from select
+    data.append("payment_terms", paymentTerms.find(t => t.id == formData.payment_terms)?.name || "");
     data.append("proposal_file", pdfFile);
+
+    data.forEach((data) => {
+      console.log(data);
+    })
 
     try {
       const res = await fetch(
@@ -172,7 +191,7 @@ const CreateProposal = () => {
             <span className="text-xl">←</span> Back
           </button>
         </div>
-        <h1 className="text-2xl text-lg font-semibold pb-2">Create Proposal</h1>
+        <h1 className="text-lg font-semibold pb-2">Create Proposal</h1>
         <div className="flex-grow overflow-y-auto border-t">
           {/* Success/Error Message */}
           {(message.success || message.error) && (
@@ -272,14 +291,23 @@ const CreateProposal = () => {
                 required
                 className="border p-2 rounded w-full"
               />
-              <input
-                type="text"
-                name="payment_terms"
-                placeholder="Payment Terms (e.g. 50% down, 30% progress, 20% completion)"
-                value={formData.payment_terms}
-                onChange={handleChange}
-                className="border p-2 rounded w-full"
-              />
+              <div>
+                <label className="block font-medium mb-1">Payment Terms</label>
+                <select
+                  name="payment_terms"
+                  value={formData.payment_terms}
+                  onChange={handleChange}
+                  required
+                  className="border p-2 rounded w-full"
+                >
+                  <option value="">-- Select Payment Terms --</option>
+                  {paymentTerms.map((term) => (
+                    <option key={term.id} value={term.id}>
+                      {term.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block mb-1 font-medium">
                   Attach Proposal PDF

@@ -11,13 +11,15 @@ const {
   uploadClientSignature,
   getApprovedContracts,
   sendContractToClient,
-  clientRejectContract
+  clientRejectContract,
+  getPaymentTerms
 } = require('../controller/projectManagerController');
 
 router.post('/contract/send-to-client/:id', sendContractToClient);
 router.post('/createProposal', createProposal);
 router.get('/respond/:token', getProposalByToken);
 router.get('/getApprovedContracts', getApprovedContracts);
+router.get('/getPaymentTerms', getPaymentTerms);
 router.post('/respond', respondToProposal);
 router.get('/getProposalResponse', getProposalResponse);
 router.post('/contracts/:id/reject', clientRejectContract);
