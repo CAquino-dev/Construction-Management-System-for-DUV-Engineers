@@ -14,7 +14,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, setRemark }
       <div className="bg-white p-6 rounded-lg shadow-lg">
         <h2 className="text-lg font-semibold text-gray-800">Confirm Action</h2>
         <p className="mt-2 text-gray-600">
-          Are you sure you want to mark this record as <strong>{actionType}</strong>?
+          Are you sure you want to <strong>{actionType}</strong>?
         </p>
 
         {(actionType === "Rejected by HR" || actionType === "Rejected by Finance" || actionType === "Rejected") && (

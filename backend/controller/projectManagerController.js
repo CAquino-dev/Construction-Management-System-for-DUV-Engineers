@@ -233,7 +233,8 @@ const generateContract = (req, res) => {
 
   // Step 1: Get proposal and lead info
   const query = `
-    SELECT p.*, l.client_name, l.email, l.phone_number, l.project_interest, l.budget, l.timeline, l.id AS lead_id
+    SELECT p.*, l.client_name, l.email, l.phone_number, l.project_interest, 
+           l.budget, l.timeline, l.id AS lead_id
     FROM proposals p
     JOIN leads l ON p.lead_id = l.id
     WHERE p.id = ?
@@ -255,13 +256,14 @@ const generateContract = (req, res) => {
     const formData = {
       title: data.title,
       description: data.description,
-      scope_of_work: JSON.parse(data.scope_of_work || '[]'),
+      scope_of_work: JSON.parse(data.scope_of_work || "[]"),
       budget_estimate: data.budget,
       timeline_estimate: data.timeline,
-      payment_terms: data.payment_terms || '50% down payment, 30% upon completion, 20% upon final acceptance'
+      payment_terms:
+        data.payment_terms ||
+        "50% down payment, 30% upon completion, 20% upon final acceptance",
     };
 
-    // Updated: Create selectedLead object with email and phone_number
     const selectedLead = {
       client_name: data.client_name,
       email: data.email,
@@ -269,10 +271,10 @@ const generateContract = (req, res) => {
       project_interest: data.project_interest,
       budget: data.budget,
       timeline: data.timeline,
-      lead_id: data.lead_id
+      lead_id: data.lead_id,
     };
 
-    // Step 3: Render the EJS template
+    // Step 3: Render EJS template
     ejs.renderFile(
       path.join(__dirname, "../templates/contract_template.ejs"),
       { selectedLead, formData },
@@ -283,63 +285,88 @@ const generateContract = (req, res) => {
         }
 
         try {
-          // Step 4: Generate PDF from HTML using Puppeteer
+          // Step 4: Generate PDF
           const browser = await puppeteer.launch();
           const page = await browser.newPage();
           await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });
           const pdfBuffer = await page.pdf({ format: "A4" });
           await browser.close();
 
-          // Step 5: Save PDF to disk
+          // Step 5: Save PDF
           const fileName = `contract_${proposalId}_${Date.now()}.pdf`;
-          const filePath = path.join(__dirname, "../public/contracts", fileName);
+          const filePath = path.join(
+            __dirname,
+            "../public/contracts",
+            fileName
+          );
           fs.writeFileSync(filePath, pdfBuffer);
-
           const fileUrl = `/contracts/${fileName}`;
 
-          // Step 6: Save contract info to database
+          // Step 6: Save contract info to DB (with payment columns)
           const insertQuery = `
-            INSERT INTO contracts (lead_id, proposal_id, contract_file_url)
-            VALUES (?, ?, ?)
+            INSERT INTO contracts 
+            (lead_id, proposal_id, contract_file_url, total_amount, payment_terms, paid_amount, payment_status)
+            VALUES (?, ?, ?, ?, ?, 0, 'Unpaid')
           `;
 
-          db.query(insertQuery, [data.lead_id, data.id, fileUrl], (insertErr, resultInsert) => {
-            if (insertErr) {
-              console.error("Insert error:", insertErr);
-              return res.status(500).json({ error: "Failed to save contract record" });
-            }
-
-            const contractId = resultInsert.insertId;
-            const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
-
-            // Update access_link column with approvalLink
-            const updateAccessLinkQuery = `
-              UPDATE contracts
-              SET access_link = ?
-              WHERE id = ?
-            `;
-
-            db.query(updateAccessLinkQuery, [approvalLink, contractId], (updateErr) => {
-              if (updateErr) {
-                console.error("Failed to update access_link:", updateErr);
-                return res.status(500).json({ error: "Failed to update access link" });
+          db.query(
+            insertQuery,
+            [
+              data.lead_id,
+              data.id,
+              fileUrl,
+              data.budget, // total_amount from proposal budget
+              formData.payment_terms,
+            ],
+            (insertErr, resultInsert) => {
+              if (insertErr) {
+                console.error("Insert error:", insertErr);
+                return res
+                  .status(500)
+                  .json({ error: "Failed to save contract record" });
               }
 
-              res.status(201).json({
-                message: "Contract generated successfully",
-                fileUrl,
-                approvalLink
-              });
-            });
-          });
+              const contractId = resultInsert.insertId;
+              const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
+
+              // Step 7: Save access link
+              const updateAccessLinkQuery = `
+                UPDATE contracts
+                SET access_link = ?
+                WHERE id = ?
+              `;
+
+              db.query(
+                updateAccessLinkQuery,
+                [approvalLink, contractId],
+                (updateErr) => {
+                  if (updateErr) {
+                    console.error("Failed to update access_link:", updateErr);
+                    return res
+                      .status(500)
+                      .json({ error: "Failed to update access link" });
+                  }
+
+                  res.status(201).json({
+                    message: "Contract generated successfully",
+                    fileUrl,
+                    approvalLink,
+                  });
+                }
+              );
+            }
+          );
         } catch (pdfErr) {
           console.error("PDF generation error:", pdfErr);
-          res.status(500).json({ error: "Failed to generate contract PDF" });
+          res
+            .status(500)
+            .json({ error: "Failed to generate contract PDF" });
         }
       }
     );
   });
 };
+
 
 
 
@@ -375,11 +402,9 @@ const uploadClientSignature = (req, res) => {
     return res.status(400).json({ error: 'Missing signature or proposal ID' });
   }
 
-  // Prepare the signature path
   const signatureFileName = `signature_${proposalId}.png`;
   const signatureFilePath = path.join(signatureDir, signatureFileName);
 
-  // Save the signature image
   const base64Data = base64Signature.replace(/^data:image\/png;base64,/, '');
   fs.writeFile(signatureFilePath, base64Data, 'base64', (err) => {
     if (err) {
@@ -387,18 +412,24 @@ const uploadClientSignature = (req, res) => {
       return res.status(500).json({ error: 'Failed to save signature' });
     }
 
-    // Step 2: Lookup contract file path from DB
-    const query = 'SELECT contract_file_url FROM contracts WHERE id = ? LIMIT 1';
+    // Find the contract via proposal_id
+    const query = `SELECT id, contract_file_url, total_amount 
+                   FROM contracts 
+                   WHERE id = ? 
+                   LIMIT 1`;
+
     db.query(query, [proposalId], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      if (results.length === 0 || !results[0].contract_file_url) {
+      if (results.length === 0) {
         return res.status(404).json({ error: 'Contract not found for proposal' });
       }
 
+      const contractId = results[0].id;
+      const totalAmount = results[0].total_amount;
       const contractPath = path.join(contractDir, results[0].contract_file_url);
       const signedFileName = `signed_contract_${proposalId}.pdf`;
       const signedPath = path.join(signedDir, signedFileName);
@@ -408,16 +439,15 @@ const uploadClientSignature = (req, res) => {
         const existingPdfBytes = fs.readFileSync(contractPath);
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
-        // Embed signature image
+        // Embed signature
         const signatureImageBytes = fs.readFileSync(signatureFilePath);
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
         const pages = pdfDoc.getPages();
         const firstPage = pages[0];
-
-        // Position: bottom-right corner (adjust as needed)
-        const { width, height } = firstPage.getSize();
+        const { width } = firstPage.getSize();
         const imageDims = signatureImage.scale(0.25);
+
         firstPage.drawImage(signatureImage, {
           x: width - imageDims.width - 50,
           y: 50,
@@ -428,7 +458,7 @@ const uploadClientSignature = (req, res) => {
         const signedPdfBytes = await pdfDoc.save();
         fs.writeFileSync(signedPath, signedPdfBytes);
 
-        // Step 3: Update DB
+        // Update DB
         const updateQuery = `
           UPDATE contracts
           SET status = 'signed',
@@ -439,14 +469,20 @@ const uploadClientSignature = (req, res) => {
         `;
         const userIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
-        db.query(updateQuery, [userIp, `/signed_contracts/${signedFileName}`, proposalId], (err2) => {
-          
+        db.query(updateQuery, [userIp, `/signed_contracts/${signedFileName}`, contractId], (err2) => {
           if (err2) {
             console.error('Error updating contract status:', err2);
             return res.status(500).json({ error: 'Failed to update contract record' });
           }
 
-          return res.status(200).json({ message: 'Contract signed successfully' });
+          // Calculate downpayment (e.g., 30%)
+          const downpaymentAmount = totalAmount * 0.3;
+
+          return res.status(200).json({
+            message: 'Contract signed successfully',
+            contractId,
+            downpaymentAmount,
+          });
         });
       } catch (pdfErr) {
         console.error('PDF processing error:', pdfErr);
@@ -455,6 +491,7 @@ const uploadClientSignature = (req, res) => {
     });
   });
 };
+
 
 const getApprovedContracts = (req, res) => {
   const query = `
@@ -540,7 +577,7 @@ const sendContractToClient = (req, res) => {
         service: "gmail",
         auth: {
           user: "caquino.dev@gmail.com",
-          pass: "qbxl zrkb mnyt quau",
+          pass: "ykvj ebtt uois mkns",
         },
       });
 
