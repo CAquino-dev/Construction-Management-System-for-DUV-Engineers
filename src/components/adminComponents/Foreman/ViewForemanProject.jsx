@@ -19,6 +19,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   const [selectedWorker, setSelectedWorker] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState(null); // team to add worker into
   const [teams, setTeams] = useState([]);
+  const [reportTab, setReportTab] = useState("create"); // "create" | "sent"
+  const [myReports, setMyReports] = useState([]);
+
 
   const ganttRef = useRef(null);
 
@@ -87,6 +90,21 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
       }
     };
 
+    const fetchReports = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getReports/${userId}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setMyReports(data.reports || []);
+        }
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+      }
+    };
+
+    fetchReports();
     fetchTeams();
     fetchTasks();
   }, []);
@@ -497,99 +515,178 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </div>
         )}
 
-        {activeTab === "reports" && (
+{activeTab === "reports" && (
+  <div>
+    {/* Reports Sub-Tab Navigation */}
+    <div className="flex gap-4 mb-6">
+      <button
+        onClick={() => setReportTab("create")}
+        className={`px-4 py-2 rounded-lg font-medium transition ${
+          reportTab === "create"
+            ? "bg-[#4c735c] text-white"
+            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+        }`}
+      >
+        Create Report
+      </button>
+      <button
+        onClick={() => setReportTab("sent")}
+        className={`px-4 py-2 rounded-lg font-medium transition ${
+          reportTab === "sent"
+            ? "bg-[#4c735c] text-white"
+            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+        }`}
+      >
+        My Reports
+      </button>
+    </div>
+
+    {/* Create Report Form */}
+    {reportTab === "create" && (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
+        <form onSubmit={handleSubmitReport} className="space-y-4">
+          {/* Task */}
           <div>
-            <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
-            <form onSubmit={handleSubmitReport} className="space-y-4">
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Task
-                </label>
-                <select
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={report.task_id}
-                  onChange={(e) =>
-                    setReport({ ...report, task_id: e.target.value })
-                  }
-                >
-                  <option value="">-- Select Task --</option>
-                  {milestones.flatMap((ms) =>
-                    ms.tasks.map((task) => (
-                      <option key={task.task_id} value={task.task_id}>
-                        {ms.milestone_title} - {task.title}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
+            <label className="block text-gray-700 font-medium mb-1">Task</label>
+            <select
+              className="w-full border rounded-lg px-3 py-2"
+              value={report.task_id}
+              onChange={(e) => setReport({ ...report, task_id: e.target.value })}
+            >
+              <option value="">-- Select Task --</option>
+              {milestones.flatMap((ms) =>
+                ms.tasks.map((task) => (
+                  <option key={task.task_id} value={task.task_id}>
+                    {ms.milestone_title} - {task.title}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
 
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Report Type
-                </label>
-                <select
-                  required
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={report.report_type}
-                  onChange={(e) =>
-                    setReport({ ...report, report_type: e.target.value })
-                  }
-                >
-                  <option value="">-- Select Report Type --</option>
-                  <option value="Update">Update</option>
-                  <option value="Final">Final</option>
-                </select>
-              </div>
+          {/* Report Type */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Report Type
+            </label>
+            <select
+              required
+              className="w-full border rounded-lg px-3 py-2"
+              value={report.report_type}
+              onChange={(e) =>
+                setReport({ ...report, report_type: e.target.value })
+              }
+            >
+              <option value="">-- Select Report Type --</option>
+              <option value="Update">Update</option>
+              <option value="Final">Final</option>
+            </select>
+          </div>
 
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Title
-                </label>
-                <input
-                  type="text"
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={report.title}
-                  onChange={(e) =>
-                    setReport({ ...report, title: e.target.value })
-                  }
-                />
-              </div>
+          {/* Title */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Title
+            </label>
+            <input
+              type="text"
+              className="w-full border rounded-lg px-3 py-2"
+              value={report.title}
+              onChange={(e) => setReport({ ...report, title: e.target.value })}
+            />
+          </div>
 
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  Details / Summary
-                </label>
-                <textarea
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows="4"
-                  value={report.summary}
-                  onChange={(e) =>
-                    setReport({ ...report, summary: e.target.value })
-                  }
-                />
-              </div>
+          {/* Summary */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Details / Summary
+            </label>
+            <textarea
+              className="w-full border rounded-lg px-3 py-2"
+              rows="4"
+              value={report.summary}
+              onChange={(e) =>
+                setReport({ ...report, summary: e.target.value })
+              }
+            />
+          </div>
 
-              <div>
-                <label className="block text-gray-700 font-medium mb-1">
-                  File Upload
-                </label>
-                <input
-                  name="report_file"
-                  type="file"
-                  className="w-full"
-                  onChange={(e) =>
-                    setReport({ ...report, file: e.target.files[0] })
-                  }
-                />
-              </div>
+          {/* File Upload */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              File Upload
+            </label>
+            <input
+              name="report_file"
+              type="file"
+              className="w-full"
+              onChange={(e) =>
+                setReport({ ...report, file: e.target.files[0] })
+              }
+            />
+          </div>
 
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Submit Report
-              </button>
-            </form>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Submit Report
+          </button>
+        </form>
+      </div>
+    )}
+
+            {/* My Reports List */}
+            {reportTab === "sent" && (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">My Reports</h2>
+                {myReports.length > 0 ? (
+                  <table className="min-w-full border border-gray-200 rounded-lg">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 border-b text-left text-sm">Title</th>
+                        <th className="px-4 py-2 border-b text-left text-sm">
+                          Report Type
+                        </th>
+                        <th className="px-4 py-2 border-b text-left text-sm">Task</th>
+                        <th className="px-4 py-2 border-b text-left text-sm">
+                          Submitted At
+                        </th>
+                        <th className="px-4 py-2 border-b text-left text-sm">File</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {myReports.map((r) => (
+                        <tr key={r.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 border-b">{r.title}</td>
+                          <td className="px-4 py-2 border-b">{r.report_type}</td>
+                          <td className="px-4 py-2 border-b">{r.task_title}</td>
+                          <td className="px-4 py-2 border-b">
+                            {new Date(r.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 border-b">
+                            {r.file_url ? (
+                              <a
+                                href={r.file_url}
+                                target="_blank"
+                                className="text-blue-600 underline"
+                              >
+                                View File
+                              </a>
+                            ) : (
+                              "No File"
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-gray-500 italic">You haven’t submitted reports yet.</p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
