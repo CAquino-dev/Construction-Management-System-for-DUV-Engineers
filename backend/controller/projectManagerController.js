@@ -402,11 +402,9 @@ const uploadClientSignature = (req, res) => {
     return res.status(400).json({ error: 'Missing signature or proposal ID' });
   }
 
-  // Prepare the signature path
   const signatureFileName = `signature_${proposalId}.png`;
   const signatureFilePath = path.join(signatureDir, signatureFileName);
 
-  // Save the signature image
   const base64Data = base64Signature.replace(/^data:image\/png;base64,/, '');
   fs.writeFile(signatureFilePath, base64Data, 'base64', (err) => {
     if (err) {
@@ -414,18 +412,24 @@ const uploadClientSignature = (req, res) => {
       return res.status(500).json({ error: 'Failed to save signature' });
     }
 
-    // Step 2: Lookup contract file path from DB
-    const query = 'SELECT contract_file_url FROM contracts WHERE id = ? LIMIT 1';
+    // Find the contract via proposal_id
+    const query = `SELECT id, contract_file_url, total_amount 
+                   FROM contracts 
+                   WHERE id = ? 
+                   LIMIT 1`;
+
     db.query(query, [proposalId], async (err, results) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
       }
 
-      if (results.length === 0 || !results[0].contract_file_url) {
+      if (results.length === 0) {
         return res.status(404).json({ error: 'Contract not found for proposal' });
       }
 
+      const contractId = results[0].id;
+      const totalAmount = results[0].total_amount;
       const contractPath = path.join(contractDir, results[0].contract_file_url);
       const signedFileName = `signed_contract_${proposalId}.pdf`;
       const signedPath = path.join(signedDir, signedFileName);
@@ -435,16 +439,15 @@ const uploadClientSignature = (req, res) => {
         const existingPdfBytes = fs.readFileSync(contractPath);
         const pdfDoc = await PDFDocument.load(existingPdfBytes);
 
-        // Embed signature image
+        // Embed signature
         const signatureImageBytes = fs.readFileSync(signatureFilePath);
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
         const pages = pdfDoc.getPages();
         const firstPage = pages[0];
-
-        // Position: bottom-right corner (adjust as needed)
-        const { width, height } = firstPage.getSize();
+        const { width } = firstPage.getSize();
         const imageDims = signatureImage.scale(0.25);
+
         firstPage.drawImage(signatureImage, {
           x: width - imageDims.width - 50,
           y: 50,
@@ -455,7 +458,7 @@ const uploadClientSignature = (req, res) => {
         const signedPdfBytes = await pdfDoc.save();
         fs.writeFileSync(signedPath, signedPdfBytes);
 
-        // Step 3: Update DB
+        // Update DB
         const updateQuery = `
           UPDATE contracts
           SET status = 'signed',
@@ -466,14 +469,20 @@ const uploadClientSignature = (req, res) => {
         `;
         const userIp = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
-        db.query(updateQuery, [userIp, `/signed_contracts/${signedFileName}`, proposalId], (err2) => {
-          
+        db.query(updateQuery, [userIp, `/signed_contracts/${signedFileName}`, contractId], (err2) => {
           if (err2) {
             console.error('Error updating contract status:', err2);
             return res.status(500).json({ error: 'Failed to update contract record' });
           }
 
-          return res.status(200).json({ message: 'Contract signed successfully' });
+          // Calculate downpayment (e.g., 30%)
+          const downpaymentAmount = totalAmount * 0.3;
+
+          return res.status(200).json({
+            message: 'Contract signed successfully',
+            contractId,
+            downpaymentAmount,
+          });
         });
       } catch (pdfErr) {
         console.error('PDF processing error:', pdfErr);
@@ -482,6 +491,7 @@ const uploadClientSignature = (req, res) => {
     });
   });
 };
+
 
 const getApprovedContracts = (req, res) => {
   const query = `

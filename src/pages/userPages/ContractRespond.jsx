@@ -42,34 +42,55 @@ const ContractRespond = () => {
     }
 
     const canvas = sigPad.current.getCanvas();
-    const dataURL = canvas.toDataURL('image/png');
+    const dataURL = canvas.toDataURL("image/png");
     setTrimmedSignature(dataURL);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          base64Signature: dataURL,
-          proposalId: proposalId
-        }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            base64Signature: dataURL,
+            proposalId: proposalId,
+          }),
+        }
+      );
 
       const data = await response.json();
       if (response.ok) {
         setResponseStatus("Successfully saved the signature!");
-        setMessage({ success: data.message, error: '' });
+        setMessage({ success: data.message, error: "" });
         setShowSignPad(false);
+
+        // 🔹 Auto-create first payment
+        const payRes = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/initial`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contractId: data.contractId, // must come from backend
+            }),
+          }
+        );
+
+        const payData = await payRes.json();
+        if (payRes.ok) {
+          // 🔹 Redirect client directly to PayMongo checkout page
+          window.location.href = payData.checkout_url;
+          return; // stop here so we don’t run the second redirect
+        }
+
       } else {
-        setMessage({ error: data.error || 'Signature upload failed.', success: '' });
+        setMessage({ error: data.error || "Signature upload failed.", success: "" });
       }
     } catch (err) {
-      setMessage({ error: 'Error uploading signature.', success: '' });
+      setMessage({ error: "Error uploading signature.", success: "" });
     }
   };
-
+  
   const handleRejectContract = async () => {
     const notes = window.prompt("Please provide a reason for rejection:");
     if (!notes || !notes.trim()) {
