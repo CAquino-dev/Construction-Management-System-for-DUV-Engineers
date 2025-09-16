@@ -22,4 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# Root .env
 .env
+
+# Backend .env
+/backend/.env
