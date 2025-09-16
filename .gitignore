@@ -27,3 +27,4 @@ dist-ssr
 
 # Backend .env
 /backend/.env
+.env.production
