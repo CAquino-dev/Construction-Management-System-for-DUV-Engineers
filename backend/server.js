@@ -17,6 +17,8 @@ const salesRoutes = require('./routes/salesRoute');
 const projectManagerRoutes = require('./routes/projectManagerRoute');
 const chatRoute = require('./routes/chatRoute');
 const foremanRoute = require('./routes/foremanRoute');
+
+const PORT = process.env.PORT || 5000; // fallback if env not set
  
 require("./config/db"); // Ensure database connects
 
@@ -56,6 +58,6 @@ app.get("/", (req, res) => {
     res.send("API is running!");
   });
 
-app.listen(5000, () => {
-    console.log("Server running on port 5000");
+app.listen(process.env.PORT || PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
