@@ -1,8 +1,7 @@
-// src/components/EmployeeProfile.jsx
 import React from "react";
+import { EmployeeCalendar } from "../../components/ui/EmployeeCalendar";
 
 const EmployeeProfile = () => {
-  // Sample employee data (replace with API later)
   const employee = {
     name: "Juan Dela Cruz",
     position: "Engineer",
@@ -10,10 +9,9 @@ const EmployeeProfile = () => {
     email: "juan.delacruz@example.com",
     phone: "+63 912 345 6789",
     hireDate: "2022-03-01",
-    avatar: "https://via.placeholder.com/150", // replace with employee photo
+    avatar: "https://via.placeholder.com/150",
   };
 
-  // Sample payslips data
   const payslips = [
     { id: 1, month: "August 2025", amount: "₱50,000", url: "#" },
     { id: 2, month: "July 2025", amount: "₱50,000", url: "#" },
@@ -50,6 +48,12 @@ const EmployeeProfile = () => {
               {new Date(employee.hireDate).toLocaleDateString()}
             </p>
           </div>
+
+          {/* Calendar here */}
+          <p className="text-lg font-semibold mb-3 border-t border-gray-200 pb-2 text-center mt-6">
+            Attendace
+          </p>
+          <EmployeeCalendar />
         </div>
 
         {/* Right Section */}

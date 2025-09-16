@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 export const Attendance = () => {
   const [status, setStatus] = useState(null);
   const [checkInTime, setCheckInTime] = useState(null);
   const [checkOutTime, setCheckOutTime] = useState(null);
-  const [timer, setTimer] = useState(0);  // In seconds
+  const [timer, setTimer] = useState(0); // In seconds
   const [intervalId, setIntervalId] = useState(null); // For clearing interval
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [checkedIn, setCheckedIn] = useState(false);
   const [checkedOut, setCheckedOut] = useState(false);
 
-  const employeeId = localStorage.getItem('userId');
+  const employeeId = localStorage.getItem("userId");
 
   // Fetch attendance status on load
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/attendanceStatus/${employeeId}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/employees/attendanceStatus/${employeeId}`
         );
 
         if (res.data) {
@@ -42,9 +44,9 @@ export const Attendance = () => {
             const nineAM = new Date(ciTime);
             nineAM.setHours(9, 0, 0, 0);
             if (ciTime > nineAM) {
-              setStatus('Late');
+              setStatus("Late");
             } else {
-              setStatus('Present');
+              setStatus("Present");
             }
           }
         }
@@ -66,7 +68,7 @@ export const Attendance = () => {
         const endOfDay = new Date(now);
         endOfDay.setHours(23, 59, 59, 999);
         if (now >= endOfDay) {
-          setStatus('Absent');
+          setStatus("Absent");
         }
       }
     }, 1000);
@@ -81,9 +83,9 @@ export const Attendance = () => {
     const response = await fetch(
       `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/checkIn`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ employeeId }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
@@ -102,9 +104,9 @@ export const Attendance = () => {
     const nineAM = new Date();
     nineAM.setHours(9, 0, 0, 0);
     if (currentDate > nineAM) {
-      setStatus('Late');
+      setStatus("Late");
     } else {
-      setStatus('Present');
+      setStatus("Present");
     }
 
     startTimer();
@@ -114,9 +116,9 @@ export const Attendance = () => {
     const response = await fetch(
       `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/checkOut`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ employeeId }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
@@ -128,8 +130,8 @@ export const Attendance = () => {
     setCheckedIn(false);
 
     // ✅ Keep status as Present or Late, not Absent
-    if (status !== 'Late') {
-      setStatus('Present');
+    if (status !== "Late") {
+      setStatus("Present");
     }
 
     stopTimer();
@@ -151,75 +153,80 @@ export const Attendance = () => {
     const hours = Math.floor(timeInSeconds / 3600);
     const minutes = Math.floor((timeInSeconds % 3600) / 60);
     const seconds = timeInSeconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes
+    return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
-      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const formatDateTime = (date) => {
     const options = {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
       hour12: true,
     };
-    return date.toLocaleString('en-US', options);
+    return date.toLocaleString("en-US", options);
   };
 
   return (
-    <div className='container mx-auto'>
-      <div className='bg-white shadow-md rounded-lg p-6 flex flex-col items-center'>
-        <h2 className='text-2xl font-bold mb-4'>Attendance</h2>
+    <div className="container mx-auto p-6 mt-10">
+      <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center">
+        <h2 className="text-2xl font-bold mb-4">Attendance</h2>
         <p className="text-xl text-gray-800 mb-2">
           📅 {formatDateTime(currentDateTime)}
         </p>
-        <p className='text-gray-600'>
+        <p className="text-gray-600">
           Status:{" "}
           <span
             className={
-              status === 'Present'
-                ? 'text-green-500 font-semibold'
-                : status === 'Absent'
-                ? 'text-red-500 font-semibold'
-                : status === 'Late'
-                ? 'text-yellow-500 font-semibold'
-                : 'text-gray-400'
+              status === "Present"
+                ? "text-green-500 font-semibold"
+                : status === "Absent"
+                ? "text-red-500 font-semibold"
+                : status === "Late"
+                ? "text-yellow-500 font-semibold"
+                : "text-gray-400"
             }
           >
             {status || "Waiting..."}
           </span>
         </p>
-        <p className='text-gray-600'>
+        <p className="text-gray-600">
           Check-in Time:{" "}
           <span
-            className={checkInTime ? 'text-green-600 font-semibold' : 'text-gray-400'}
+            className={
+              checkInTime ? "text-green-600 font-semibold" : "text-gray-400"
+            }
           >
             {checkInTime || "---"}
           </span>
         </p>
-        <p className='text-gray-600'>
+        <p className="text-gray-600">
           Check-out Time:{" "}
           <span
-            className={checkOutTime ? 'text-red-600 font-semibold' : 'text-gray-400'}
+            className={
+              checkOutTime ? "text-red-600 font-semibold" : "text-gray-400"
+            }
           >
             {checkOutTime || "---"}
           </span>
         </p>
-        <p className='text-gray-600'>
-          Timer: <span className='text-black font-semibold'>{formatTime(timer)}</span>
+        <p className="text-gray-600">
+          Timer:{" "}
+          <span className="text-black font-semibold">{formatTime(timer)}</span>
         </p>
-        <div className='flex space-x-4 mt-4'>
+        <div className="flex space-x-4 mt-4">
           <button
             onClick={handleCheckIn}
             disabled={checkedIn || checkedOut}
             className={`${
               checkedIn || checkedOut
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-green-500 hover:bg-green-600'
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-green-500 hover:bg-green-600"
             } text-white font-semibold py-2 px-4 rounded`}
           >
             Check In
@@ -230,8 +237,8 @@ export const Attendance = () => {
             disabled={!checkedIn || checkedOut}
             className={`${
               !checkedIn || checkedOut
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-red-500 hover:bg-red-600'
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-red-500 hover:bg-red-600"
             } text-white font-semibold py-2 px-4 rounded`}
           >
             Check Out
