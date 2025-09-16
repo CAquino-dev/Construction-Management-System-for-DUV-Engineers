@@ -1,6 +1,6 @@
 // controllers/projectController.js
 const db = require('../config/db');  // Importing the MySQL connection
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const path = require('path');
 const fs = require('fs');
