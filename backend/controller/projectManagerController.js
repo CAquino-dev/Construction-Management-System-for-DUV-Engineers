@@ -440,7 +440,7 @@ const getContract = (req, res) => {
   const { proposalId } = req.params;
 
   const query = `
-    SELECT contract_file_url 
+    SELECT contract_file_url, status 
     FROM contracts
     WHERE contracts.id = ?
   `;
