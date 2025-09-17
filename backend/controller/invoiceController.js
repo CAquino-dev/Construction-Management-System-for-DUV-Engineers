@@ -261,10 +261,6 @@ async function pollPayments() {
 // ---------------------
 // Poller Cron: Run every minute
 // ---------------------
-cron.schedule("*/1 * * * *", () => {
-  console.log("Running payment polling...");
-  pollPayments();
-});
 
 // ---------------------
 // Export
