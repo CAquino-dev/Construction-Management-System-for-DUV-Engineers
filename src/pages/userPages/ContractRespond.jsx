@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 
 const ContractRespond = () => {
   const { proposalId } = useParams();
@@ -35,40 +36,65 @@ const ContractRespond = () => {
 
   const clearSignature = () => sigPad.current.clear();
 
-  const handleSaveSignature = async () => {
-    if (sigPad.current.isEmpty()) {
-      alert("Please provide a signature.");
-      return;
-    }
+const handleSaveSignature = async () => {
+  if (sigPad.current.isEmpty()) {
+    alert("Please provide a signature.");
+    return;
+  }
 
-    const canvas = sigPad.current.getCanvas();
-    const dataURL = canvas.toDataURL('image/png');
-    setTrimmedSignature(dataURL);
+  const canvas = sigPad.current.getCanvas();
+  const dataURL = canvas.toDataURL("image/png");
+  setTrimmedSignature(dataURL);
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          base64Signature: dataURL,
-          proposalId: proposalId
-        }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setResponseStatus("Successfully saved the signature!");
-        setMessage({ success: data.message, error: '' });
-        setShowSignPad(false);
-      } else {
-        setMessage({ error: data.error || 'Signature upload failed.', success: '' });
+  try {
+    // 1. Save signature
+    const response = await axios.post(
+      `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`,
+      {
+        base64Signature: dataURL,
+        proposalId: proposalId,
       }
+    );
+
+    setResponseStatus("Successfully saved the signature!");
+    setMessage({ success: response.data.message, error: "" });
+    setShowSignPad(false);
+
+    // 2. Auto-generate payment schedule
+    try {
+      const scheduleRes = await axios.post(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/payment-schedule/${proposalId}`
+      );
+
+      console.log("Payment schedule generated:", scheduleRes.data.schedule);
+
+      // 3. Send invoice for the first schedule automatically
+      try {
+        const invoiceRes = await axios.post(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/invoice/send-next`,
+          { contractId: scheduleRes.data.contractId } // use the returned contractId
+        );
+
+        console.log("Invoice sent:", invoiceRes.data);
+        setMessage(prev => ({ ...prev, success: `Invoice sent to client. ${invoiceRes.data.invoiceNumber}` }));
+      } catch (invErr) {
+        console.error("Invoice sending failed:", invErr.response?.data || invErr.message);
+        setMessage(prev => ({ ...prev, error: "Failed to send invoice." }));
+      }
+
     } catch (err) {
-      setMessage({ error: 'Error uploading signature.', success: '' });
+      console.error("Schedule generation failed:", err.response?.data || err.message);
+      setMessage(prev => ({ ...prev, error: "Failed to generate payment schedule." }));
     }
-  };
+
+  } catch (err) {
+    setMessage({
+      error: err.response?.data?.error || "Signature upload failed.",
+      success: "",
+    });
+  }
+};
+
 
   const handleRejectContract = async () => {
     const notes = window.prompt("Please provide a reason for rejection:");
@@ -114,7 +140,7 @@ const ContractRespond = () => {
       )}
 
       {/* Action buttons */}
-      {contract?.status === "pending" && (
+      {contract?.status === "draft" && (
         <div className="flex gap-4 mb-4">
           <button
             className="bg-blue-600 text-white px-4 py-2 rounded"

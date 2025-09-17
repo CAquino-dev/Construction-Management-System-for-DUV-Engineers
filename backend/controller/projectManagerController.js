@@ -354,74 +354,12 @@ const generateContract = (req, res) => {
                     return res.status(500).json({ error: "Failed to update access link" });
                   }
 
-                  // Step 7: Auto-generate payment schedules into "payments" table
-                  const scheduleQuery = `
-                    SELECT milestone_name, due_percentage, due_days, sort_order
-                    FROM payment_schedule
-                    WHERE payment_term_id = ?
-                    ORDER BY sort_order ASC
-                  `;
-
-                  db.query(scheduleQuery, [data.payment_term_id], (schedErr, schedules) => {
-                    if (schedErr) {
-                      console.error("Failed to fetch schedules:", schedErr);
-                      return res.status(500).json({ error: "Failed to fetch payment schedule" });
-                    }
-
-                    if (schedules.length > 0) {
-                      const total = data.budget;
-                      const today = new Date();
-
-                      const paymentRows = schedules.map(s => {
-                        let dueDate = null;
-
-                        if (s.due_days !== null) {
-                          dueDate = new Date(today);
-                          dueDate.setDate(today.getDate() + s.due_days);
-                        }
-
-                        return [
-                          contractId,
-                          null, // milestone_id not linked for now
-                          null, // transaction_id (filled when paid)
-                          (total * (s.due_percentage / 100)).toFixed(2),
-                          dueDate ? dueDate.toISOString().slice(0, 10) : null,
-                          null, // paid_date
-                          "Pending",
-                          null, // payment_method
-                          null, // reference_no
-                          s.milestone_name, // remarks (store milestone text)
-                        ];
-                      });
-
-                      const insertPayments = `
-                        INSERT INTO payments
-                        (contract_id, milestone_id, transaction_id, amount, due_date, paid_date, status, payment_method, reference_no, remarks)
-                        VALUES ?
-                      `;
-
-                      db.query(insertPayments, [paymentRows], (insertPayErr) => {
-                        if (insertPayErr) {
-                          console.error("Failed to insert payments:", insertPayErr);
-                          return res.status(500).json({ error: "Failed to generate payment schedule" });
-                        }
-
-                        return res.status(201).json({
-                          message: "Contract generated successfully",
-                          fileUrl,
-                          approvalLink,
-                          contractId,
-                        });
-                      });
-                    } else {
-                      // No schedule (like milestone-based), skip auto insert
-                      return res.status(201).json({
-                        message: "Contract generated successfully (no auto schedule)",
-                        fileUrl,
-                        approvalLink,
-                        contractId,
-                      });
-                    }
+                  // ✅ DONE: Only generate contract, no schedule
+                  return res.status(201).json({
+                    message: "Contract generated successfully",
+                    fileUrl,
+                    approvalLink,
+                    contractId,
                   });
                 }
               );
@@ -436,11 +374,12 @@ const generateContract = (req, res) => {
   });
 };
 
+
 const getContract = (req, res) => {
   const { proposalId } = req.params;
 
   const query = `
-    SELECT contract_file_url, status 
+    SELECT contract_file_url, status, id 
     FROM contracts
     WHERE contracts.id = ?
   `;

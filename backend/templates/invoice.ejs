@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice - <%= invoice.invoice_number %></title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      color: #333;
+    }
+    .invoice-box {
+      max-width: 800px;
+      margin: auto;
+      padding: 30px;
+      border: 1px solid #eee;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .company-info, .client-info {
+      margin-bottom: 20px;
+    }
+    .details {
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table th, table td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    table th {
+      background-color: #f2f2f2;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-box">
+    <h1>Invoice</h1>
+
+    <div class="company-info">
+      <p><strong><%= company.name %></strong></p>
+      <p><%= company.address %></p>
+      <p>Email: <%= company.email %></p>
+    </div>
+
+    <div class="client-info">
+      <p><strong>Bill To:</strong></p>
+      <p><%= client.name %></p>
+      <p><%= client.address %></p>
+      <p>Email: <%= client.email %></p>
+    </div>
+
+    <div class="details">
+      <p><strong>Invoice No:</strong> <%= invoice.invoice_number %></p>
+      <p><strong>Date:</strong> <%= invoice.date %></p>
+      <p><strong>Due Date:</strong> <%= invoice.due_date %></p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach(function(item) { %>
+          <tr>
+            <td><%= item.description %></td>
+            <td><%= item.quantity %></td>
+            <td>₱<%= item.unit_price.toFixed(2) %></td>
+            <td>₱<%= (item.quantity * item.unit_price).toFixed(2) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+
+    <p class="total">Grand Total: ₱<%= invoice.total.toFixed(2) %></p>
+  </div>
+</body>
+</html>
