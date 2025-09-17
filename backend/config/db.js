@@ -24,6 +24,7 @@ db.connect((err) => {
     console.log(
       `Connected to MySQL database "${process.env.DB_NAME}" ✅`
     );
+    console.log(process.env.NODE_ENV);
   }
 });
 
