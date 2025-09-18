@@ -1,11 +1,7 @@
 const db = require("../config/db");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
-const cron = require("node-cron");
 
-// ---------------------
-// Email Transporter
-// ---------------------
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
@@ -16,18 +12,12 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ---------------------
-// Helper: Generate Invoice Number
-// ---------------------
 function generateInvoiceNumber(lastNumber) {
   const year = new Date().getFullYear();
   const nextNumber = (lastNumber || 0) + 1;
   return `INV-${year}-${String(nextNumber).padStart(4, "0")}`;
 }
 
-// ---------------------
-// Send Invoice Endpoint
-// ---------------------
 const sendInvoiceForNextSchedule = (req, res) => {
   const { contractId } = req.body;
 
