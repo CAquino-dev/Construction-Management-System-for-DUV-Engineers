@@ -368,16 +368,16 @@ const updateFinanceApprovalStatus = (req, res) => {
   const milestoneId = req.params.id;
   const { status, financeId } = req.body;
 
-  if (!status || !['Pending', 'Approved', 'Rejected'].includes(status)) {
+  // Only allow Finance-related statuses
+  if (!status || !['Finance Approved', 'Finance Rejected'].includes(status)) {
     return res.status(400).json({ error: "Invalid or missing status" });
   }
 
-  // If status is "Pending", reset approval date
-  const approvalDate = status === 'Pending' ? null : new Date();
+  const approvalDate = new Date();
 
   const query = `
     UPDATE milestones
-    SET finance_approval_status = ?, 
+    SET status = ?, 
         finance_approved_by = ?, 
         finance_approval_date = ?
     WHERE id = ?
@@ -394,6 +394,7 @@ const updateFinanceApprovalStatus = (req, res) => {
     res.json({ message: "Finance approval status updated successfully" });
   });
 };
+
 
 
 const getContracts = (req, res) => {
