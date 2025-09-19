@@ -68,14 +68,14 @@ const ApprovedContracts = () => {
     );
 
   return (
-    <div className="h-screen">
-      <div className="max-w-5xl mx-auto bg-white shadow h-9/10 px-4 py-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">
+    <div className="min-h-screen bg-gray-50 px-2 sm:px-4 py-4">
+      <div className="max-w-5xl mx-auto bg-white shadow-md rounded-lg h-full sm:h-[90vh] px-4 py-6 overflow-hidden flex flex-col">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
           Approved Contracts
         </h1>
 
         {/* Toggle Buttons */}
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-6">
           <button
             onClick={() => setViewMode("pending")}
             className={`px-4 py-2 rounded ${
@@ -90,7 +90,7 @@ const ApprovedContracts = () => {
             onClick={() => setViewMode("signed")}
             className={`px-4 py-2 rounded ${
               viewMode === "signed"
-                ? "bg-[#4c735c]  text-white"
+                ? "bg-[#4c735c] text-white"
                 : "bg-gray-200 text-gray-700"
             }`}
           >
@@ -99,7 +99,7 @@ const ApprovedContracts = () => {
         </div>
 
         {/* Contract List */}
-        <div className="space-y-4 overflow-y-auto h-8/10 sm:h-9/10 border-1">
+        <div className="space-y-4 overflow-y-auto flex-1 border-t pt-2">
           {filteredContracts.length === 0 ? (
             <p className="text-gray-500 text-center">
               {viewMode === "pending"
@@ -112,7 +112,7 @@ const ApprovedContracts = () => {
                 key={contract.contract_id}
                 className="p-4 bg-gray-100 shadow rounded-xl border"
               >
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 text-sm sm:text-base">
                   {/* Basic Info */}
                   <div className="space-y-1">
                     <p>
@@ -162,7 +162,7 @@ const ApprovedContracts = () => {
                   </div>
 
                   {/* View & Action */}
-                  <div className="flex flex-col justify-between">
+                  <div className="flex flex-col gap-2">
                     <div>
                       <p className="font-medium mb-1">View Contract:</p>
                       <a
@@ -180,14 +180,14 @@ const ApprovedContracts = () => {
                         href={contract.access_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm mb-2"
+                        className="text-blue-600 hover:underline text-sm"
                       >
                         Access Link (for Client)
                       </a>
                     )}
 
-                    {/* Conditional Button */}
-                    <div className="flex justify-end">
+                    {/* Conditional Buttons */}
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 mt-3">
                       {viewMode === "pending" ? (
                         <button
                           onClick={() =>
@@ -205,7 +205,7 @@ const ApprovedContracts = () => {
                             : "Send to Client"}
                         </button>
                       ) : (
-                        <div className="text-green-600 font-medium mr-2 flex items-center">
+                        <div className="text-green-600 font-medium flex items-center">
                           <span>Already Signed</span>
                         </div>
                       )}

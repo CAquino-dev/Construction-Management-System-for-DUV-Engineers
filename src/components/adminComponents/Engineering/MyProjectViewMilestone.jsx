@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
-import { X } from '@phosphor-icons/react';
-import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, Legend, ResponsiveContainer } from 'recharts';
+import React, { useState } from "react";
+import { X } from "@phosphor-icons/react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { toast } from "sonner";
 
 export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   const [items, setItems] = useState(milestone.boq_items || []);
   const [selectedBoq, setSelectedBoq] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const permissions = JSON.parse(localStorage.getItem('permissions'));
-  const canModifyMto = permissions?.can_modify_mto === 'Y';
+  const permissions = JSON.parse(localStorage.getItem("permissions"));
+  const canModifyMto = permissions?.can_modify_mto === "Y";
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return "N/A";
     try {
       return new Date(dateStr).toLocaleDateString();
     } catch {
@@ -44,7 +56,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   };
 
   const addMtoItem = () => {
-    const newItem = { description: '', unit: '', quantity: 0, unit_cost: 0 };
+    const newItem = { description: "", unit: "", quantity: 0, unit_cost: 0 };
     setSelectedBoq({
       ...selectedBoq,
       mto_items: [...(selectedBoq.mto_items || []), newItem],
@@ -56,8 +68,8 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       const response = await fetch(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/mto`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             milestone_boq_id: selectedBoq.milestone_boq_id,
             mto_items: selectedBoq.mto_items,
@@ -66,13 +78,13 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       );
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update MTO');
+      if (!response.ok) throw new Error(data.error || "Failed to update MTO");
 
-      alert('MTO updated successfully ✅');
+      toast.success(`Milestone marked as ${newStatus}`);
       setSelectedBoq(null);
     } catch (error) {
-      console.error('Update MTO failed:', error);
-      alert('Error: ' + error.message);
+      console.error("Update MTO failed:", error);
+      toast.error("Error: " + error.message);
     }
   };
 
@@ -81,10 +93,12 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     try {
       setStatusUpdating(true);
       const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/update-status`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/engr/milestones/update-status`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             milestone_id: milestone.id,
             status: newStatus,
@@ -93,12 +107,13 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       );
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update status');
+      if (!response.ok)
+        throw new Error(data.error || "Failed to update status");
 
-      alert(`Milestone marked as ${newStatus}`);
+      toast.success(`Milestone marked as ${newStatus}`);
     } catch (error) {
-      console.error('Update status failed:', error);
-      alert('Error: ' + error.message);
+      console.error("Update status failed:", error);
+      toast.error("Error: " + error.message);
     } finally {
       setStatusUpdating(false);
     }
@@ -118,21 +133,25 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
 
         {/* Milestone Info */}
         <h2 className="text-xl font-semibold mb-4">Milestone Details</h2>
-        <p className="text-sm text-gray-600 mb-4">Created on: {formatDate(milestone.timestamp)}</p>
+        <p className="text-sm text-gray-600 mb-4">
+          Created on: {formatDate(milestone.timestamp)}
+        </p>
         <p className="text-xl font-bold mb-1">{milestone.title}</p>
         <p className="text-md mb-4 whitespace-pre-line">{milestone.details}</p>
 
         {/* Dates & Status */}
         <div className="mb-4 space-y-1">
           <p>
-            <span className="font-semibold">Status:</span>{' '}
-            <span className="capitalize">{milestone.status || 'N/A'}</span>
+            <span className="font-semibold">Status:</span>{" "}
+            <span className="capitalize">{milestone.status || "N/A"}</span>
           </p>
           <p>
-            <span className="font-semibold">Due Date:</span> {formatDate(milestone.due_date)}
+            <span className="font-semibold">Due Date:</span>{" "}
+            {formatDate(milestone.due_date)}
           </p>
           <p>
-            <span className="font-semibold">Start Date:</span> {formatDate(milestone.start_date)}
+            <span className="font-semibold">Start Date:</span>{" "}
+            {formatDate(milestone.start_date)}
           </p>
         </div>
 
@@ -141,14 +160,14 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
           <div className="flex gap-3 mb-6">
             <button
               disabled={statusUpdating}
-              onClick={() => updateMilestoneStatus('PM Approved')}
+              onClick={() => updateMilestoneStatus("PM Approved")}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
             >
               PM Approve
             </button>
             <button
               disabled={statusUpdating}
-              onClick={() => updateMilestoneStatus('PM Rejected')}
+              onClick={() => updateMilestoneStatus("PM Rejected")}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
             >
               PM Reject
@@ -195,9 +214,15 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   <tr key={idx} className="hover:bg-gray-50">
                     <td className="border px-3 py-1">{item.description}</td>
                     <td className="border px-3 py-1">{item.unit}</td>
-                    <td className="border px-3 py-1 text-right">{item.quantity}</td>
-                    <td className="border px-3 py-1 text-right">{item.unit_cost}</td>
-                    <td className="border px-3 py-1 text-right">{item.total_cost || 0}</td>
+                    <td className="border px-3 py-1 text-right">
+                      {item.quantity}
+                    </td>
+                    <td className="border px-3 py-1 text-right">
+                      {item.unit_cost}
+                    </td>
+                    <td className="border px-3 py-1 text-right">
+                      {item.total_cost || 0}
+                    </td>
                     <td className="border px-3 py-1 text-center">
                       <button
                         className="text-blue-600 hover:underline text-sm"
@@ -250,7 +275,11 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                               className="w-full border px-1 py-0.5 text-sm"
                               value={mto.description}
                               onChange={(e) =>
-                                handleMtoChange(idx, 'description', e.target.value)
+                                handleMtoChange(
+                                  idx,
+                                  "description",
+                                  e.target.value
+                                )
                               }
                             />
                           ) : (
@@ -263,7 +292,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                               className="w-full border px-1 py-0.5 text-sm"
                               value={mto.unit}
                               onChange={(e) =>
-                                handleMtoChange(idx, 'unit', e.target.value)
+                                handleMtoChange(idx, "unit", e.target.value)
                               }
                             />
                           ) : (
@@ -277,7 +306,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                               className="w-20 border px-1 py-0.5 text-sm text-right"
                               value={mto.quantity}
                               onChange={(e) =>
-                                handleMtoChange(idx, 'quantity', e.target.value)
+                                handleMtoChange(idx, "quantity", e.target.value)
                               }
                             />
                           ) : (
@@ -291,7 +320,11 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                               className="w-20 border px-1 py-0.5 text-sm text-right"
                               value={mto.unit_cost}
                               onChange={(e) =>
-                                handleMtoChange(idx, 'unit_cost', e.target.value)
+                                handleMtoChange(
+                                  idx,
+                                  "unit_cost",
+                                  e.target.value
+                                )
                               }
                             />
                           ) : (
@@ -305,7 +338,10 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center py-3 text-gray-500">
+                      <td
+                        colSpan="5"
+                        className="text-center py-3 text-gray-500"
+                      >
                         No MTO items found.
                       </td>
                     </tr>
@@ -353,11 +389,11 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                     <Pie
                       data={[
                         {
-                          name: 'Used',
+                          name: "Used",
                           value: calculateMtoTotals(selectedBoq.mto_items),
                         },
                         {
-                          name: 'Remaining',
+                          name: "Remaining",
                           value: Math.max(
                             selectedBoq.quantity * selectedBoq.unit_cost -
                               calculateMtoTotals(selectedBoq.mto_items),
