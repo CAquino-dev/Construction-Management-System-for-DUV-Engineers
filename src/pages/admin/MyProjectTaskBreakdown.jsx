@@ -17,6 +17,8 @@ export const MyProjectTaskBreakdown = () => {
   const [action, setAction] = useState("");
   const [reportId, setReportId] = useState("");
 
+    const permissions = JSON.parse(localStorage.getItem("permissions"));
+
   const [newTask, setNewTask] = useState({
     title: "",
     details: "",
@@ -367,76 +369,79 @@ export const MyProjectTaskBreakdown = () => {
 
           {/* Add Task button */}
           <div className="mt-6">
-            {!isAddingTask ? (
-              <button
-                onClick={() => setIsAddingTask(true)}
-                className="bg-[#4c735c] text-white px-6 py-3 rounded-md"
-              >
-                + Add Task
-              </button>
-            ) : (
-              <div className="p-4 border rounded-lg bg-gray-50 space-y-3">
-                <input
-                  type="text"
-                  placeholder="Task title"
-                  value={newTask.title}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, title: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-                <textarea
-                  placeholder="Task details"
-                  value={newTask.details}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, details: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-                <input
-                  type="date"
-                  value={newTask.start_date}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, start_date: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-                <input
-                  type="date"
-                  value={newTask.due_date}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, due_date: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
-                />
-                <select
-                  value={newTask.priority}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, priority: e.target.value })
-                  }
-                  className="w-full p-2 border rounded"
+            {permissions.role_name === "Engineer" && (
+              !isAddingTask ? (
+                <button
+                  onClick={() => setIsAddingTask(true)}
+                  className="bg-[#4c735c] text-white px-6 py-3 rounded-md"
                 >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddTask}
-                    className="bg-[#4c735c] text-white px-4 py-2 rounded-md"
+                  + Add Task
+                </button>
+              ) : (
+                <div className="p-4 border rounded-lg bg-gray-50 space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Task title"
+                    value={newTask.title}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, title: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                  />
+                  <textarea
+                    placeholder="Task details"
+                    value={newTask.details}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, details: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                  />
+                  <input
+                    type="date"
+                    value={newTask.start_date}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, start_date: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                  />
+                  <input
+                    type="date"
+                    value={newTask.due_date}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, due_date: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
+                  />
+                  <select
+                    value={newTask.priority}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, priority: e.target.value })
+                    }
+                    className="w-full p-2 border rounded"
                   >
-                    Save Task
-                  </button>
-                  <button
-                    onClick={() => setIsAddingTask(false)}
-                    className="bg-gray-300 px-4 py-2 rounded-md"
-                  >
-                    Cancel
-                  </button>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddTask}
+                      className="bg-[#4c735c] text-white px-4 py-2 rounded-md"
+                    >
+                      Save Task
+                    </button>
+                    <button
+                      onClick={() => setIsAddingTask(false)}
+                      className="bg-gray-300 px-4 py-2 rounded-md"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )
             )}
           </div>
+
         </>
       )}
 

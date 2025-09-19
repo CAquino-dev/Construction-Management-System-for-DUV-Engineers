@@ -55,12 +55,12 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   };
 
   const handleApprove = async () => {
-    const success = await updateFinanceApproval("Approved");
+    const success = await updateFinanceApproval("Finance Approved");
     if (success) onClose();
   };
 
   const handleReject = async () => {
-    const success = await updateFinanceApproval("Rejected");
+    const success = await updateFinanceApproval("Finance Rejected");
     if (success) onClose();
   };
 
