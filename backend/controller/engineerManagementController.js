@@ -323,7 +323,7 @@ const createMilestone = (req, res) => {
 
 // Update MTO items for a specific milestone_boq_id
 const updateMtoItems = (req, res) => {
-  const { milestone_boq_id, mto_items, milestone_status } = req.body;
+  const { milestone_boq_id, mto_items } = req.body;
 
   if (!milestone_boq_id) return res.status(400).json({ error: 'milestone_boq_id is required' });
   if (!Array.isArray(mto_items)) return res.status(400).json({ error: 'mto_items must be an array' });
@@ -334,54 +334,52 @@ const updateMtoItems = (req, res) => {
     if (err) return res.status(500).json({ error: 'Failed to clear old MTO items' });
 
     // Step 2: Insert updated MTO items (if any)
-    const insertMtoItems = (callback) => {
-      if (mto_items.length === 0) return callback();
+    if (mto_items.length === 0) {
+      return res.status(200).json({ message: 'MTO items cleared successfully' });
+    }
 
-      const mtoValues = mto_items.map(item => [
-        milestone_boq_id,
-        item.description,
-        item.unit,
-        item.quantity,
-        item.unit_cost
-      ]);
+    const mtoValues = mto_items.map(item => [
+      milestone_boq_id,
+      item.description,
+      item.unit,
+      item.quantity,
+      item.unit_cost
+    ]);
 
-      const insertQuery = `
-        INSERT INTO milestone_mto
-        (milestone_boq_id, description, unit, quantity, unit_cost)
-        VALUES ?
-      `;
+    const insertQuery = `
+      INSERT INTO milestone_mto
+      (milestone_boq_id, description, unit, quantity, unit_cost)
+      VALUES ?
+    `;
 
-      db.query(insertQuery, [mtoValues], (err2) => {
-        if (err2) return res.status(500).json({ error: 'Failed to insert updated MTO items' });
-        callback();
-      });
-    };
-
-    // Step 3: Update milestone status if provided
-    insertMtoItems(() => {
-      if (!milestone_status) {
-        return res.status(200).json({ message: 'MTO items updated successfully' });
-      }
-
-      // get milestone_id from milestone_boq
-      const milestoneIdQuery = `SELECT milestone_id FROM milestone_boq WHERE id = ?`;
-      db.query(milestoneIdQuery, [milestone_boq_id], (err3, rows) => {
-        if (err3 || rows.length === 0) {
-          return res.status(500).json({ error: 'Failed to find milestone for this BOQ' });
-        }
-
-        const milestoneId = rows[0].milestone_id;
-        const updateStatusQuery = `UPDATE milestones SET status = ? WHERE id = ?`;
-
-        db.query(updateStatusQuery, [milestone_status, milestoneId], (err4) => {
-          if (err4) return res.status(500).json({ error: 'Failed to update milestone status' });
-
-          return res.status(200).json({ message: 'MTO and milestone status updated successfully' });
-        });
-      });
+    db.query(insertQuery, [mtoValues], (err2) => {
+      if (err2) return res.status(500).json({ error: 'Failed to insert updated MTO items' });
+      return res.status(200).json({ message: 'MTO items updated successfully' });
     });
   });
 };
+
+const updateMilestoneStatus = (req, res) => {
+  const { milestone_id, status } = req.body;
+
+  if (!milestone_id || !status) {
+    return res.status(400).json({ error: 'milestone_id and status are required' });
+  }
+
+  const query = `UPDATE milestones SET status = ? WHERE id = ?`;
+
+  db.query(query, [status, milestone_id], (err, result) => {
+    if (err) {
+      console.error("Error updating milestone status:", err);
+      return res.status(500).json({ error: "Failed to update milestone status" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Milestone not found" });
+    }
+    res.json({ message: "Milestone status updated successfully" });
+  });
+};
+
 
 
 const getMilestonesForPaymentByProject = (req, res) => {
@@ -525,4 +523,5 @@ const updateForemanReports = (req, res) => {
 
 module.exports = { getEngineers, createProject, getClients, 
                   getClientProject, getEngineerProjects, createMilestone,
-                getMilestonesForPaymentByProject, completeMilestone, updateMtoItems, updateForemanReports };
+                getMilestonesForPaymentByProject, completeMilestone, updateMtoItems, 
+                updateForemanReports, updateMilestoneStatus };
