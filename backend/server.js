@@ -17,6 +17,10 @@ const salesRoutes = require('./routes/salesRoute');
 const projectManagerRoutes = require('./routes/projectManagerRoute');
 const chatRoute = require('./routes/chatRoute');
 const foremanRoute = require('./routes/foremanRoute');
+const invoiceRoute = require('./routes/invoiceRoutes');
+const webhookRoute = require('./routes/webhookRoute');
+ 
+const PORT = process.env.PORT || 5000; // fallback if env not set
  
 require("./config/db"); // Ensure database connects
 
@@ -45,17 +49,18 @@ app.use("/api/chat", messageRoutes);
 app.use("/api/sales", salesRoutes);
 app.use("/api/projectManager", projectManagerRoutes);
 app.use("/api", messageRoutes);
-app.use("/api/payments", paymentRoutes);
 app.use("/api/chat", messageRoutes);
 app.use("/api/sales", salesRoutes);
 app.use("/api/projectManager", projectManagerRoutes);
 app.use("/api/chatAi", chatRoute);
 app.use("/api/foreman", foremanRoute);
+app.use("/api/invoice", invoiceRoute);
+app.use("/api/webhooks", webhookRoute);
 
 app.get("/", (req, res) => {
     res.send("API is running!");
   });
 
-app.listen(5000, () => {
-    console.log("Server running on port 5000");
+app.listen(process.env.PORT || PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });

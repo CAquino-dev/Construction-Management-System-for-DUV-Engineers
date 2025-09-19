@@ -32,7 +32,7 @@ const ViewProposals = () => {
       const data = await res.json();
 
       setMessage({
-        success: "Contract generated successfully!",
+        success: "Contract generated successfully!, Sent to finance for approval",
         error: '',
         approvalLink: `${data.approvalLink}`
       });
@@ -60,7 +60,7 @@ const ViewProposals = () => {
   );
 
   return (
-    <div className="mt-6 mx-auto px-4 bg-white p-6 rounded shadow-md rounded-md">
+    <div className="mt-6 mx-auto px-4 bg-white p-6 shadow-md rounded-md">
       <h2 className="text-xl font-bold mb-4">Submitted Proposals</h2>
 
       {/* ✅ Success/Error Message */}
@@ -68,19 +68,6 @@ const ViewProposals = () => {
         <div className={`p-4 mb-6 rounded shadow ${message.error ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
           {message.success && <p className="font-semibold">{message.success}</p>}
           {message.error && <p className="font-semibold">{message.error}</p>}
-          {message.approvalLink && (
-            <div className="mt-2">
-              <p className="text-sm">Contract Link:</p>
-              <a
-                href={message.approvalLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline break-all"
-              >
-                {message.approvalLink}
-              </a>
-            </div>
-          )}
         </div>
       )}
 

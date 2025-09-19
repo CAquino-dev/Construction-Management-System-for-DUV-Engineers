@@ -284,5 +284,88 @@ function createInitialPayment(req, res) {
 }
 
 
+const generatePaymentSchedule = (req, res) => {
+  const { contractId } = req.params;
 
-module.exports = { createPaymentIntent, createCheckoutSession, createInitialPayment };
+  // 1. Get contract
+  db.query(
+    "SELECT id, total_amount, contract_signed_at, payment_term_id FROM contracts WHERE id = ? AND status = 'signed'",
+    [contractId],
+    (err, contractRows) => {
+      if (err) {
+        console.error("DB Error (contract):", err);
+        return res.status(500).json({ message: "Database error" });
+      }
+
+      if (contractRows.length === 0) {
+        return res.status(404).json({ message: "Contract not found or not signed" });
+      }
+
+      const contract = contractRows[0];
+
+      // 2. Get payment term rules
+      db.query(
+        "SELECT * FROM payment_term_rules WHERE payment_term_id = ? ORDER BY sequence ASC",
+        [contract.payment_term_id],
+        (err, rules) => {
+          if (err) {
+            console.error("DB Error (rules):", err);
+            return res.status(500).json({ message: "Database error" });
+          }
+
+          if (rules.length === 0) {
+            return res.status(400).json({ message: "No payment rules defined for this contract" });
+          }
+
+          // 3. Generate schedule rows
+          const scheduleRows = rules.map((rule) => {
+            let dueDate = null;
+
+            if (rule.trigger_event === "signing") {
+              dueDate = contract.contract_signed_at;
+            } else if (rule.trigger_event === "completion") {
+              // placeholder: later tie this to project_end_date
+              dueDate = contract.contract_signed_at;
+            } else if (rule.trigger_event === "monthly") {
+              const d = new Date(contract.contract_signed_at);
+              d.setMonth(d.getMonth() + (rule.sequence - 1));
+              dueDate = d.toISOString().slice(0, 10);
+            }
+
+            const amount = (contract.total_amount * rule.percentage) / 100;
+
+            return [
+              contract.id,
+              rule.id,
+              rule.milestone_name,
+              dueDate,
+              amount,
+            ];
+          });
+
+          // 4. Insert schedule into DB
+          db.query(
+            "INSERT INTO payment_schedule (contract_id, rule_id, milestone_name, due_date, amount) VALUES ?",
+            [scheduleRows],
+            (err) => {
+              if (err) {
+                console.error("DB Error (insert schedule):", err);
+                return res.status(500).json({ message: "Database error" });
+              }
+
+              // Return contractId along with schedule
+              return res.json({
+                message: "Payment schedule generated",
+                contractId: contract.id,
+                schedule: scheduleRows,
+              });
+            }
+          );
+        }
+      );
+    }
+  );
+};
+
+
+module.exports = { createPaymentIntent, createCheckoutSession, createInitialPayment, generatePaymentSchedule };

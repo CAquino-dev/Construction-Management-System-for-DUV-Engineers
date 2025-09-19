@@ -177,22 +177,24 @@ const AdminNavbar = ({ children }) => {
                   </Link>
                 </li>
               ))}
-            {/* Collapsible Sales Section */}
             <li>
-              <button
-                onClick={toggleSalesDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-              >
-                <span className="flex items-center gap-3 font-semibold">
-                  <User size={20} /> Sales
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isSalesOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {/* Collapsible Sales Section */}
+                {permissions.can_access_sales === "Y" && (
+                  <button
+                    onClick={toggleSalesDropdown}
+                    className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                  >
+                    <span className="flex items-center gap-3 font-semibold">
+                      <User size={20} /> Sales
+                    </span>
+                    <CaretDown
+                      size={20}
+                      className={`transform transition-all ${
+                        isSalesOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                )}
               {isSalesOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
@@ -222,22 +224,24 @@ const AdminNavbar = ({ children }) => {
                 </ul>
               )}
             </li>
-            {/* Collapsible Foreman Section */}
             <li>
-              <button
-                onClick={toggleForemanDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-              >
-                <span className="flex items-center gap-3 font-semibold">
-                  <HardHat size={20} /> Foreman
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isForemanOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {/* Collapsible Foreman Section */}
+              {permissions.can_access_foreman === "Y" && (
+                <button
+                  onClick={toggleForemanDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <HardHat size={20} /> Foreman
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isForemanOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
               {isForemanOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>

@@ -52,7 +52,7 @@ const uploadProposalPDF = multer({
 const createProposal = (req, res) => {
   uploadProposalPDF(req, res, (err) => {
     if (err) {
-      console.error('File upload error:', err.message);
+      console.error("File upload error:", err.message);
       return res.status(400).json({ error: err.message });
     }
 
@@ -63,64 +63,83 @@ const createProposal = (req, res) => {
       scope_of_work,
       budget_estimate,
       timeline_estimate,
-      payment_terms
+      payment_term_id, // 👈 from frontend select
     } = req.body;
 
-    if (!lead_id || !title || !description || !scope_of_work || !budget_estimate || !timeline_estimate) {
-      return res.status(400).json({ error: 'All required fields must be filled.' });
+    if (!lead_id || !title || !description || !scope_of_work || !budget_estimate || !timeline_estimate || !payment_term_id) {
+      return res.status(400).json({ error: "All required fields must be filled." });
     }
 
     let parsedScopeOfWork;
     try {
       parsedScopeOfWork = JSON.parse(scope_of_work);
     } catch (parseErr) {
-      return res.status(400).json({ error: 'Invalid format for scope_of_work. Must be a JSON array.' });
+      return res.status(400).json({ error: "Invalid format for scope_of_work. Must be a JSON array." });
     }
 
     const fileUrl = req.file ? `/uploads/proposals/${req.file.filename}` : null;
     const approvalToken = uuidv4();
 
-    const query = `
-      INSERT INTO proposals (
+    // 1. Fetch payment term text for snapshot
+    const termQuery = `SELECT name FROM payment_terms WHERE id = ? LIMIT 1`;
+
+    db.query(termQuery, [payment_term_id], (termErr, termResult) => {
+      if (termErr) {
+        console.error("DB error fetching payment term:", termErr);
+        return res.status(500).json({ error: "Failed to fetch payment term." });
+      }
+
+      if (!termResult.length) {
+        return res.status(400).json({ error: "Invalid payment term selected." });
+      }
+
+      const payment_terms = termResult[0].name; // snapshot text
+
+      // 2. Insert proposal
+      const query = `
+        INSERT INTO proposals (
+          lead_id,
+          title,
+          description,
+          scope_of_work,
+          budget_estimate,
+          timeline_estimate,
+          payment_term_id,
+          payment_terms,
+          file_url,
+          approval_token,
+          status,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+      `;
+
+      const values = [
         lead_id,
         title,
         description,
-        scope_of_work,
+        JSON.stringify(parsedScopeOfWork),
         budget_estimate,
         timeline_estimate,
+        payment_term_id,
         payment_terms,
-        file_url,
-        approval_token,
-        status,
-        created_at,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
-    `;
+        fileUrl,
+        approvalToken,
+      ];
 
-    const values = [
-      lead_id,
-      title,
-      description,
-      JSON.stringify(parsedScopeOfWork),
-      budget_estimate,
-      timeline_estimate,
-      payment_terms || null,
-      fileUrl,
-      approvalToken
-    ];
+      db.query(query, values, (dbErr, result) => {
+        if (dbErr) {
+          console.error("Database error:", dbErr);
+          return res.status(500).json({ error: "Failed to create proposal." });
+        }
 
-    db.query(query, values, (dbErr, result) => {
-      if (dbErr) {
-        console.error('Database error:', dbErr);
-        return res.status(500).json({ error: 'Failed to create proposal.' });
-      }
+        const approvalLink = `${process.env.FRONTEND_URL}/proposal/respond/${approvalToken}`;
 
-      const approvalLink = `${process.env.FRONTEND_URL}/proposal/respond/${approvalToken}`;
-
-      return res.status(201).json({
-        message: 'Proposal created successfully.',
-        proposalId: result.insertId,
-        approvalLink
+        return res.status(201).json({
+          message: "Proposal created successfully.",
+          proposalId: result.insertId,
+          approvalLink,
+        });
       });
     });
   });
@@ -231,12 +250,14 @@ const getProposalResponse = (req, res) => {
 const generateContract = (req, res) => {
   const { proposalId } = req.params;
 
-  // Step 1: Get proposal and lead info
+  // Step 1: Get proposal + lead + payment term info
   const query = `
     SELECT p.*, l.client_name, l.email, l.phone_number, l.project_interest, 
-           l.budget, l.timeline, l.id AS lead_id
+           l.budget, l.timeline, l.id AS lead_id,
+           pt.id AS payment_term_id, pt.name AS payment_term_label
     FROM proposals p
     JOIN leads l ON p.lead_id = l.id
+    LEFT JOIN payment_terms pt ON p.payment_term_id = pt.id
     WHERE p.id = ?
   `;
 
@@ -252,7 +273,7 @@ const generateContract = (req, res) => {
 
     const data = result[0];
 
-    // Step 2: Prepare data for EJS template
+    // Step 2: Prepare contract data
     const formData = {
       title: data.title,
       description: data.description,
@@ -260,7 +281,7 @@ const generateContract = (req, res) => {
       budget_estimate: data.budget,
       timeline_estimate: data.timeline,
       payment_terms:
-        data.payment_terms ||
+        data.payment_term_label ||
         "50% down payment, 30% upon completion, 20% upon final acceptance",
     };
 
@@ -274,7 +295,7 @@ const generateContract = (req, res) => {
       lead_id: data.lead_id,
     };
 
-    // Step 3: Render EJS template
+    // Step 3: Render contract PDF
     ejs.renderFile(
       path.join(__dirname, "../templates/contract_template.ejs"),
       { selectedLead, formData },
@@ -285,28 +306,27 @@ const generateContract = (req, res) => {
         }
 
         try {
-          // Step 4: Generate PDF
-          const browser = await puppeteer.launch();
+          const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+          });
           const page = await browser.newPage();
           await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });
           const pdfBuffer = await page.pdf({ format: "A4" });
           await browser.close();
 
-          // Step 5: Save PDF
+          // Step 4: Save PDF to disk
           const fileName = `contract_${proposalId}_${Date.now()}.pdf`;
-          const filePath = path.join(
-            __dirname,
-            "../public/contracts",
-            fileName
-          );
+          const filePath = path.join(__dirname, "../public/contracts", fileName);
           fs.writeFileSync(filePath, pdfBuffer);
           const fileUrl = `/contracts/${fileName}`;
 
-          // Step 6: Save contract info to DB (with payment columns)
+          // Step 5: Insert contract into DB
           const insertQuery = `
             INSERT INTO contracts 
-            (lead_id, proposal_id, contract_file_url, total_amount, payment_terms, paid_amount, payment_status)
-            VALUES (?, ?, ?, ?, ?, 0, 'Unpaid')
+            (lead_id, proposal_id, contract_file_url, total_amount, payment_term_id, payment_terms, paid_amount, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, 0, 'Unpaid')
           `;
 
           db.query(
@@ -315,42 +335,35 @@ const generateContract = (req, res) => {
               data.lead_id,
               data.id,
               fileUrl,
-              data.budget, // total_amount from proposal budget
+              data.budget, // total_amount = proposal budget
+              data.payment_term_id || null,
               formData.payment_terms,
             ],
             (insertErr, resultInsert) => {
               if (insertErr) {
                 console.error("Insert error:", insertErr);
-                return res
-                  .status(500)
-                  .json({ error: "Failed to save contract record" });
+                return res.status(500).json({ error: "Failed to save contract record" });
               }
 
               const contractId = resultInsert.insertId;
               const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
 
-              // Step 7: Save access link
-              const updateAccessLinkQuery = `
-                UPDATE contracts
-                SET access_link = ?
-                WHERE id = ?
-              `;
-
+              // Step 6: Save access link
               db.query(
-                updateAccessLinkQuery,
+                `UPDATE contracts SET access_link = ? WHERE id = ?`,
                 [approvalLink, contractId],
                 (updateErr) => {
                   if (updateErr) {
                     console.error("Failed to update access_link:", updateErr);
-                    return res
-                      .status(500)
-                      .json({ error: "Failed to update access link" });
+                    return res.status(500).json({ error: "Failed to update access link" });
                   }
 
-                  res.status(201).json({
+                  // ✅ DONE: Only generate contract, no schedule
+                  return res.status(201).json({
                     message: "Contract generated successfully",
                     fileUrl,
                     approvalLink,
+                    contractId,
                   });
                 }
               );
@@ -358,9 +371,7 @@ const generateContract = (req, res) => {
           );
         } catch (pdfErr) {
           console.error("PDF generation error:", pdfErr);
-          res
-            .status(500)
-            .json({ error: "Failed to generate contract PDF" });
+          res.status(500).json({ error: "Failed to generate contract PDF" });
         }
       }
     );
@@ -368,13 +379,11 @@ const generateContract = (req, res) => {
 };
 
 
-
-
 const getContract = (req, res) => {
   const { proposalId } = req.params;
 
   const query = `
-    SELECT contract_file_url 
+    SELECT contract_file_url, status, id 
     FROM contracts
     WHERE contracts.id = ?
   `;
@@ -632,6 +641,19 @@ const clientRejectContract = (req, res) => {
 
 }
 
+const getPaymentTerms = (req, res) => {
+
+  const query = `SELECT * FROM payment_terms`;
+
+  db.query(query, (err, results) => {
+    if(err){
+      console.error("error getting payment temrs", err)
+      return res.status(500).json({ error: "Failed to get payment terms" });
+    }
+    res.json(results);
+  })
+};
+
 module.exports = {
   createProposal,
   getProposalByToken,
@@ -642,5 +664,6 @@ module.exports = {
   uploadClientSignature,
   getApprovedContracts,
   sendContractToClient,
-  clientRejectContract
+  clientRejectContract,
+  getPaymentTerms
 };

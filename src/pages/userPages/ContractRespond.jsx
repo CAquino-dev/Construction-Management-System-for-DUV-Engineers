@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
 import { useParams } from 'react-router-dom';
+import axios from 'axios';
 
 const ContractRespond = () => {
   const { proposalId } = useParams();
-  const [contractUrl, setContractUrl] = useState('');
+  const [contract, setContract] = useState([]);
   const [loading, setLoading] = useState(true);
   const [responseStatus, setResponseStatus] = useState('');
   const [message, setMessage] = useState({ error: '', success: '' });
@@ -19,7 +20,7 @@ const ContractRespond = () => {
         const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/contract/${proposalId}`);
         if (response.ok) {
           const data = await response.json();
-          setContractUrl(data.contract_file_url);
+          setContract(data);
         } else {
           setMessage({ error: 'Failed to fetch contract.', success: '' });
         }
@@ -35,62 +36,66 @@ const ContractRespond = () => {
 
   const clearSignature = () => sigPad.current.clear();
 
-  const handleSaveSignature = async () => {
-    if (sigPad.current.isEmpty()) {
-      alert("Please provide a signature.");
-      return;
-    }
+const handleSaveSignature = async () => {
+  if (sigPad.current.isEmpty()) {
+    alert("Please provide a signature.");
+    return;
+  }
 
-    const canvas = sigPad.current.getCanvas();
-    const dataURL = canvas.toDataURL("image/png");
-    setTrimmedSignature(dataURL);
+  const canvas = sigPad.current.getCanvas();
+  const dataURL = canvas.toDataURL("image/png");
+  setTrimmedSignature(dataURL);
 
+  try {
+    // 1. Save signature
+    const response = await axios.post(
+      `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`,
+      {
+        base64Signature: dataURL,
+        proposalId: proposalId,
+      }
+    );
+
+    setResponseStatus("Successfully saved the signature!");
+    setMessage({ success: response.data.message, error: "" });
+    setShowSignPad(false);
+
+    // 2. Auto-generate payment schedule
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            base64Signature: dataURL,
-            proposalId: proposalId,
-          }),
-        }
+      const scheduleRes = await axios.post(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/payment-schedule/${proposalId}`
       );
 
-      const data = await response.json();
-      if (response.ok) {
-        setResponseStatus("Successfully saved the signature!");
-        setMessage({ success: data.message, error: "" });
-        setShowSignPad(false);
+      console.log("Payment schedule generated:", scheduleRes.data.schedule);
 
-        // 🔹 Auto-create first payment
-        const payRes = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/initial`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contractId: data.contractId, // must come from backend
-            }),
-          }
+      // 3. Send invoice for the first schedule automatically
+      try {
+        const invoiceRes = await axios.post(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/invoice/send-next`,
+          { contractId: scheduleRes.data.contractId } // use the returned contractId
         );
 
-        const payData = await payRes.json();
-        if (payRes.ok) {
-          // 🔹 Redirect client directly to PayMongo checkout page
-          window.location.href = payData.checkout_url;
-          return; // stop here so we don’t run the second redirect
-        }
-
-      } else {
-        setMessage({ error: data.error || "Signature upload failed.", success: "" });
+        console.log("Invoice sent:", invoiceRes.data);
+        setMessage(prev => ({ ...prev, success: `Invoice sent to client. ${invoiceRes.data.invoiceNumber}` }));
+      } catch (invErr) {
+        console.error("Invoice sending failed:", invErr.response?.data || invErr.message);
+        setMessage(prev => ({ ...prev, error: "Failed to send invoice." }));
       }
+
     } catch (err) {
-      setMessage({ error: "Error uploading signature.", success: "" });
+      console.error("Schedule generation failed:", err.response?.data || err.message);
+      setMessage(prev => ({ ...prev, error: "Failed to generate payment schedule." }));
     }
-  };
-  
+
+  } catch (err) {
+    setMessage({
+      error: err.response?.data?.error || "Signature upload failed.",
+      success: "",
+    });
+  }
+};
+
+
   const handleRejectContract = async () => {
     const notes = window.prompt("Please provide a reason for rejection:");
     if (!notes || !notes.trim()) {
@@ -124,36 +129,48 @@ const ContractRespond = () => {
     <div className="mt-20">
       <h1 className="text-2xl font-bold mb-4">Contract Review</h1>
 
-      {contractUrl ? (
-        <div className="bg-white p-4 shadow-lg rounded-lg border mb-6">
-          <iframe
-            src={`${import.meta.env.VITE_REACT_APP_API_URL}${contractUrl}`}
-            title="Contract PDF"
-            className="w-full h-[600px] rounded border"
-            allow="fullscreen"
-          />
-        </div>
+      {contract?.contract_file_url ? (
+        <iframe
+          src={`${import.meta.env.VITE_REACT_APP_API_URL}${contract.contract_file_url}`}
+          title="Contract PDF"
+          className="w-full h-[600px] rounded border"
+        />
       ) : (
         <p>No contract found for this proposal.</p>
       )}
 
-      <div className="flex gap-4 mb-4">
-        <button
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-          onClick={() => setShowSignPad(true)}
-        >
-          Sign Digitally
-        </button>
-        <button className="bg-green-600 text-white px-4 py-2 rounded">
-          Sign In Person
-        </button>
-        <button
-          className="bg-red-600 text-white px-4 py-2 rounded"
-          onClick={handleRejectContract}
-        >
-          Reject Contract
-        </button>
-      </div>
+      {/* Action buttons */}
+      {contract?.status === "draft" && (
+        <div className="flex gap-4 mb-4">
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={() => setShowSignPad(true)}
+          >
+            Sign Digitally
+          </button>
+          <button className="bg-green-600 text-white px-4 py-2 rounded">
+            Sign In Person
+          </button>
+          <button
+            className="bg-red-600 text-white px-4 py-2 rounded"
+            onClick={handleRejectContract}
+          >
+            Reject Contract
+          </button>
+        </div>
+      )}
+
+      {contract?.status === "signed" && (
+        <p className="text-green-700 font-medium mt-4">
+          ✅ This contract has already been signed.
+        </p>
+      )}
+
+      {contract?.status === "rejected" && (
+        <p className="text-red-700 font-medium mt-4">
+          ❌ This contract was rejected.
+        </p>
+      )}
 
       {showSignPad && (
         <div className="border p-4 bg-gray-50 rounded">
