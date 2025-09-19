@@ -47,87 +47,105 @@ const sendInvoiceForNextSchedule = (req, res) => {
 
       const invoiceNumber = generateInvoiceNumber(lastInv[0].lastId);
 
-      // 3. Create PayMongo checkout session
-      axios.post(
-        "https://api.paymongo.com/v1/checkout_sessions",
-        {
-          data: {
-            attributes: {
-              amount: schedule.amount * 100,
-              currency: "PHP",
-              description: `Invoice ${invoiceNumber} for Contract #${contractId}`,
-              line_items: [
-                {
-                  name: `Contract #${contractId} - ${invoiceNumber}`,
+      // 3. Insert invoice first
+      const insertInvoice = `
+        INSERT INTO invoices
+        (contract_id, payment_schedule_id, invoice_number, amount, status, created_at)
+        VALUES (?, ?, ?, ?, 'Sent', NOW())
+      `;
+      db.query(
+        insertInvoice,
+        [contractId, schedule.schedule_id, invoiceNumber, schedule.amount],
+        (insertErr, result) => {
+          if (insertErr) return res.status(500).json({ error: "Failed to save invoice" });
+
+          const invoiceId = result.insertId;
+
+          // 4. Create PayMongo Checkout Session with invoice_id metadata
+          axios.post(
+            "https://api.paymongo.com/v1/checkout_sessions",
+            {
+              data: {
+                attributes: {
                   amount: schedule.amount * 100,
                   currency: "PHP",
-                  quantity: 1,
+                  description: `Invoice ${invoiceNumber} for Contract #${contractId}`,
+                  line_items: [
+                    {
+                      name: `Contract #${contractId} - ${invoiceNumber}`,
+                      amount: schedule.amount * 100,
+                      currency: "PHP",
+                      quantity: 1,
+                    },
+                  ],
+                  payment_method_types: ["gcash", "paymaya", "card"],
+                  success_url: `${process.env.FRONTEND_URL}/payment/success`,
+                  cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
+                  metadata: {
+                    invoice_id: invoiceId,   // 🔑 used later in webhook
+                    contract_id: contractId,
+                  },
                 },
-              ],
-              payment_method_types: ["gcash", "paymaya", "card"],
-              success_url: `${process.env.FRONTEND_URL}/payment/success`,
-              cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
+              },
             },
-          },
-        },
-        {
-          headers: {
-            Authorization: `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64")}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
-      .then((paymongoRes) => {
-        const checkoutUrl = paymongoRes.data.data.attributes.checkout_url;
-        const checkoutSessionId = paymongoRes.data.data.id;
+            {
+              headers: {
+                Authorization: `Basic ${Buffer.from(process.env.PAYMONGO_SECRET_KEY + ":").toString("base64")}`,
+                "Content-Type": "application/json",
+              },
+            }
+          )
+          .then((paymongoRes) => {
+            const checkoutUrl = paymongoRes.data.data.attributes.checkout_url;
+            const checkoutSessionId = paymongoRes.data.data.id;
 
-        // 4. Insert invoice record with checkout session ID only
-        const insertInvoice = `
-          INSERT INTO invoices
-          (contract_id, payment_schedule_id, invoice_number, paymongo_checkout_url, paymongo_checkout_session_id, amount, status, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, 'Sent', NOW())
-        `;
-        db.query(
-          insertInvoice,
-          [contractId, schedule.schedule_id, invoiceNumber, checkoutUrl, checkoutSessionId, schedule.amount],
-          (insertErr) => {
-            if (insertErr) return res.status(500).json({ error: "Failed to save invoice" });
+            // 5. Update invoice with checkout session info
+            const updateInvoice = `
+              UPDATE invoices
+              SET paymongo_checkout_url = ?, paymongo_checkout_session_id = ?
+              WHERE id = ?
+            `;
+            db.query(updateInvoice, [checkoutUrl, checkoutSessionId, invoiceId], (updateErr) => {
+              if (updateErr) return res.status(500).json({ error: "Failed to update invoice with PayMongo details" });
 
-            // 5. Send email to client
-            const mailOptions = {
-              from: process.env.SMTP_EMAIL,
-              to: schedule.email,
-              subject: `Invoice ${invoiceNumber} - Contract #${contractId}`,
-              html: `
-                <p>Hi ${schedule.client_name},</p>
-                <p>Please pay your invoice for Contract #${contractId}:</p>
-                <p>Amount due: ₱${parseFloat(schedule.amount).toLocaleString()}</p>
-                <p>Due date: ${new Date(schedule.due_date).toLocaleDateString()}</p>
-                <p><a href="${checkoutUrl}">Click here to pay now</a></p>
-              `,
-            };
+              // 6. Send invoice email
+              const mailOptions = {
+                from: process.env.SMTP_EMAIL,
+                to: schedule.email,
+                subject: `Invoice ${invoiceNumber} - Contract #${contractId}`,
+                html: `
+                  <p>Hi ${schedule.client_name},</p>
+                  <p>Please pay your invoice for Contract #${contractId}:</p>
+                  <p>Amount due: ₱${parseFloat(schedule.amount).toLocaleString()}</p>
+                  <p>Due date: ${new Date(schedule.due_date).toLocaleDateString()}</p>
+                  <p><a href="${checkoutUrl}">Click here to pay now</a></p>
+                `,
+              };
 
-            transporter.sendMail(mailOptions, (mailErr) => {
-              if (mailErr) {
-                console.error("Failed to send email:", mailErr);
-                return res.status(500).json({ error: "Failed to send invoice email" });
-              }
+              transporter.sendMail(mailOptions, (mailErr) => {
+                if (mailErr) {
+                  console.error("❌ Failed to send email:", mailErr);
+                  return res.status(500).json({ error: "Failed to send invoice email" });
+                }
 
-              res.status(200).json({
-                message: "Invoice created and sent to client",
-                invoiceUrl: checkoutUrl,
-                invoiceNumber,
+                res.status(200).json({
+                  message: "Invoice created and sent to client",
+                  invoiceUrl: checkoutUrl,
+                  invoiceNumber,
+                });
               });
             });
-          }
-        );
-      })
-      .catch((apiErr) => {
-        console.error("PayMongo API error:", apiErr.response?.data || apiErr.message);
-        res.status(500).json({ error: "Failed to create PayMongo checkout session" });
-      });
+          })
+          .catch((apiErr) => {
+            console.error("❌ PayMongo API error:", apiErr.response?.data || apiErr.message);
+            res.status(500).json({ error: "Failed to create PayMongo checkout session" });
+          });
+        }
+      );
     });
   });
 };
+
+
 
 module.exports = { sendInvoiceForNextSchedule };
