@@ -18,8 +18,8 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   const [items, setItems] = useState(milestone.boq_items || []);
   const [selectedBoq, setSelectedBoq] = useState(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const permissions = JSON.parse(localStorage.getItem('permissions'));
-  const canModifyMto = permissions?.can_modify_mto === 'Y';
+  const permissions = JSON.parse(localStorage.getItem("permissions"));
+  const canModifyMto = permissions?.can_modify_mto === "Y";
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "N/A";
@@ -83,8 +83,8 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       toast.success(`Milestone marked as ${newStatus}`);
       setSelectedBoq(null);
     } catch (error) {
-      console.error('Update MTO failed:', error);
-      alert('Error: ' + error.message);
+      console.error("Update MTO failed:", error);
+      toast.error("Error: " + error.message);
     }
   };
 
@@ -93,10 +93,12 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     try {
       setStatusUpdating(true);
       const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/update-status`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/engr/milestones/update-status`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             milestone_id: milestone.id,
             status: newStatus,
@@ -105,12 +107,13 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       );
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to update status');
+      if (!response.ok)
+        throw new Error(data.error || "Failed to update status");
 
-      alert(`Milestone marked as ${newStatus}`);
+      toast.success(`Milestone marked as ${newStatus}`);
     } catch (error) {
-      console.error('Update status failed:', error);
-      alert('Error: ' + error.message);
+      console.error("Update status failed:", error);
+      toast.error("Error: " + error.message);
     } finally {
       setStatusUpdating(false);
     }
@@ -157,14 +160,14 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
           <div className="flex gap-3 mb-6">
             <button
               disabled={statusUpdating}
-              onClick={() => updateMilestoneStatus('PM Approved')}
+              onClick={() => updateMilestoneStatus("PM Approved")}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
             >
               PM Approve
             </button>
             <button
               disabled={statusUpdating}
-              onClick={() => updateMilestoneStatus('PM Rejected')}
+              onClick={() => updateMilestoneStatus("PM Rejected")}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
             >
               PM Reject
@@ -263,7 +266,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedBoq.mto_items?.length > 0 ? (
                   {selectedBoq.mto_items?.length > 0 ? (
                     selectedBoq.mto_items.map((mto, idx) => (
                       <tr key={idx} className="hover:bg-gray-50">
@@ -406,8 +408,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                     >
                       <Cell fill="#ef4444" />
                       <Cell fill="#22c55e" />
-                      <Cell fill="#ef4444" />
-                      <Cell fill="#22c55e" />
                     </Pie>
                     <Tooltip />
                   </PieChart>
@@ -430,18 +430,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   Confirm
                 </button>
               )}
-              {canModifyMto === true && (
-                <button
-                  onClick={updateMto}
-                  disabled={
-                    calculateMtoTotals(selectedBoq.mto_items) >
-                    selectedBoq.quantity * selectedBoq.unit_cost
-                  }
-                  className="mt-4 px-4 py-2 bg-[#4c735c] text-white rounded-md hover:bg-[#3a5b47] disabled:opacity-50"
-                >
-                  Confirm
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -449,4 +437,3 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     </div>
   );
 };
-
