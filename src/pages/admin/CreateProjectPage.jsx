@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Button } from "../../components/ui/button";
 
 const CreateProjectPage = () => {
   const { contractId } = useParams();
@@ -153,6 +154,14 @@ const CreateProjectPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      <Button
+        variant="link"
+        onClick={() => navigate(-1)}
+        className="mb-6 text-[#4c735c]"
+      >
+        ← Back
+      </Button>
+
       {/* Contract Overview */}
       <div className="border p-4 rounded mb-6 bg-white shadow rounded-lg">
         <h3 className="text-lg font-semibold mb-2">Contract Details</h3>

@@ -27,7 +27,9 @@ export const HR = () => {
     const fetchWorkers = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getForemanWorkers`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/foreman/getForemanWorkers`
         );
         const data = await response.json();
         setWorkers(data);
@@ -45,7 +47,7 @@ export const HR = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 mt-10">
+    <div className="container mx-auto p-6">
       <div className="bg-white shadow-md rounded-lg p-4">
         {selectedUser ? (
           <EmployeeDetails
