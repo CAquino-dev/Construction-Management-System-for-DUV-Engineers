@@ -60,7 +60,7 @@ const ViewProposals = () => {
   );
 
   return (
-    <div className="mt-6 mx-auto px-4 bg-white p-6 rounded shadow-md rounded-md">
+    <div className="mt-6 mx-auto px-4 bg-white p-6 shadow-md rounded-md">
       <h2 className="text-xl font-bold mb-4">Submitted Proposals</h2>
 
       {/* ✅ Success/Error Message */}
