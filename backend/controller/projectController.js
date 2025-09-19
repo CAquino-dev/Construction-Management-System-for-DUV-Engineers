@@ -426,7 +426,8 @@ const createProjectWithClient = (req, res) => {
     payment_schedule,
     project_type,
     assigned_users, // array of { user_id, role_in_project }
-    boq_items // array of { item_name, description, unit, quantity, unit_price }
+    boq_items,      // array of { item_name, description, unit, quantity, unit_price }
+    contractId      // ✅ new
   } = req.body;
 
   const defaultPassword = "client123"; 
@@ -455,8 +456,8 @@ const createProjectWithClient = (req, res) => {
           INSERT INTO engineer_projects (
             client_id, engineer_id, project_manager_id, project_name, description, start_date, end_date,
             status, budget, cost_breakdown, location, payment_schedule,
-            project_type, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, NOW(), NOW())
+            project_type, contract_id, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, NOW(), NOW())
         `;
 
         db.query(
@@ -473,7 +474,8 @@ const createProjectWithClient = (req, res) => {
             cost_breakdown,
             location,
             payment_schedule,
-            project_type
+            project_type,
+            contractId || null // ✅ added here
           ],
           (err, projectResult) => {
             if (err) {
@@ -511,7 +513,7 @@ const createProjectWithClient = (req, res) => {
 
               // ✅ Insert BOQ items if provided
               if (Array.isArray(boq_items) && boq_items.length > 0) {
-                console.log("📦 Received BOQ Items:", boq_items); // Debug incoming BOQ data
+                console.log("📦 Received BOQ Items:", boq_items);
 
                 const boqValues = boq_items.map(item => [
                   projectId,
@@ -520,7 +522,7 @@ const createProjectWithClient = (req, res) => {
                   item.unit,
                   item.quantity,
                   item.unit_cost,
-                  item.quantity * item.unit_cost, // total cost
+                  item.quantity * item.unit_cost,
                   new Date()
                 ]);
 
@@ -537,13 +539,15 @@ const createProjectWithClient = (req, res) => {
 
                   return res.status(200).json({
                     message: "Project, client, and BOQ created successfully",
-                    project_id: projectId
+                    project_id: projectId,
+                    contract_id: contractId || null
                   });
                 });
               } else {
                 return res.status(200).json({
                   message: "Project and client created successfully (no BOQ provided)",
-                  project_id: projectId
+                  project_id: projectId,
+                  contract_id: contractId || null
                 });
               }
             });
@@ -553,6 +557,7 @@ const createProjectWithClient = (req, res) => {
     );
   });
 };
+
 
 
 

@@ -21,8 +21,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   const permissions = JSON.parse(localStorage.getItem("permissions"));
   const canModifyMto = permissions?.can_modify_mto === "Y";
 
-  console.log("milestone", milestone);
-
   const formatDate = (dateStr) => {
     if (!dateStr) return "N/A";
     try {
@@ -158,22 +156,24 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
         </div>
 
         {/* PM Approval Buttons */}
-        <div className="flex gap-3 mb-6">
-          <button
-            disabled={statusUpdating}
-            onClick={() => updateMilestoneStatus("PM Approved")}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-          >
-            PM Approve
-          </button>
-          <button
-            disabled={statusUpdating}
-            onClick={() => updateMilestoneStatus("PM Rejected")}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-          >
-            PM Reject
-          </button>
-        </div>
+        {permissions.can_update_milestone === "Y" && (
+          <div className="flex gap-3 mb-6">
+            <button
+              disabled={statusUpdating}
+              onClick={() => updateMilestoneStatus("PM Approved")}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+            >
+              PM Approve
+            </button>
+            <button
+              disabled={statusUpdating}
+              onClick={() => updateMilestoneStatus("PM Rejected")}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+            >
+              PM Reject
+            </button>
+          </div>
+        )}
 
         {/* --- Data Analysis Section --- */}
         {comparisonData.length > 0 && (
@@ -418,16 +418,18 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
               </div>
 
               {/* Confirm */}
-              <button
-                onClick={updateMto}
-                disabled={
-                  calculateMtoTotals(selectedBoq.mto_items) >
-                  selectedBoq.quantity * selectedBoq.unit_cost
-                }
-                className="mt-4 px-4 py-2 bg-[#4c735c] text-white rounded-md hover:bg-[#3a5b47] disabled:opacity-50"
-              >
-                Confirm
-              </button>
+              {canModifyMto === true && (
+                <button
+                  onClick={updateMto}
+                  disabled={
+                    calculateMtoTotals(selectedBoq.mto_items) >
+                    selectedBoq.quantity * selectedBoq.unit_cost
+                  }
+                  className="mt-4 px-4 py-2 bg-[#4c735c] text-white rounded-md hover:bg-[#3a5b47] disabled:opacity-50"
+                >
+                  Confirm
+                </button>
+              )}
             </div>
           </div>
         )}

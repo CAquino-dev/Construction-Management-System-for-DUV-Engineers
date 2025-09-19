@@ -97,6 +97,7 @@ const CreateProjectPage = () => {
       client_email: contract.client_email,
       client_phone: contract.client_phone,
       client_address: contract.client_address || "",
+      contractId: contractId, 
       projectManagerId: userId,
       project_name: form.project_name,
       start_date: form.start_date,
@@ -188,7 +189,7 @@ const CreateProjectPage = () => {
         {contract.contract_file_url && (
           <p>
             <a
-              href={contract.contract_file_url}
+              href={`${import.meta.env.VITE_REACT_APP_API_URL}${contract.contract_file_url}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 underline"
