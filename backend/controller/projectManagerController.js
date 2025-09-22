@@ -62,11 +62,21 @@ const createProposal = (req, res) => {
       description,
       scope_of_work,
       budget_estimate,
-      timeline_estimate,
-      payment_term_id, // 👈 from frontend select
+      start_date,   // ✅ new
+      end_date,     // ✅ new
+      payment_term_id,
     } = req.body;
 
-    if (!lead_id || !title || !description || !scope_of_work || !budget_estimate || !timeline_estimate || !payment_term_id) {
+    if (
+      !lead_id ||
+      !title ||
+      !description ||
+      !scope_of_work ||
+      !budget_estimate ||
+      !start_date ||
+      !end_date ||
+      !payment_term_id
+    ) {
       return res.status(400).json({ error: "All required fields must be filled." });
     }
 
@@ -103,7 +113,8 @@ const createProposal = (req, res) => {
           description,
           scope_of_work,
           budget_estimate,
-          timeline_estimate,
+          start_date,
+          end_date,
           payment_term_id,
           payment_terms,
           file_url,
@@ -111,7 +122,7 @@ const createProposal = (req, res) => {
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
       `;
 
       const values = [
@@ -120,7 +131,8 @@ const createProposal = (req, res) => {
         description,
         JSON.stringify(parsedScopeOfWork),
         budget_estimate,
-        timeline_estimate,
+        start_date,
+        end_date,
         payment_term_id,
         payment_terms,
         fileUrl,
@@ -279,7 +291,8 @@ const generateContract = (req, res) => {
       description: data.description,
       scope_of_work: JSON.parse(data.scope_of_work || "[]"),
       budget_estimate: data.budget,
-      timeline_estimate: data.timeline,
+      start_date: data.start_date,   // ✅ use start_date
+      end_date: data.end_date,       // ✅ use end_date
       payment_terms:
         data.payment_term_label ||
         "50% down payment, 30% upon completion, 20% upon final acceptance",
@@ -291,7 +304,8 @@ const generateContract = (req, res) => {
       phone_number: data.phone_number,
       project_interest: data.project_interest,
       budget: data.budget,
-      timeline: data.timeline,
+      start_date: data.start_date,   // ✅ use start_date
+      end_date: data.end_date,       // ✅ use end_date
       lead_id: data.lead_id,
     };
 
@@ -322,11 +336,11 @@ const generateContract = (req, res) => {
           fs.writeFileSync(filePath, pdfBuffer);
           const fileUrl = `/contracts/${fileName}`;
 
-          // Step 5: Insert contract into DB
+          // Step 5: Insert contract into DB (now includes start/end dates)
           const insertQuery = `
             INSERT INTO contracts 
-            (lead_id, proposal_id, contract_file_url, total_amount, payment_term_id, payment_terms, paid_amount, payment_status)
-            VALUES (?, ?, ?, ?, ?, ?, 0, 'Unpaid')
+            (lead_id, proposal_id, contract_file_url, total_amount, payment_term_id, payment_terms, start_date, end_date, paid_amount, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'Unpaid')
           `;
 
           db.query(
@@ -338,6 +352,8 @@ const generateContract = (req, res) => {
               data.budget, // total_amount = proposal budget
               data.payment_term_id || null,
               formData.payment_terms,
+              data.start_date,
+              data.end_date,
             ],
             (insertErr, resultInsert) => {
               if (insertErr) {
@@ -358,7 +374,7 @@ const generateContract = (req, res) => {
                     return res.status(500).json({ error: "Failed to update access link" });
                   }
 
-                  // ✅ DONE: Only generate contract, no schedule
+                  // ✅ DONE
                   return res.status(201).json({
                     message: "Contract generated successfully",
                     fileUrl,
@@ -453,7 +469,7 @@ const uploadClientSignature = (req, res) => {
         const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
 
         const pages = pdfDoc.getPages();
-        const firstPage = pages[0];
+        const firstPage = pages[1];
         const { width } = firstPage.getSize();
         const imageDims = signatureImage.scale(0.25);
 
@@ -512,10 +528,13 @@ const getApprovedContracts = (req, res) => {
       contracts.created_at AS contract_created_at,
       contracts.access_link,
       contracts.approval_status,
+      contracts.start_date AS contract_start_date,
+      contracts.end_date AS contract_end_date,
 
       proposals.title AS proposal_title,
       proposals.budget_estimate,
-      proposals.timeline_estimate,
+      proposals.start_date AS proposal_start_date,
+      proposals.end_date AS proposal_end_date,
       proposals.scope_of_work,
       proposals.status AS proposal_status,
 
@@ -545,6 +564,7 @@ const getApprovedContracts = (req, res) => {
     res.json(contracts);
   });
 };
+
 
 const sendContractToClient = (req, res) => {
   const contractId = req.params.id;

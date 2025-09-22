@@ -283,13 +283,12 @@ function createInitialPayment(req, res) {
   });
 }
 
-
 const generatePaymentSchedule = (req, res) => {
   const { contractId } = req.params;
 
-  // 1. Get contract
+  // 1. Get contract (with start and end date)
   db.query(
-    "SELECT id, total_amount, contract_signed_at, payment_term_id FROM contracts WHERE id = ? AND status = 'signed'",
+    "SELECT id, total_amount, contract_signed_at, payment_term_id, start_date, end_date FROM contracts WHERE id = ? AND status = 'signed'",
     [contractId],
     (err, contractRows) => {
       if (err) {
@@ -302,6 +301,13 @@ const generatePaymentSchedule = (req, res) => {
       }
 
       const contract = contractRows[0];
+
+      // Validate dates
+      if (!contract.start_date || !contract.end_date) {
+        return res.status(400).json({
+          message: "Contract does not have valid start or end date",
+        });
+      }
 
       // 2. Get payment term rules
       db.query(
@@ -317,17 +323,29 @@ const generatePaymentSchedule = (req, res) => {
             return res.status(400).json({ message: "No payment rules defined for this contract" });
           }
 
+          // ✅ Validate total percentage = 100
+          const totalPercentage = rules.reduce((sum, r) => sum + parseFloat(r.percentage), 0);
+          if (Math.abs(totalPercentage - 100) > 0.01) { // allow floating-point tolerance
+            return res.status(400).json({
+              message: `Invalid payment rules: total percentage = ${totalPercentage}%. It must equal 100%.`,
+            });
+          }
+
           // 3. Generate schedule rows
-          const scheduleRows = rules.map((rule) => {
+          const scheduleRows = rules.map((rule, index) => {
             let dueDate = null;
 
-            if (rule.trigger_event === "signing") {
+            if (index === rules.length - 1) {
+              // ✅ Last milestone always at contract end date
+              dueDate = contract.end_date;
+            } else if (rule.trigger_event === "signing") {
               dueDate = contract.contract_signed_at;
+            } else if (rule.trigger_event === "start") {
+              dueDate = contract.start_date;
             } else if (rule.trigger_event === "completion") {
-              // placeholder: later tie this to project_end_date
-              dueDate = contract.contract_signed_at;
+              dueDate = contract.end_date;
             } else if (rule.trigger_event === "monthly") {
-              const d = new Date(contract.contract_signed_at);
+              const d = new Date(contract.start_date);
               d.setMonth(d.getMonth() + (rule.sequence - 1));
               dueDate = d.toISOString().slice(0, 10);
             }
@@ -353,7 +371,6 @@ const generatePaymentSchedule = (req, res) => {
                 return res.status(500).json({ message: "Database error" });
               }
 
-              // Return contractId along with schedule
               return res.json({
                 message: "Payment schedule generated",
                 contractId: contract.id,

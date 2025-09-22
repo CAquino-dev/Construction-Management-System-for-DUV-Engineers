@@ -395,8 +395,6 @@ const updateFinanceApprovalStatus = (req, res) => {
   });
 };
 
-
-
 const getContracts = (req, res) => {
   const query = `
     SELECT 
@@ -407,10 +405,13 @@ const getContracts = (req, res) => {
       contracts.created_at AS contract_created_at,
       contracts.access_link,
       contracts.approval_status,
+      contracts.start_date AS contract_start_date,
+      contracts.end_date AS contract_end_date,
 
       proposals.title AS proposal_title,
       proposals.budget_estimate,
-      proposals.timeline_estimate,
+      proposals.start_date AS proposal_start_date,
+      proposals.end_date AS proposal_end_date,
       proposals.scope_of_work,
       proposals.status AS proposal_status,
 
@@ -432,7 +433,6 @@ const getContracts = (req, res) => {
     res.json(results);
   });
 };
-
 
 const approveContract = (req, res) => {
   const contractId = req.params.id;

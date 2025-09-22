@@ -559,9 +559,6 @@ const createProjectWithClient = (req, res) => {
 };
 
 
-
-
-
 const getContractById = (req, res) => {
   const contractId = req.params.contractId;
 
@@ -570,7 +567,8 @@ const getContractById = (req, res) => {
       c.*, 
       p.title AS proposal_title, 
       p.budget_estimate, 
-      p.timeline_estimate,
+      p.start_date AS proposal_start_date,
+      p.end_date AS proposal_end_date,
       l.client_name AS client_name,
       l.email AS client_email,
       l.phone_number AS client_phone
@@ -593,6 +591,7 @@ const getContractById = (req, res) => {
     res.json(results[0]);
   });
 };
+
 
 const createMilestone = (req, res) => {
     const { project_id, title, details, start_date, due_date, items } = req.body;

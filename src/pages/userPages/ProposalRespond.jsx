@@ -55,7 +55,8 @@ const ProposalRespond = () => {
         <p><strong>Title:</strong> {proposal.title}</p>
         <p><strong>Description:</strong> {proposal.description}</p>
         <p><strong>Budget Estimate:</strong> ₱{proposal.budget_estimate}</p>
-        <p><strong>Timeline:</strong> {proposal.timeline_estimate}</p>
+        <p><strong>Start Date:</strong> {new Date(proposal.start_date).toLocaleDateString()}</p>
+        <p><strong>End Date:</strong> {new Date(proposal.end_date).toLocaleDateString()}</p>
         <p><strong>Payment Terms:</strong> {proposal.payment_terms}</p>
 
         <div>
