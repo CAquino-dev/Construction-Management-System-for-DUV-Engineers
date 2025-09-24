@@ -19,6 +19,7 @@ const chatRoute = require('./routes/chatRoute');
 const foremanRoute = require('./routes/foremanRoute');
 const invoiceRoute = require('./routes/invoiceRoutes');
 const webhookRoute = require('./routes/webhookRoute');
+const inventoryRoute = require('./routes/inventoryRoute');
  
 const PORT = process.env.PORT || 5000; // fallback if env not set
  
@@ -56,6 +57,7 @@ app.use("/api/chatAi", chatRoute);
 app.use("/api/foreman", foremanRoute);
 app.use("/api/invoice", invoiceRoute);
 app.use("/api/webhooks", webhookRoute);
+app.use("/api/inventory", inventoryRoute);
 
 app.get("/", (req, res) => {
     res.send("API is running!");
