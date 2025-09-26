@@ -63,30 +63,41 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     });
   };
 
-  const updateMto = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/mto`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            milestone_boq_id: selectedBoq.milestone_boq_id,
-            mto_items: selectedBoq.mto_items,
-          }),
-        }
-      );
+const updateMto = async () => {
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/mto`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          milestone_boq_id: selectedBoq.milestone_boq_id,
+          mto_items: selectedBoq.mto_items,
+        }),
+      }
+    );
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to update MTO");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Failed to update MTO");
 
-      toast.success(`Milestone marked as ${newStatus}`);
-      setSelectedBoq(null);
-    } catch (error) {
-      console.error("Update MTO failed:", error);
-      toast.error("Error: " + error.message);
-    }
-  };
+    // ✅ update the items state so UI refreshes with new data
+    setItems((prev) =>
+      prev.map((item) =>
+        item.milestone_boq_id === selectedBoq.milestone_boq_id
+          ? { ...item, mto_items: selectedBoq.mto_items }
+          : item
+      )
+    );
+
+    // close modal
+    setSelectedBoq(null);
+    toast.success("MTO updated successfully!");
+  } catch (error) {
+    console.error("Update MTO failed:", error);
+    toast.error("Error: " + error.message);
+  }
+};
+
 
   // --- Update Milestone Status ---
   const updateMilestoneStatus = async (newStatus) => {
