@@ -50,6 +50,7 @@ import { MyProjectTaskBreakdown } from "./pages/admin/MyProjectTaskBreakdown";
 import { AttendancePage } from "./pages/admin/AttendancePage";
 import EmployeeProfile from "./pages/admin/EmployeeProfile";
 import PaymentPage from "./pages/admin/PaymentPage";
+import RequestPage from "./pages/admin/RequestPage";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -156,6 +157,10 @@ const App = () => {
             <Route
               path="/admin-dashboard/profile"
               element={<EmployeeProfile />}
+            />
+            <Route
+              path="ItemRequest"
+              element={<RequestPage />}
             />
             <Route path="payment/:paymentId" element={<PaymentPage />} />
           </Route>
