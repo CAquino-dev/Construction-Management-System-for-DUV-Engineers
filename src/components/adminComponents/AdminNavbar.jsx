@@ -17,6 +17,7 @@ import {
   HardHat,
   Clock,
   Briefcase,
+  ClipboardText,
 } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
@@ -65,6 +66,11 @@ const AdminNavbar = ({ children }) => {
       name: "Attendance Monitoring",
       icon: <Clock size={20} />,
       href: "/admin-dashboard/AttendanceMonitoring",
+    },
+    {
+      name: "Item Request",
+      icon: <ClipboardText size={20} />,
+      href: "/admin-dashboard/ItemRequest",
     },
   ];
 
