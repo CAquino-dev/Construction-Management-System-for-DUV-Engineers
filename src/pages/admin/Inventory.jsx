@@ -4,9 +4,10 @@ import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Pencil, Trash2 } from "lucide-react";
 import axios from "axios";
+import { toast } from "sonner";
 
 export const Inventory = () => {
-  const [tab, setTab] = useState("inventory"); // 🔹 NEW: active tab
+  const [tab, setTab] = useState("inventory");
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({
     name: "",
@@ -17,81 +18,88 @@ export const Inventory = () => {
   });
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
+  const [requests, setRequests] = useState([]);
+  const userId = localStorage.getItem('userId');
 
-  // 🔹 Sample item requests
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      requester: "John Doe",
-      item: "Bond Paper A4",
-      quantity: 5,
-      status: "Pending",
-      date: "2025-09-20",
-    },
-    {
-      id: 2,
-      requester: "Jane Smith",
-      item: "Printer Ink (Black)",
-      quantity: 2,
-      status: "Approved",
-      date: "2025-09-19",
-    },
-    {
-      id: 3,
-      requester: "Mike Johnson",
-      item: "Staplers",
-      quantity: 10,
-      status: "Rejected",
-      date: "2025-09-18",
-    },
-    {
-      id: 4,
-      requester: "Emily Davis",
-      item: "Whiteboard Markers",
-      quantity: 12,
-      status: "Pending",
-      date: "2025-09-21",
-    },
-  ]);
+  // 🔹 Popup state
+  const [isOpen, setIsOpen] = useState(false);
+  const [action, setAction] = useState("");
+  const [reportId, setReportId] = useState("");
+  const [comment, setComment] = useState("");
 
+  const openPopup = (action, reportId) => {
+    setIsOpen(true);
+    setAction(action);
+    setReportId(reportId);
+    setComment("");
+  };
 
   const fetchInventoryItems = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/getInventoryItems`
       );
-      if (res.data) {
-        setItems(res.data);
-      }
+      if (res.data) setItems(res.data);
     } catch (error) {
       console.error("Error fetching items:", error);
     }
   };
 
+  const fetchItemRequests = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/getRequests`
+      );
+      if (res.data) setRequests(res.data);
+    } catch (error) {
+      console.error("Error fetching requests", error);
+    }
+  };
+
+  const handleClaim = async (requestId) => {
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/claimItem/${requestId}`,
+        { userId }
+      );
+      toast.success("Item claimed successfully");
+      fetchItemRequests();
+    } catch (error) {
+      toast.error("Error claiming item");
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchInventoryItems();
+    fetchItemRequests();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.category || !form.quantity || !form.unit) return;
 
-    if (editingId !== null) {
-      await axios.put(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/updateInventoryItem/${editingId}`,
-        form
-      );
+    try {
+      if (editingId !== null) {
+        await axios.put(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/updateInventoryItem/${editingId}`,
+          form
+        );
+        toast.success("Item updated successfully");
+        setEditingId(null);
+      } else {
+        await axios.post(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/addInventoryItem`,
+          form
+        );
+        toast.success("Item added successfully");
+      }
       fetchInventoryItems();
-      setEditingId(null);
-    } else {
-      await axios.post(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/addInventoryItem`,
-        form
-      );
-
-      fetchInventoryItems();
+      setForm({ name: "", category: "", quantity: "", unit: "", description: "" });
+    } catch (err) {
+      toast.error("Error saving item");
+      console.error(err);
     }
-    setForm({ name: "", category: "", quantity: "", unit: "", description: "" });
   };
 
   const handleEdit = (item) => {
@@ -109,6 +117,35 @@ export const Inventory = () => {
     setItems(items.filter((item) => item.id !== id));
   };
 
+  // 🔹 Update request status (Approve / Reject)
+  const updateRequestStatus = async (id, status, rejection_note) => {
+    try {
+      await axios.put(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/updateRequest/${id}`,
+        { status, rejection_note }
+      );
+      toast.success(`Request ${status.toLowerCase()} successfully`);
+      fetchItemRequests();
+    } catch (err) {
+      console.error("Error updating request status:", err);
+      toast.error("Failed to update request");
+    }
+  };
+
+  const handleReport = () => {
+    if (action === "Approved") {
+      updateRequestStatus(reportId, "Approved", null);
+    } else if (action === "Rejected") {
+      if (!comment.trim()) {
+        toast.error("Please provide a rejection note");
+        return;
+      }
+      updateRequestStatus(reportId, "Rejected", comment);
+    }
+    setIsOpen(false);
+    setComment("");
+  };
+
   const filteredItems = items.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -117,7 +154,7 @@ export const Inventory = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">📦 Inventory Management</h1>
 
-      {/* 🔹 Tabs */}
+      {/* Tabs */}
       <div className="flex gap-4 mb-6">
         <Button
           variant={tab === "inventory" ? "default" : "outline"}
@@ -133,7 +170,7 @@ export const Inventory = () => {
         </Button>
       </div>
 
-      {/* 🔹 Inventory Items Tab */}
+      {/* Inventory Items */}
       {tab === "inventory" && (
         <>
           {/* Search */}
@@ -241,7 +278,7 @@ export const Inventory = () => {
         </>
       )}
 
-      {/* 🔹 Item Requests Tab */}
+      {/* Item Requests */}
       {tab === "requests" && (
         <Card>
           <CardContent>
@@ -252,6 +289,7 @@ export const Inventory = () => {
                   <th className="border p-2 text-left">Requester</th>
                   <th className="border p-2 text-left">Item</th>
                   <th className="border p-2 text-left">Quantity</th>
+                  <th className="border p-2 text-left">Notes</th>
                   <th className="border p-2 text-left">Status</th>
                   <th className="border p-2 text-left">Date</th>
                   <th className="border p-2 text-center">Actions</th>
@@ -261,49 +299,45 @@ export const Inventory = () => {
                 {requests.map((req) => (
                   <tr key={req.id}>
                     <td className="border p-2">{req.id}</td>
-                    <td className="border p-2">{req.requester}</td>
-                    <td className="border p-2">{req.item}</td>
+                    <td className="border p-2">{req.requester_name}</td>
+                    <td className="border p-2">{req.item_name}</td>
                     <td className="border p-2">{req.quantity}</td>
+                    <td className="border p-2">{req.notes}</td>
                     <td
-                      className={`border p-2 font-semibold ${
-                        req.status === "Approved"
+                      className={`border p-2 font-semibold ${req.status === "Approved"
                           ? "text-green-600"
                           : req.status === "Rejected"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                      }`}
+                            ? "text-red-600"
+                            : "text-yellow-600"
+                        }`}
                     >
                       {req.status}
                     </td>
-                    <td className="border p-2">{req.date}</td>
+                    <td className="border p-2">{new Date(req.request_date).toLocaleDateString()}</td>
                     <td className="border p-2 flex gap-2 justify-center">
-                      <Button
+                      <Button 
                         size="sm"
                         variant="outline"
-                        onClick={() =>
-                          setRequests((prev) =>
-                            prev.map((r) =>
-                              r.id === req.id ? { ...r, status: "Approved" } : r
-                            )
-                          )
-                        }
-                        disabled={req.status === "Approved"}
+                        onClick={() => openPopup("Approved", req.id)}
+                        disabled={req.status !== "Pending"}
                       >
                         Approve
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() =>
-                          setRequests((prev) =>
-                            prev.map((r) =>
-                              r.id === req.id ? { ...r, status: "Rejected" } : r
-                            )
-                          )
-                        }
-                        disabled={req.status === "Rejected"}
+                        onClick={() => openPopup("Rejected", req.id)}
+                        disabled={req.status !== "Pending"}
                       >
                         Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 text-white hover:bg-green-700"
+                        onClick={() => handleClaim(req.id)}
+                        disabled={req.status !== "Approved" || req.status === "Claimed"}
+                      >
+                        Mark as Claimed
                       </Button>
                     </td>
                   </tr>
@@ -312,6 +346,42 @@ export const Inventory = () => {
             </table>
           </CardContent>
         </Card>
+      )}
+
+      {/* 🔹 Popup Modal for Approve / Reject */}
+      {isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">
+              {action === "Approved" ? "Approve Request" : "Reject Request"}
+            </h2>
+
+            {action === "Rejected" && (
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Write your rejection reason..."
+                rows={4}
+              ></textarea>
+            )}
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReport}
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
