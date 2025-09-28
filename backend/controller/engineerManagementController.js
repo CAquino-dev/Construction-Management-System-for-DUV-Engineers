@@ -298,12 +298,11 @@ const createMilestone = (req, res) => {
           item.description,
           item.unit,
           item.quantity,
-          item.unit_cost
         ]);
 
         const mtoQuery = `
           INSERT INTO milestone_mto
-          (milestone_boq_id, description, unit, quantity, unit_cost)
+          (milestone_boq_id, description, unit, quantity)
           VALUES ?
         `;
 

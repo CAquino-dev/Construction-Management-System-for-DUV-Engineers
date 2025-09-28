@@ -559,9 +559,6 @@ const createProjectWithClient = (req, res) => {
 };
 
 
-
-
-
 const getContractById = (req, res) => {
   const contractId = req.params.contractId;
 
@@ -570,7 +567,8 @@ const getContractById = (req, res) => {
       c.*, 
       p.title AS proposal_title, 
       p.budget_estimate, 
-      p.timeline_estimate,
+      p.start_date AS proposal_start_date,
+      p.end_date AS proposal_end_date,
       l.client_name AS client_name,
       l.email AS client_email,
       l.phone_number AS client_phone
@@ -593,6 +591,7 @@ const getContractById = (req, res) => {
     res.json(results[0]);
   });
 };
+
 
 const createMilestone = (req, res) => {
     const { project_id, title, details, start_date, due_date, items } = req.body;
@@ -839,22 +838,22 @@ const submitReport = (req, res) => {
     }
 
     const { projectId } = req.params;
-    const { title, summary, created_by } = req.body;
+    const { title, summary, milestoneId, created_by, } = req.body;
 
-    if (!projectId || !title || !created_by) {
+    if (!projectId || !title || !created_by || !milestoneId) {
       return res.status(400).json({ error: "projectId, title, and created_by are required" });
     }
 
     const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
 
     const query = `
-      INSERT INTO reports (project_id, title, summary, file_url, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, NOW())
+      INSERT INTO reports (project_id, title, summary, file_url, milestone_id, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
 
     db.query(
       query,
-      [projectId, title, summary || null, fileUrl, created_by],
+      [projectId, title, summary || null, fileUrl, milestoneId, created_by],
       (err, result) => {
         if (err) {
           console.error("Error inserting report:", err);
@@ -869,6 +868,7 @@ const submitReport = (req, res) => {
             title,
             summary,
             file_url: fileUrl,
+            milestoneId,
             created_by,
             created_at: new Date(),
           },

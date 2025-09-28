@@ -87,7 +87,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
       ...prev,
       [boqId]: [
         ...(prev[boqId] || []),
-        { description: "", unit: "", quantity: "", unit_cost: "" },
+        { description: "", unit: "", quantity: ""},
       ],
     }));
   };
@@ -230,20 +230,6 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
                           )
                         }
                         className="border p-1 text-sm w-20"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Unit Cost"
-                        value={item.unit_cost}
-                        onChange={(e) =>
-                          updateMtoItem(
-                            boq.id,
-                            index,
-                            "unit_cost",
-                            e.target.value
-                          )
-                        }
-                        className="border p-1 text-sm w-24"
                       />
                       <button
                         type="button"

@@ -9,7 +9,8 @@ const CreateProposal = () => {
     description: "",
     scope_of_work: [""],
     budget_estimate: "",
-    timeline_estimate: "",
+    start_date: "",
+    end_date: "",
     payment_terms: "",
   });
   const [pdfFile, setPdfFile] = useState(null);
@@ -99,7 +100,8 @@ const CreateProposal = () => {
     data.append("description", formData.description);
     data.append("scope_of_work", JSON.stringify(formData.scope_of_work));
     data.append("budget_estimate", formData.budget_estimate);
-    data.append("timeline_estimate", formData.timeline_estimate);
+    data.append("start_date", formData.start_date);
+    data.append("end_date", formData.end_date);
     data.append("payment_term_id", formData.payment_terms); // the ID from select
     data.append("payment_terms", paymentTerms.find(t => t.id == formData.payment_terms)?.name || "");
     data.append("proposal_file", pdfFile);
@@ -132,8 +134,8 @@ const CreateProposal = () => {
         title: "",
         description: "",
         scope_of_work: [""],
-        budget_estimate: "",
-        timeline_estimate: "",
+        start_date: "",
+        end_date: "",
         payment_terms: "",
       });
       setPdfFile(null);
@@ -282,15 +284,26 @@ const CreateProposal = () => {
                 required
                 className="border p-2 rounded w-full"
               />
-              <input
-                type="text"
-                name="timeline_estimate"
-                placeholder="Estimated Timeline"
-                value={formData.timeline_estimate}
-                onChange={handleChange}
-                required
-                className="border p-2 rounded w-full"
-              />
+                <div>
+                  <label className="block font-medium">Start Date</label>
+                  <input
+                    type="date"
+                    name="start_date"
+                    value={formData.start_date}
+                    onChange={handleChange}
+                    className="border rounded-lg p-2 w-full bg-gray-100"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium">End Date</label>
+                  <input
+                    type="date"
+                    name="end_date"
+                    value={formData.end_date}
+                    onChange={handleChange}
+                    className="border rounded-lg p-2 w-full bg-gray-100"
+                  />
+                </div>
               <div>
                 <label className="block font-medium mb-1">Payment Terms</label>
                 <select
