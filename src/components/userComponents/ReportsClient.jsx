@@ -21,31 +21,54 @@ export const ReportsClient = ({ selectedProject }) => {
   }, [selectedProject]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+
       {reports.length === 0 ? (
-        <p className="text-gray-500">No reports available yet.</p>
+        <p className="text-gray-500 text-sm">No reports submitted yet.</p>
       ) : (
-        <ul className="divide-y divide-gray-200">
+        <div className="grid gap-4 md:grid-cols-2">
           {reports.map((report) => (
-            <li key={report.id} className="py-3">
-              <p className="font-medium text-gray-700">{report.title}</p>
-              <p className="text-sm text-gray-500">
-                {new Date(report.created_at).toLocaleDateString()}
+            <div
+              key={report.id}
+              className="bg-white shadow rounded-lg p-4 border border-gray-200 hover:shadow-md transition"
+            >
+              {/* Header */}
+              <div className="flex justify-between items-center mb-2">
+                <h5 className="font-semibold text-gray-900">{report.title}</h5>
+                <span className="text-xs text-gray-500">
+                  {new Date(report.created_at).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* Summary */}
+              <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+                {report.summary}
               </p>
-              <p className="text-gray-600 mt-1">{report.summary}</p>
+
+              {/* File link */}
               {report.file_url && (
                 <a
-                  href={report.file_url}
+                  href={`${import.meta.env.VITE_REACT_APP_API_URL}${report.file_url}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#4c735c] text-sm underline"
+                  className="inline-block text-sm text-[#4c735c] font-medium hover:underline"
                 >
-                  View Full Report
+                  📎 View Attached File
                 </a>
               )}
-            </li>
+
+              {/* Milestone info */}
+              {report.milestone_title && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Linked to milestone:{" "}
+                  <span className="font-medium text-gray-700">
+                    {report.milestone_title}
+                  </span>
+                </p>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -1,66 +1,88 @@
-// src/components/engineerComponents/EngineerReports.jsx
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 export const EngineerReports = ({ selectedProject }) => {
   const [reports, setReports] = useState([]);
-  const [commentInputs, setCommentInputs] = useState({}); // track input per report
+  const [comments, setComments] = useState({});
+  const [newComment, setNewComment] = useState("");
+  const [activeReport, setActiveReport] = useState(null);
+
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const reportsRes = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${selectedProject.id}`
-        );
-        if (reportsRes.ok) {
-          const reportsData = await reportsRes.json();
-          setReports(reportsData);
-        }
-      } catch (err) {
-        console.error("Error fetching reports:", err);
-      }
-    };
-    fetchReports();
+    getReports();
   }, [selectedProject.id]);
 
-  // Handle input typing
-  const handleInputChange = (reportId, value) => {
-    setCommentInputs((prev) => ({ ...prev, [reportId]: value }));
-  };
-
-  // Submit comment
-  const handleAddComment = async (reportId) => {
-    const content = commentInputs[reportId]?.trim();
-    if (!content) return;
-
+  // Fetch reports
+  const getReports = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/addComment`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            report_id: reportId,
-            content,
-            author_type: "Engineer", // so backend knows
-          }),
-        }
+      const res = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${selectedProject.id}`
       );
-
-      if (res.ok) {
-        const newComment = await res.json();
-        setReports((prev) =>
-          prev.map((r) =>
-            r.id === reportId
-              ? { ...r, comments: [...(r.comments || []), newComment] }
-              : r
-          )
-        );
-        setCommentInputs((prev) => ({ ...prev, [reportId]: "" }));
-      }
-    } catch (err) {
-      console.error("Error adding comment:", err);
+      setReports(res.data);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
     }
   };
+
+  // Fetch comments
+  const loadComments = async (reportId) => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/getReportComments/${reportId}`
+      );
+      setComments((prev) => ({ ...prev, [reportId]: res.data }));
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  };
+
+  // Open modal
+  const openModal = (report) => {
+    setActiveReport(report);
+    setNewComment("");
+    if (!comments[report.id]) {
+      loadComments(report.id);
+    }
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setActiveReport(null);
+    setNewComment("");
+  };
+
+  // Add comment
+const handleAddComment = async (e) => {
+  e.preventDefault();
+  if (!newComment.trim() || !activeReport) return;
+
+  try {
+    const res = await axios.post(
+      `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/addComment/${activeReport.id}`,
+      {
+        milestoneId: null, // explicitly send null
+        userId,
+        comment: newComment.trim(),
+      }
+    );
+
+    const savedComment = res.data;
+
+    setComments((prev) => ({
+      ...prev,
+      [activeReport.id]: [
+        ...(prev[activeReport.id] || []),
+        savedComment,
+      ],
+    }));
+
+    setNewComment("");
+  } catch (err) {
+    console.error("Error adding comment:", err);
+  }
+};
+
 
   return (
     <div className="space-y-6">
@@ -108,48 +130,78 @@ export const EngineerReports = ({ selectedProject }) => {
                 </p>
               )}
 
-              {/* Comments section */}
-              <div className="mt-3 border-t pt-3">
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  Comments:
-                </p>
-                {report.comments && report.comments.length > 0 ? (
-                  <ul className="space-y-1">
-                    {report.comments.map((c) => (
-                      <li
-                        key={c.id}
-                        className="text-xs text-gray-600 border-b pb-1"
-                      >
-                        <span className="font-semibold">{c.author_type}: </span>
-                        {c.content}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-gray-400">No comments yet.</p>
-                )}
-
-                {/* Add comment box */}
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Write a comment..."
-                    value={commentInputs[report.id] || ""}
-                    onChange={(e) =>
-                      handleInputChange(report.id, e.target.value)
-                    }
-                    className="flex-1 border rounded px-2 py-1 text-sm"
-                  />
-                  <button
-                    onClick={() => handleAddComment(report.id)}
-                    className="px-3 py-1 text-sm bg-[#4c735c] text-white rounded hover:bg-[#3a5c49]"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
+              {/* Open Comments */}
+              <button
+                onClick={() => openModal(report)}
+                className="mt-3 text-xs text-blue-500 underline"
+              >
+                View Comments
+              </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Comments Modal */}
+      {activeReport && (
+        <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold mb-4">
+              Comments for: {activeReport.title}
+            </h3>
+
+            {/* Comments list */}
+            <div className="max-h-96 overflow-y-auto mb-4 space-y-3">
+              {comments[activeReport.id]?.length > 0 ? (
+                comments[activeReport.id].map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-start gap-3 border-b pb-2"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-semibold">
+                      {c.user_name ? c.user_name.charAt(0) : "?"}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-800">
+                          {c.user_id == userId ? "You" : c.user_name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ({c.role_name})
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm">{c.comment}</p>
+                      <span className="text-xs text-gray-400">
+                        {new Date(c.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400">No comments yet.</p>
+              )}
+            </div>
+
+            {/* Add comment */}
+            <form onSubmit={handleAddComment} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Write a comment..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="flex-1 border rounded-lg p-2 text-sm"
+              />
+              <button className="bg-[#4c735c] text-white px-4 rounded-lg text-sm">
+                Send
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

@@ -248,16 +248,6 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
           Milestones
         </button>
         <button
-          onClick={() => handleTabClick('reports')}
-          className={`text-lg font-medium cursor-pointer p-2 ${
-            activeTab === 'reports'
-              ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
-              : 'text-gray-500'
-          }`}
-        >
-          Reports
-        </button>
-        <button
           onClick={() => handleTabClick('legals')}
           className={`text-lg font-medium cursor-pointer p-2 ${
             activeTab === 'legals'
@@ -267,28 +257,6 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
         >
           Legals
         </button>
-        {/* <button
-          onClick={() => handleTabClick('expenses')}
-          className={`text-lg font-medium cursor-pointer p-2 ${
-            activeTab === 'expenses'
-              ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
-              : 'text-gray-500'
-          }`}
-        >
-          Expenses Tracking
-        </button> */}
-
-        {/* <button
-          onClick={() => handleTabClick('supply')}
-          className={`text-lg font-medium cursor-pointer p-2 ${
-            activeTab === 'supply'
-              ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
-              : 'text-gray-500'
-          }`}
-        >
-          Supply
-        </button> */}
-
         <button
           onClick={() => handleTabClick('chat')}
           className={`text-lg font-medium cursor-pointer p-2 ${
@@ -335,26 +303,6 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
                   <ClientLegals selectedProject={selectedProject} />
               </div>
           )}
-          {activeTab === 'reports' && (
-              <div className='p-4'>
-                  <h4 className='text-lg font-semibold'>Project Reports</h4>
-                  <ReportsClient selectedProject={selectedProject} />
-              </div>
-          )}
-
-          {/* {activeTab === 'expenses' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold">Expenses</h4>
-              <ExpensesClient selectedProject={selectedProject} />
-            </div>
-          )} */}
-
-          {/* {activeTab === 'supply' && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold">Supply</h4>
-              <SupplyClient selectedProject={selectedProject} />
-            </div>
-          )} */}
 
           {activeTab === 'chat' && (
             <div className="space-y-4">
