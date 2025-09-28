@@ -176,7 +176,10 @@ const CreateProjectPage = () => {
           {parseFloat(contract.budget_estimate).toLocaleString()}
         </p>
         <p>
-          <strong>Timeline:</strong> {contract.timeline_estimate}
+          <strong>Start Date</strong> {contract.start_date}
+        </p>
+        <p>
+          <strong>End Date</strong> {contract.end_date}
         </p>
         <p>
           <strong>Status:</strong>{" "}

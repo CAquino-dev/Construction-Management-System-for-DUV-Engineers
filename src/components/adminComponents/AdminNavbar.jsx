@@ -17,6 +17,7 @@ import {
   HardHat,
   Clock,
   Briefcase,
+  ClipboardText,
 } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
@@ -54,7 +55,7 @@ const AdminNavbar = ({ children }) => {
   const menuItems = [
     { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
     // { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
-    // { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
+    { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
     {
       name: "CEO Dashboard",
       icon: <UserCircleCheck size={20} />,
@@ -65,6 +66,11 @@ const AdminNavbar = ({ children }) => {
       name: "Attendance Monitoring",
       icon: <Clock size={20} />,
       href: "/admin-dashboard/AttendanceMonitoring",
+    },
+    {
+      name: "Item Request",
+      icon: <ClipboardText size={20} />,
+      href: "/admin-dashboard/ItemRequest",
     },
   ];
 

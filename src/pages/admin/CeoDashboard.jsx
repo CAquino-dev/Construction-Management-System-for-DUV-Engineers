@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import {
   BarChart,
   Bar,
@@ -16,14 +17,41 @@ import {
 } from "recharts";
 
 export const CeoDashboard = () => {
-  const [projectionData] = useState([
-    { month: "Sept 2025", expected: 2100000, paid: 1400000, pending: 500000, overdue: 200000 },
-    { month: "Oct 2025", expected: 1800000, paid: 800000, pending: 1000000, overdue: 0 },
-    { month: "Nov 2025", expected: 3000000, paid: 0, pending: 3000000, overdue: 0 },
-    { month: "Dec 2025", expected: 1500000, paid: 500000, pending: 1000000, overdue: 0 },
-    { month: "Jan 2026", expected: 2000000, paid: 0, pending: 2000000, overdue: 0 },
-    { month: "Feb 2026", expected: 2500000, paid: 0, pending: 2500000, overdue: 0 },
-  ]);
+  // const [projectionData] = useState([
+  //   { month: "Sept 2025", expected: 2100000, paid: 1400000, pending: 500000, overdue: 200000 },
+  //   { month: "Oct 2025", expected: 1800000, paid: 800000, pending: 1000000, overdue: 0 },
+  //   { month: "Nov 2025", expected: 3000000, paid: 0, pending: 3000000, overdue: 0 },
+  //   { month: "Dec 2025", expected: 1500000, paid: 500000, pending: 1000000, overdue: 0 },
+  //   { month: "Jan 2026", expected: 2000000, paid: 0, pending: 2000000, overdue: 0 },
+  //   { month: "Feb 2026", expected: 2500000, paid: 0, pending: 2500000, overdue: 0 },
+  // ]);
+
+  const [projectionData, setProjectionData] = useState([{}]);
+
+  useEffect(() => {
+    const fetchProjectionData = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_REACT_APP_API_URL}/api/ceo/getFinanceProjection`)
+        if(res.data){
+          const formattedData = res.data.map(item => ({
+              month: item.month,
+              expected: Number(item.expected),
+              paid: Number(item.paid),
+              pending: Number(item.pending),
+              overdue: Number(item.overdue),
+            }));
+            setProjectionData(formattedData);
+        }
+      } catch (error) {
+         console.error("Error fetching projection data:", error);
+      }
+    };
+    fetchProjectionData();
+  }, [])
+
+  useEffect(() => {
+    console.log(projectionData);
+  }, [projectionData])
 
   // Totals
   const totals = projectionData.reduce(
