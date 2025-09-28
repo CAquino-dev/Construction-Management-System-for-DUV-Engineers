@@ -15,9 +15,18 @@ const STATUS_COLORS = {
 export const MyProjectMilestones = ({ selectedProject }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
 
+  // Report form state
+  const [report, setReport] = useState({
+    title: "",
+    summary: "",
+    file: null,
+  });
+
+  const userId = localStorage.getItem("userId");
   const permissions = JSON.parse(localStorage.getItem("permissions"));
   const navigate = useNavigate();
 
@@ -25,9 +34,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     const getMilestones = async () => {
       try {
         const res = await fetch(
-          `${
-            import.meta.env.VITE_REACT_APP_API_URL
-          }/api/project/getMilestones/${selectedProject.id}`
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestones/${selectedProject.id}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -62,6 +69,52 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     navigate(
       `/admin-dashboard/project/${selectedProject.id}/milestone/${milestone.id}/tasks`
     );
+  };
+
+  // Report modal handlers
+  const openReportModal = (milestone) => {
+    setSelectedMilestone(milestone);
+    setIsReportModalOpen(true);
+  };
+  const closeReportModal = () => {
+    setIsReportModalOpen(false);
+    setReport({ title: "", summary: "", file: null });
+  };
+
+  const handleReportChange = (field, value) => {
+    setReport((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const formData = new FormData();
+      formData.append("title", report.title);
+      formData.append("summary", report.summary);
+      formData.append("milestoneId", selectedMilestone.id);
+      formData.append("created_by", userId);
+      if (report.file) {
+        formData.append("report_file", report.file);
+      }
+
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${selectedProject.id}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (res.ok) {
+        alert("Report submitted successfully!");
+        closeReportModal();
+      } else {
+        alert("Failed to submit report.");
+      }
+    } catch (err) {
+      console.error("Error submitting report:", err);
+    }
   };
 
   return (
@@ -152,6 +205,14 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                   Go to Task Breakdown
                 </button>
               )}
+              {milestone.status === "Finance Approved" && (
+              <button
+                onClick={() => openReportModal(milestone)}
+                className="text-indigo-600 text-sm sm:text-base font-medium hover:underline"
+              >
+                Create Report
+              </button>
+              )}
             </div>
           </div>
         ))}
@@ -172,6 +233,72 @@ export const MyProjectMilestones = ({ selectedProject }) => {
           milestone={selectedMilestone}
           onClose={closeViewModal}
         />
+      )}
+
+      {/* Report Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">
+              Create Report for: {selectedMilestone?.title}
+            </h3>
+            <form onSubmit={handleReportSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Report Title
+                </label>
+                <input
+                  type="text"
+                  value={report.title}
+                  onChange={(e) => handleReportChange("title", e.target.value)}
+                  required
+                  placeholder="e.g. Foundation Completion Report"
+                  className="w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Summary
+                </label>
+                <textarea
+                  value={report.summary}
+                  onChange={(e) => handleReportChange("summary", e.target.value)}
+                  required
+                  placeholder="Write the progress update here..."
+                  rows="4"
+                  className="w-full border rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Upload File
+                </label>
+                <input
+                  name="report_file"
+                  type="file"
+                  onChange={(e) => handleReportChange("file", e.target.files[0])}
+                  className="w-full text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={closeReportModal}
+                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#4c735c] text-white rounded hover:opacity-90"
+                >
+                  Submit Report
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
