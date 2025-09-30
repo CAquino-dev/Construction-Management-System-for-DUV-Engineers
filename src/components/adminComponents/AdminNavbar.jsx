@@ -55,7 +55,12 @@ const AdminNavbar = ({ children }) => {
   const menuItems = [
     { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
     // { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
-    { name: "Inventory", icon: <Package size={20} />, href: "/admin-dashboard/inventory", permission: "can_access_inventory_management" },
+    {
+      name: "Inventory",
+      icon: <Package size={20} />,
+      href: "/admin-dashboard/inventory",
+      permission: "can_access_inventory_management",
+    },
     {
       name: "CEO Dashboard",
       icon: <UserCircleCheck size={20} />,
@@ -185,22 +190,22 @@ const AdminNavbar = ({ children }) => {
               ))}
             <li>
               {/* Collapsible Sales Section */}
-                {permissions.can_access_sales === "Y" && (
-                  <button
-                    onClick={toggleSalesDropdown}
-                    className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-                  >
-                    <span className="flex items-center gap-3 font-semibold">
-                      <User size={20} /> Sales
-                    </span>
-                    <CaretDown
-                      size={20}
-                      className={`transform transition-all ${
-                        isSalesOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                )}
+              {permissions.can_access_sales === "Y" && (
+                <button
+                  onClick={toggleSalesDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <User size={20} /> Sales
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isSalesOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
               {isSalesOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
@@ -550,6 +555,22 @@ const AdminNavbar = ({ children }) => {
                 </ul>
               )}
             </li>
+            {permissions.can_access_sales === "Y" && (
+              <button
+                onClick={toggleSalesDropdown}
+                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+              >
+                <span className="flex items-center gap-3 font-semibold">
+                  <User size={20} /> Sales
+                </span>
+                <CaretDown
+                  size={20}
+                  className={`transform transition-all ${
+                    isSalesOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            )}
             {/* Feedback Dropdown */}
             {/* <li>
                             <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
@@ -628,38 +649,37 @@ const AdminNavbar = ({ children }) => {
                 </Link>
               </li>
             ))}
-            {/* Engineer Section in Mobile Sidebar */}
+            {/* Collapsible Engineering Section */}
             <li>
-              <button
-                onClick={toggleEngineerDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg"
-              >
-                <span className="flex items-center gap-3">
-                  <HardHat size={20} /> Engineer
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isEngineerOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {permissions.can_access_engineer === "Y" && (
+                <button
+                  onClick={toggleEngineerDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <HardHat size={20} /> Engineer
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isEngineerOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
               {isEngineerOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
                     <Link
-                      to="/admin-dashboard/engineer/projects"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
+                      to="/admin-dashboard/projects"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/projects"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
                     >
                       Projects
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/admin-dashboard/engineer/my-project"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
-                    >
-                      My Project
                     </Link>
                   </li>
                 </ul>
@@ -747,6 +767,185 @@ const AdminNavbar = ({ children }) => {
                 </ul>
               )}
             </li>
+            <li>
+              {/* Collapsible Sales Section */}
+              {permissions.can_access_sales === "Y" && (
+                <button
+                  onClick={toggleSalesDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <User size={20} /> Sales
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isSalesOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
+              {isSalesOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/appointment"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/appointment"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Appointment Request
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/sales/lead"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/sales/lead"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Lead
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li>
+              {/* Collapsible Foreman Section */}
+              {permissions.can_access_foreman === "Y" && (
+                <button
+                  onClick={toggleForemanDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <HardHat size={20} /> Foreman
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isForemanOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
+              {isForemanOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/projects"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/projects"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Projects
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/foreman/attendance"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/projects/foreman/attendance"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Attendance
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+            {/* Collapsible Site manager Section */}
+            <li>
+              {permissions.can_view_sitemanager === "Y" && (
+                <button
+                  onClick={toggleSiteManagerDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <Briefcase size={20} /> Project Manager
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isSiteManagerOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
+              {isSiteManagerOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/projects"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/projects"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Projects
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/site-manager/add-client"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/add-client"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Add Client
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/site-manager/proposal"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/site-manager/proposal"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Proposal
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/project-manager/approved-contracts"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/project-manager/approved-contracts"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Approved Contracts
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <div>
+              <button
+                className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full cursor-pointer"
+                onClick={() => setIsLogoutModalOpen(true)}
+              >
+                <SignOut size={22} /> Logout
+              </button>
+            </div>
             {/* Feedback Section in Mobile Sidebar */}
             {/* <li>
                             <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg">
