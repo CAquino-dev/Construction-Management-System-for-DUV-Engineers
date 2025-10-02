@@ -9,6 +9,7 @@ import { MyProjectExpenses } from './MyProjectExpenses';
 import { MyprojectSupply } from './MyprojectSupply';
 import { MyProjectChat } from './MyProjectChat';
 import { EngineerReports } from './EngineerReports';
+import ProjectInventory from './ProjectInventory';
 
 export const ViewMyProject = ({ selectedProject, onBack }) => {
     const [activeTab, setActiveTab] = useState('projectDetails');
@@ -98,27 +99,16 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
             >
                 Legals
             </button>
-            {/* <button
-                onClick={() => handleTabClick('expenses')}
+            <button
+                onClick={() => handleTabClick('inventory')}
                 className={`text-lg font-medium cursor-pointer p-2 ${
-                    activeTab === 'expenses'
+                    activeTab === 'inventory'
                         ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
                         : 'text-gray-500 hover:text-[#4c735c]'
                 }`}
             >
-                Expenses Tracking
-            </button> */}
-            {/* <button
-                onClick={() => handleTabClick('supply')}
-                className={`text-lg font-medium cursor-pointer p-2 ${
-                    activeTab === 'supply'
-                        ? 'text-[#4c735c] border-b-2 border-[#4c735c]'
-                        : 'text-gray-500 hover:text-[#4c735c]'
-                }`}
-            >
-                Supply
-            </button> */}
-
+                Inventory
+            </button>
             <button
                 onClick={() => handleTabClick('chat')}
                 className={`text-lg font-medium cursor-pointer p-2 ${
@@ -156,12 +146,12 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                         <MyprojectLegals selectedProject={selectedProject} />
                     </div>
                 )}
-                {/* {activeTab === 'expenses' && (
+                {activeTab === 'inventory' && (
                     <div className='p-4'>
                         <h4 className='text-lg font-semibold'>Expenses Tracking</h4>
-                        <MyProjectExpenses selectedProject={selectedProject} />
+                        <ProjectInventory selectedProject={selectedProject} />
                     </div>
-                )} */}
+                )}
 
                 {/* {activeTab === 'supply' && (
                     <div className='p-4'>
