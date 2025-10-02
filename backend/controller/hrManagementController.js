@@ -60,13 +60,19 @@ const calculateEmployeeSalary = (req, res) => {
         e.full_name, 
         es.hourly_rate, 
         a.check_in, 
-        a.check_out
+        a.check_out,
+        a.status,
+        a.work_date
       FROM users e
-      JOIN employee_salary es ON e.id = es.employee_id
-      LEFT JOIN attendance a ON e.id = a.employee_id
-      WHERE a.status = 'Present'
-        AND a.check_in BETWEEN ? AND ?
-      ORDER BY e.id
+      JOIN employee_salary es 
+        ON e.id = es.employee_id
+      LEFT JOIN attendance a 
+        ON e.id = a.employee_id
+        AND a.work_date BETWEEN ? AND ?
+        AND a.status IN ('Present', 'Late')
+      WHERE a.check_in IS NOT NULL 
+        AND a.check_out IS NOT NULL
+      ORDER BY e.id, a.work_date;
     `;
 
     db.query(calculationQuery, [startDate, endDate], (calcErr, results) => {
