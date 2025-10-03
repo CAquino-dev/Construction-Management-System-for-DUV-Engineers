@@ -190,9 +190,136 @@ const claimItem = (req, res) => {
     });
 };
 
+const getMaterialCatalog = (req, res) => {
+  const query = `SELECT * FROM material_catalog`;
+
+  db.query(query, (err, result) => {
+    if(err){
+      console.error('Failed fetching material catalog')
+      return res.status(400).json({ error: "Failed to get items" })
+    }
+    res.json(result);
+  });
+};
+
+const createTransaction = (req, res) => {
+  const {
+    project_id,
+    material_id,
+    transaction_type,
+    quantity,
+    unit,
+    reference,
+    created_by
+  } = req.body;
+
+  // If OUT, check available stock first
+  if (transaction_type === "OUT") {
+    const checkStockQuery = `
+      SELECT quantity FROM project_inventory
+      WHERE project_id = ? AND material_id = ?
+    `;
+
+    db.query(checkStockQuery, [project_id, material_id], (err, rows) => {
+      if (err) {
+        console.error("Error checking stock:", err);
+        return res.status(500).json({ success: false, message: "Error checking stock" });
+      }
+
+      const currentQty = rows.length > 0 ? parseFloat(rows[0].quantity) : 0;
+
+      if (currentQty < quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Not enough stock. Available: ${currentQty}, Requested: ${quantity}`
+        });
+      }
+
+      // Proceed with transaction if stock is enough
+      insertTransaction();
+    });
+  } else {
+    // If IN, no need to check stock
+    insertTransaction();
+  }
+
+  function insertTransaction() {
+    const insertTransactionQuery = `
+      INSERT INTO inventory_transactions
+        (project_id, material_id, transaction_type, quantity, unit, reference, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+      insertTransactionQuery,
+      [project_id, material_id, transaction_type, quantity, unit, reference, created_by],
+      (err, result) => {
+        if (err) {
+          console.error("Error inserting transaction:", err);
+          return res.status(500).json({ success: false, message: "Error inserting transaction" });
+        }
+
+        const transactionId = result.insertId;
+
+        // Update project_inventory
+        const updateInventoryQuery = `
+          INSERT INTO project_inventory (project_id, material_id, quantity, unit)
+          VALUES (?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            quantity = CASE
+              WHEN ? = 'IN' THEN quantity + VALUES(quantity)
+              WHEN ? = 'OUT' THEN quantity - VALUES(quantity)
+              ELSE quantity
+            END
+        `;
+
+        db.query(
+          updateInventoryQuery,
+          [project_id, material_id, quantity, unit, transaction_type, transaction_type],
+          (err2) => {
+            if (err2) {
+              console.error("Error updating project inventory:", err2);
+              return res.status(500).json({ success: false, message: "Error updating project inventory" });
+            }
+
+            return res.status(201).json({
+              success: true,
+              message: "Transaction recorded and inventory updated",
+              transaction_id: transactionId
+            });
+          }
+        );
+      }
+    );
+  }
+};
+
+const getProjectInventory = (req, res) => {
+    const { projectId } = req.params;
+
+    const query = 
+     `SELECT
+      pi.id,
+      mc.name AS material_name,
+      pi.project_id,
+      pi.quantity,
+      pi.unit
+      FROM project_inventory pi
+      JOIN material_catalog mc ON mc.id = pi.material_id
+      WHERE project_id = ?`;
+
+    db.query(query, [projectId], (err, result) => {
+      if(err){
+        console.error('Failed to get project inventory', err);
+        return res.status(400).json({ error: "failed to get project inventory" })
+      };
+      return res.json(result);
+    });
+};
 
 module.exports = { 
 getInventoryItems, updateInventoryItem, addInventoryItem, 
 inventoryRequest, getInventoryRequests, updateRequestStatus,
-getUserRequest, claimItem
+getUserRequest, claimItem, getMaterialCatalog, createTransaction,
+getProjectInventory
 };
