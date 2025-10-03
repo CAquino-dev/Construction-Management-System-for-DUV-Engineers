@@ -426,6 +426,106 @@ const attendanceStatus = (req, res) => {
   });
 };
 
+const getEmployeeInformation = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT
+    u.id,
+    p.role_name AS position,
+    u.username,
+    u.email,
+    u.full_name,
+    u.created_at AS hire_date,
+    d.name
+    FROM users u
+    JOIN permissions p ON p.id = u.role_id
+    JOIN departments d ON d.id = u.department_id
+    WHERE u.id = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching employee info:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: "Employee not found" });
+    }
+    res.json(results[0]);
+  });
+};
+
+const getEmployeeAttendance = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT 
+      work_date,
+      status,
+      check_in,
+      check_out,
+      CASE 
+        WHEN check_in IS NOT NULL AND check_out IS NOT NULL 
+        THEN ROUND(TIMESTAMPDIFF(SECOND, check_in, check_out) / 3600, 2)
+        ELSE 0
+      END AS hours_worked
+    FROM attendance
+    WHERE employee_id = ?
+    ORDER BY work_date DESC
+    LIMIT 30
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching attendance:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(results);
+  });
+};
 
 
-module.exports = { addEmployee, checkIn, checkOut, getPermissions, getDepartments, attendanceStatus };
+const getEmployeeSalary = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+SELECT 
+    e.employee_id AS employee_id,               
+    e.full_name,
+    p.period_start,
+    p.period_end,
+    p.total_hours_worked,
+    p.calculated_salary,
+    p.status,
+    p.overtime_pay,
+    p.philhealth_deduction,
+    p.sss_deduction,
+    p.pagibig_deduction,
+    p.total_deductions,
+    p.final_salary,
+    d.name AS department_name,          
+    es.hourly_rate                      
+    FROM payroll p
+    JOIN users e ON p.employee_id = e.id   
+    JOIN departments d on e.department_id = d.id
+    JOIN employee_salary es ON e.id = es.employee_id 
+    WHERE e.id = ?
+    ORDER BY period_start DESC
+    LIMIT 10
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching salary:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res.json(results);
+  });
+};
+
+
+module.exports = { addEmployee, checkIn, checkOut, 
+  getPermissions, getDepartments, attendanceStatus,
+  getEmployeeInformation, getEmployeeAttendance, getEmployeeSalary
+ };
