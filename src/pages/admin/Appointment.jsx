@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "sonner";
 
 const Appointment = () => {
   const [appointments, setAppointments] = useState([]);
@@ -138,6 +139,7 @@ const Appointment = () => {
         success: true,
         message: "Appointment submitted successfully!",
       });
+      toast.success("Appointment request submitted successfully!");
       setNewAppointment({
         clientName: "",
         clientEmail: "",

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "sonner";
 
 export const AppointmentRequestPage = () => {
   const [formData, setFormData] = useState({
@@ -21,13 +22,15 @@ export const AppointmentRequestPage = () => {
   useEffect(() => {
     const fetchBookedDates = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`
+        );
         if (!response.ok) throw new Error("Failed to fetch booked dates.");
         const data = await response.json();
 
         const fullyBookedDates = data
-          .filter(d => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
-          .map(d => new Date(d.preferred_date)); // Convert to Date objects
+          .filter((d) => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
+          .map((d) => new Date(d.preferred_date)); // Convert to Date objects
 
         setBookedDates(fullyBookedDates);
       } catch (error) {
@@ -39,7 +42,7 @@ export const AppointmentRequestPage = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
@@ -57,7 +60,10 @@ export const AppointmentRequestPage = () => {
       !formData.preferredTime ||
       !formData.purpose
     ) {
-      setSubmitStatus({ success: false, message: "Please fill all required fields." });
+      setSubmitStatus({
+        success: false,
+        message: "Please fill all required fields.",
+      });
       return;
     }
 
@@ -67,14 +73,21 @@ export const AppointmentRequestPage = () => {
     };
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submissionData),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(submissionData),
+        }
+      );
 
       if (response.ok) {
-        setSubmitStatus({ success: true, message: "Appointment request submitted successfully!" });
+        setSubmitStatus({
+          success: true,
+          message: "Appointment request submitted successfully!",
+        });
+        toast.success("Appointment request submitted successfully!");
         setFormData({
           clientName: "",
           clientEmail: "",
@@ -86,17 +99,27 @@ export const AppointmentRequestPage = () => {
         setPreferredDate(null);
       } else {
         const errorData = await response.json();
-        setSubmitStatus({ success: false, message: errorData.message || "Submission failed." });
+        toast.error(errorData.message || "Submission failed.");
+        setSubmitStatus({
+          success: false,
+          message: errorData.message || "Submission failed.",
+        });
       }
     } catch (error) {
-      setSubmitStatus({ success: false, message: "An error occurred. Please try again." });
+      setSubmitStatus({
+        success: false,
+        message: "An error occurred. Please try again.",
+      });
+      toast.error(err.message || "Something went wrong. Please try again.");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 mt-30">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">Request an Appointment</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Request an Appointment
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -195,13 +218,10 @@ export const AppointmentRequestPage = () => {
             />
           </div>
 
-          {submitStatus && (
-            <p className={`text-center font-medium ${submitStatus.success ? "text-green-600" : "text-red-600"}`}>
-              {submitStatus.message}
-            </p>
-          )}
-
-          <button type="submit" className="w-full bg-[#4c735c] text-white py-3 rounded">
+          <button
+            type="submit"
+            className="w-full bg-[#4c735c] text-white py-3 rounded"
+          >
             Submit Request
           </button>
         </form>
