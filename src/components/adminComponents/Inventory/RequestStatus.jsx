@@ -9,7 +9,9 @@ const RequestStatus = () => {
   const getUserRequests = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/getUserRequests/${userId}`
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/inventory/getUserRequests/${userId}`
       );
       if (res.data) {
         setRequests(res.data);
@@ -47,18 +49,30 @@ const RequestStatus = () => {
         <thead>
           <tr className="bg-gray-100">
             <th className="border border-gray-300 px-3 py-2 text-left">Item</th>
-            <th className="border border-gray-300 px-3 py-2 text-left">Quantity</th>
-            <th className="border border-gray-300 px-3 py-2 text-left">Request Date</th>
-            <th className="border border-gray-300 px-3 py-2 text-left">Rejection Note</th>
-            <th className="border border-gray-300 px-3 py-2 text-left">Status</th>
-            <th className="border border-gray-300 px-3 py-2 text-center">Actions</th>
+            <th className="border border-gray-300 px-3 py-2 text-left">
+              Quantity
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-left">
+              Request Date
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-left">
+              Rejection Note
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-left">
+              Status
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-center">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody>
           {requests.map((req) => (
             <tr key={req.id}>
               <td className="border border-gray-300 px-3 py-2">{req.name}</td>
-              <td className="border border-gray-300 px-3 py-2">{req.quantity}</td>
+              <td className="border border-gray-300 px-3 py-2">
+                {req.quantity}
+              </td>
               <td className="border border-gray-300 px-3 py-2">
                 {new Date(req.request_date).toLocaleDateString()}
               </td>
@@ -97,16 +111,36 @@ const RequestStatus = () => {
       {selectedStub && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50">
           <div className="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h2 className="text-xl font-bold text-center mb-4">📦 Claim Stub</h2>
-            <div id="claim-stub" className="border border-dashed border-gray-400 p-4">
-              <p><strong>Request ID:</strong> {selectedStub.id}</p>
-              <p><strong>Item:</strong> {selectedStub.name}</p>
-              <p><strong>Quantity:</strong> {selectedStub.quantity}</p>
-              <p><strong>Requester:</strong> {selectedStub.requester_name || "You"}</p>
-              <p><strong>Approved Date:</strong> {new Date().toLocaleDateString()}</p>
-              <p><strong>Status:</strong> Approved ✅</p>
+            <h2 className="text-xl font-bold text-center mb-4">
+              📦 Claim Stub
+            </h2>
+            <div
+              id="claim-stub"
+              className="border border-dashed border-gray-400 p-4"
+            >
+              <p>
+                <strong>Request ID:</strong> {selectedStub.id}
+              </p>
+              <p>
+                <strong>Item:</strong> {selectedStub.name}
+              </p>
+              <p>
+                <strong>Quantity:</strong> {selectedStub.quantity}
+              </p>
+              <p>
+                <strong>Requester:</strong>{" "}
+                {selectedStub.requester_name || "You"}
+              </p>
+              <p>
+                <strong>Approved Date:</strong>{" "}
+                {new Date().toLocaleDateString()}
+              </p>
+              <p>
+                <strong>Status:</strong> Approved ✅
+              </p>
               <div className="text-xs text-gray-500 text-center mt-3">
-                Please present this stub to the Inventory Manager to claim your item.
+                Please present this stub to the Inventory Manager to claim your
+                item.
               </div>
             </div>
 

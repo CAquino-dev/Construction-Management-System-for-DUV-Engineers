@@ -317,7 +317,7 @@ const AdminNavbar = ({ children }) => {
                       Projects
                     </Link>
                   </li>
-                  <li>
+                  {/* <li>
                     <Link
                       to="/admin-dashboard/site-manager/add-client"
                       className={`block p-2 rounded-lg cursor-pointer ${
@@ -329,7 +329,7 @@ const AdminNavbar = ({ children }) => {
                     >
                       Add Client
                     </Link>
-                  </li>
+                  </li> */}
                   <li>
                     <Link
                       to="/admin-dashboard/site-manager/proposal"
