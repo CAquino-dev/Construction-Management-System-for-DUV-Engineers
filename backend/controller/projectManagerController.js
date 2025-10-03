@@ -265,7 +265,7 @@ const generateContract = (req, res) => {
   // Step 1: Get proposal + lead + payment term info
   const query = `
     SELECT p.*, l.client_name, l.email, l.phone_number, l.project_interest, 
-           l.budget, l.timeline, l.id AS lead_id,
+           p.budget_estimate, l.timeline, l.id AS lead_id,
            pt.id AS payment_term_id, pt.name AS payment_term_label
     FROM proposals p
     JOIN leads l ON p.lead_id = l.id
@@ -290,7 +290,7 @@ const generateContract = (req, res) => {
       title: data.title,
       description: data.description,
       scope_of_work: JSON.parse(data.scope_of_work || "[]"),
-      budget_estimate: data.budget,
+      budget_estimate: data.budget_estimate,
       start_date: data.start_date,   // ✅ use start_date
       end_date: data.end_date,       // ✅ use end_date
       payment_terms:
@@ -303,7 +303,7 @@ const generateContract = (req, res) => {
       email: data.email,
       phone_number: data.phone_number,
       project_interest: data.project_interest,
-      budget: data.budget,
+      budget: data.budget_estimate,
       start_date: data.start_date,   // ✅ use start_date
       end_date: data.end_date,       // ✅ use end_date
       lead_id: data.lead_id,
@@ -349,7 +349,7 @@ const generateContract = (req, res) => {
               data.lead_id,
               data.id,
               fileUrl,
-              data.budget, // total_amount = proposal budget
+              data.budget_estimate, // total_amount = proposal budget
               data.payment_term_id || null,
               formData.payment_terms,
               data.start_date,

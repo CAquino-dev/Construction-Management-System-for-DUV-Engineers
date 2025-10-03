@@ -1,184 +1,123 @@
 import React, { useState, useEffect } from "react";
 
-export const FinancePaymentEntry = () => {
-  const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState("");
-  const [milestones, setMilestones] = useState([]);
-  const [selectedMilestoneId, setSelectedMilestoneId] = useState("");
-  const [amountPaid, setAmountPaid] = useState("");
-  const [paymentDate, setPaymentDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
-  const [message, setMessage] = useState("");
+export const FinancePaymentEntry = ({ selectedProject }) => {
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // 🔑 error state
 
   useEffect(() => {
-    fetch(
-      `${
-        import.meta.env.VITE_REACT_APP_API_URL
-      }/api/finance/projects/with-pending-payments`
-    )
-      .then((res) => res.json())
-      .then(setProjects)
-      .catch(console.error);
-  }, []);
+    if (!selectedProject?.id) return;
 
-  useEffect(() => {
-    if (!selectedProjectId) {
-      setMilestones([]);
-      setSelectedMilestoneId("");
-      setAmountPaid("");
-      return;
-    }
-    fetch(
-      `${
-        import.meta.env.VITE_REACT_APP_API_URL
-      }/api/finance/projects/${selectedProjectId}/milestones/for-payment`
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setMilestones(data);
-        setSelectedMilestoneId("");
-        setAmountPaid("");
-      })
-      .catch(console.error);
-  }, [selectedProjectId]);
+    const fetchSchedule = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getPaymentScheduleByProject/${selectedProject.id}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch payment schedule");
+        const data = await res.json();
+        setSchedule(data.results);
+        setError(null); // reset error if successful
+      } catch (err) {
+        console.error("Error fetching schedule:", err);
+        setSchedule([]);
+        setError("Unable to load payment schedule."); // 🔑 set error
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  useEffect(() => {
-    const milestone = milestones.find((m) => m.id === selectedMilestoneId);
-    if (milestone) setAmountPaid(milestone.payment_amount.toFixed(2));
-    else setAmountPaid("");
-  }, [selectedMilestoneId, milestones]);
+    fetchSchedule();
+  }, [selectedProject]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage("");
+  if (!selectedProject) {
+    return <p className="text-gray-600">No project selected.</p>;
+  }
 
-    if (!selectedProjectId) return setMessage("Please select a project.");
-    if (!selectedMilestoneId) return setMessage("Please select a milestone.");
-    if (!amountPaid || isNaN(amountPaid))
-      return setMessage("Please enter a valid amount.");
-
+  const handlePay = async (amount, scheduleId) => {
     try {
-      const payload = {
-        milestone_id: selectedMilestoneId,
-        payment_date: paymentDate,
-        amount_paid: amountPaid,
-      };
-
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/payments`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/create-checkout-session`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            amount, // amount in pesos
+            description: `Payment for schedule #${scheduleId}`,
+          }),
         }
       );
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to record payment");
+        const error = await res.json();
+        throw new Error(error.message || "Failed to create checkout session");
       }
 
-      setMessage("✅ Payment recorded successfully!");
-    } catch (error) {
-      setMessage(`❌ Error: ${error.message}`);
+      const data = await res.json();
+      // Redirect to PayMongo checkout page
+      window.location.href = data.checkout_url;
+    } catch (err) {
+      console.error("Payment error:", err);
+      alert("Payment failed: " + err.message);
     }
   };
 
   return (
-    <div className="max-w-lg mx-auto mt-8 p-6 rounded-xl shadow-lg bg-white">
+    <div className="p-6 bg-white shadow-lg rounded-xl mt-6">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        Record Payment
+        Payment Schedule for {selectedProject.name}
       </h2>
 
-      {message && (
-        <div
-          className={`mb-4 p-2 rounded text-sm ${
-            message.includes("Error")
-              ? "bg-red-100 text-red-700"
-              : "bg-green-100 text-green-700"
-          }`}
-        >
-          {message}
+      {loading ? (
+        <p>Loading...</p>
+      ) : error ? ( // 🔑 error boundary here
+        <p className="text-red-600">{error}</p>
+      ) : schedule.length === 0 ? (
+        <p className="text-gray-500">No payment schedule found.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border border-gray-200 rounded-lg">
+            <thead className="bg-gray-100 text-left">
+              <tr>
+                <th className="px-4 py-2 border">Milestone</th>
+                <th className="px-4 py-2 border">Due Date</th>
+                <th className="px-4 py-2 border">Amount</th>
+                <th className="px-4 py-2 border">Status</th>
+                <th className="px-4 py-2 border">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {schedule.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 border">{item.milestone_name}</td>
+                  <td className="px-4 py-2 border">{item.due_date}</td>
+                  <td className="px-4 py-2 border">
+                    ₱{parseFloat(item.amount).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-2 border">
+                    {item.status === "Paid" ? (
+                      <span className="text-green-600 font-medium">Paid</span>
+                    ) : (
+                      <span className="text-yellow-600 font-medium">
+                        Pending
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2 border text-center">
+                    {item.status !== "Paid" && (
+                      <button
+                        onClick={() => handlePay(item.amount, item.id)}
+                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
+                        Pay with PayMongo
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Project
-          </label>
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-green-500"
-            required
-          >
-            <option value="">-- Select project --</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.project_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Milestone
-          </label>
-          <select
-            value={selectedMilestoneId}
-            onChange={(e) => setSelectedMilestoneId(e.target.value)}
-            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-green-500"
-            required
-            disabled={!selectedProjectId}
-          >
-            <option value="">-- Select milestone --</option>
-            {milestones.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.status} — ₱{m.payment_amount}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Amount
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={amountPaid}
-            onChange={(e) => setAmountPaid(e.target.value)}
-            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-green-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Payment Date
-          </label>
-          <input
-            type="date"
-            value={paymentDate}
-            onChange={(e) => setPaymentDate(e.target.value)}
-            className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-green-500"
-            max={new Date().toISOString().slice(0, 10)}
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full py-2 px-4 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors"
-        >
-          Record Payment
-        </button>
-      </form>
     </div>
   );
 };
