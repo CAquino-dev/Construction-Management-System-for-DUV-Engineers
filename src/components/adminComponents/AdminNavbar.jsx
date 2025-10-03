@@ -53,7 +53,7 @@ const AdminNavbar = ({ children }) => {
     setIsSiteManagerOpen(!isSiteManagerOpen);
 
   const menuItems = [
-    { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
+    // { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
     // { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
     {
       name: "Inventory",
@@ -431,19 +431,6 @@ const AdminNavbar = ({ children }) => {
                   </li>
                   <li>
                     <Link
-                      to="/admin-dashboard/finance/approved-payroll-from-ceo"
-                      className={`block p-2 rounded-lg cursor-pointer ${
-                        location.pathname ===
-                        "/admin-dashboard/finance/approved-payroll-from-ceo"
-                          ? "bg-[#5A8366] text-white"
-                          : "hover:bg-[#5A8366]"
-                      }`}
-                    >
-                      HR Payroll (Approved Records of CEO)
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
                       to="/admin-dashboard/finance/view-contracts"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
@@ -555,22 +542,6 @@ const AdminNavbar = ({ children }) => {
                 </ul>
               )}
             </li>
-            {permissions.can_access_sales === "Y" && (
-              <button
-                onClick={toggleSalesDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-              >
-                <span className="flex items-center gap-3 font-semibold">
-                  <User size={20} /> Sales
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isSalesOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-            )}
             {/* Feedback Dropdown */}
             {/* <li>
                             <button onClick={toggleFeedbackDropdown} className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer">
@@ -709,14 +680,6 @@ const AdminNavbar = ({ children }) => {
                       className="block p-2 hover:bg-[#5A8366] rounded-lg"
                     >
                       HR Payroll (Approved Records of HR)
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/admin-dashboard/finance/approved-payroll-from-ceo"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
-                    >
-                      HR Payroll (Approved Records of CEO)
                     </Link>
                   </li>
                 </ul>
