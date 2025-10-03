@@ -19,7 +19,7 @@ export const Inventory = () => {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
   const [requests, setRequests] = useState([]);
-  const userId = localStorage.getItem('userId');
+  const userId = localStorage.getItem("userId");
 
   // 🔹 Popup state
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +37,9 @@ export const Inventory = () => {
   const fetchInventoryItems = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/getInventoryItems`
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/inventory/getInventoryItems`
       );
       if (res.data) setItems(res.data);
     } catch (error) {
@@ -59,7 +61,9 @@ export const Inventory = () => {
   const handleClaim = async (requestId) => {
     try {
       await axios.put(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/claimItem/${requestId}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/inventory/claimItem/${requestId}`,
         { userId }
       );
       toast.success("Item claimed successfully");
@@ -82,20 +86,30 @@ export const Inventory = () => {
     try {
       if (editingId !== null) {
         await axios.put(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/updateInventoryItem/${editingId}`,
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/inventory/updateInventoryItem/${editingId}`,
           form
         );
         toast.success("Item updated successfully");
         setEditingId(null);
       } else {
         await axios.post(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/addInventoryItem`,
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/inventory/addInventoryItem`,
           form
         );
         toast.success("Item added successfully");
       }
       fetchInventoryItems();
-      setForm({ name: "", category: "", quantity: "", unit: "", description: "" });
+      setForm({
+        name: "",
+        category: "",
+        quantity: "",
+        unit: "",
+        description: "",
+      });
     } catch (err) {
       toast.error("Error saving item");
       console.error(err);
@@ -121,7 +135,9 @@ export const Inventory = () => {
   const updateRequestStatus = async (id, status, rejection_note) => {
     try {
       await axios.put(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/updateRequest/${id}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/inventory/updateRequest/${id}`,
         { status, rejection_note }
       );
       toast.success(`Request ${status.toLowerCase()} successfully`);
@@ -152,18 +168,26 @@ export const Inventory = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">📦 Inventory Management</h1>
+      <h1 className="text-2xl font-bold mb-6">Inventory Management</h1>
 
       {/* Tabs */}
       <div className="flex gap-4 mb-6">
         <Button
-          variant={tab === "inventory" ? "default" : "outline"}
+          className={`${
+            tab === "inventory"
+              ? "bg-[#4c735c] text-white hover:bg-[#4c735c]"
+              : "bg-gray-200 text-gray-700 hover:bg-[#4c735c]/50 cursor-pointer"
+          } px-4 py-2 rounded-lg`}
           onClick={() => setTab("inventory")}
         >
           Inventory Items
         </Button>
         <Button
-          variant={tab === "requests" ? "default" : "outline"}
+          className={`${
+            tab === "requests"
+              ? "bg-[#4c735c] text-white hover:bg-[#4c735c]"
+              : "bg-gray-200 text-gray-700 hover:bg-[#4c735c]/50 cursor-pointer"
+          } px-4 py-2 rounded-lg`}
           onClick={() => setTab("requests")}
         >
           Item Requests
@@ -173,20 +197,13 @@ export const Inventory = () => {
       {/* Inventory Items */}
       {tab === "inventory" && (
         <>
-          {/* Search */}
-          <div className="mb-4 flex justify-between">
-            <Input
-              placeholder="Search items..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-xs"
-            />
-          </div>
-
           {/* Add / Edit Form */}
           <Card className="mb-6">
             <CardContent>
-              <form onSubmit={handleSubmit} className="grid grid-cols-5 gap-2">
+              <form
+                onSubmit={handleSubmit}
+                className="grid grid-cols-5 gap-2 items-end"
+              >
                 <Input
                   placeholder="Item name"
                   value={form.name}
@@ -195,13 +212,17 @@ export const Inventory = () => {
                 <Input
                   placeholder="Category"
                   value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, category: e.target.value })
+                  }
                 />
                 <Input
                   type="number"
                   placeholder="Quantity"
                   value={form.quantity}
-                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, quantity: e.target.value })
+                  }
                 />
                 <Input
                   placeholder="Unit (pcs, box, ream...)"
@@ -215,31 +236,75 @@ export const Inventory = () => {
                     setForm({ ...form, description: e.target.value })
                   }
                 />
-                <Button type="submit" className="col-span-5">
-                  {editingId !== null ? "Update Item" : "Add Item"}
-                </Button>
+
+                {/* Buttons row */}
+                <div className="col-span-5 flex justify-end gap-2">
+                  {editingId !== null ? (
+                    <>
+                      <Button
+                        type="submit"
+                        className="bg-[#4c735c] hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm"
+                      >
+                        Update Item
+                      </Button>
+                      <Button
+                        type="button"
+                        className="bg-gray-400 hover:bg-gray-500 text-white rounded-lg px-4 py-2 text-sm"
+                        onClick={() => {
+                          setEditingId(null);
+                          setForm({
+                            name: "",
+                            category: "",
+                            quantity: "",
+                            unit: "",
+                            description: "",
+                          });
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      type="submit"
+                      className="bg-[#4c735c] hover:bg-[#3b5a49] text-white rounded-lg px-3 py-1 text-sm"
+                    >
+                      + Add Item
+                    </Button>
+                  )}
+                </div>
               </form>
             </CardContent>
           </Card>
 
+          {/* Search */}
+          <div className="mb-4 flex justify-between bg-white rounded-lg p-2">
+            <Input
+              placeholder="Search items..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-xs border border-gray-300"
+            />
+          </div>
+
           {/* Inventory Table */}
           <Card>
             <CardContent>
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse rounded-lg overflow-hidden">
                 <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border p-2 text-left">id</th>
-                    <th className="border p-2 text-left">Name</th>
-                    <th className="border p-2 text-left">Category</th>
-                    <th className="border p-2 text-left">Quantity</th>
-                    <th className="border p-2 text-left">Unit</th>
-                    <th className="border p-2 text-left">Description</th>
-                    <th className="border p-2">Actions</th>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="border p-2">ID</th>
+                    <th className="border p-2">Name</th>
+                    <th className="border p-2">Category</th>
+                    <th className="border p-2">Quantity</th>
+                    <th className="border p-2">Unit</th>
+                    <th className="border p-2">Description</th>
+                    <th className="border p-2 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredItems.map((item) => (
-                    <tr key={item.id}>
+                    <tr key={item.id} className="hover:bg-gray-50">
                       <td className="border p-2">{item.id}</td>
                       <td className="border p-2">{item.name}</td>
                       <td className="border p-2">{item.category}</td>
@@ -249,14 +314,14 @@ export const Inventory = () => {
                       <td className="border p-2 flex gap-2 justify-center">
                         <Button
                           size="sm"
-                          variant="outline"
+                          className="bg-[#4c735c] text-white hover:bg-[#3b5a49]"
                           onClick={() => handleEdit(item)}
                         >
                           <Pencil size={16} />
                         </Button>
                         <Button
                           size="sm"
-                          variant="destructive"
+                          className="bg-red-600 text-white hover:bg-red-700"
                           onClick={() => handleDelete(item.id)}
                         >
                           <Trash2 size={16} />
@@ -282,42 +347,45 @@ export const Inventory = () => {
       {tab === "requests" && (
         <Card>
           <CardContent>
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse rounded-lg overflow-hidden">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border p-2 text-left">ID</th>
-                  <th className="border p-2 text-left">Requester</th>
-                  <th className="border p-2 text-left">Item</th>
-                  <th className="border p-2 text-left">Quantity</th>
-                  <th className="border p-2 text-left">Notes</th>
-                  <th className="border p-2 text-left">Status</th>
-                  <th className="border p-2 text-left">Date</th>
+                <tr className="bg-gray-100 text-left">
+                  <th className="border p-2">ID</th>
+                  <th className="border p-2">Requester</th>
+                  <th className="border p-2">Item</th>
+                  <th className="border p-2">Quantity</th>
+                  <th className="border p-2">Notes</th>
+                  <th className="border p-2">Status</th>
+                  <th className="border p-2">Date</th>
                   <th className="border p-2 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {requests.map((req) => (
-                  <tr key={req.id}>
+                  <tr key={req.id} className="hover:bg-gray-50">
                     <td className="border p-2">{req.id}</td>
                     <td className="border p-2">{req.requester_name}</td>
                     <td className="border p-2">{req.item_name}</td>
                     <td className="border p-2">{req.quantity}</td>
                     <td className="border p-2">{req.notes}</td>
                     <td
-                      className={`border p-2 font-semibold ${req.status === "Approved"
+                      className={`border p-2 font-semibold ${
+                        req.status === "Approved"
                           ? "text-green-600"
                           : req.status === "Rejected"
-                            ? "text-red-600"
-                            : "text-yellow-600"
-                        }`}
+                          ? "text-red-600"
+                          : "text-yellow-600"
+                      }`}
                     >
                       {req.status}
                     </td>
-                    <td className="border p-2">{new Date(req.request_date).toLocaleDateString()}</td>
+                    <td className="border p-2">
+                      {new Date(req.request_date).toLocaleDateString()}
+                    </td>
                     <td className="border p-2 flex gap-2 justify-center">
-                      <Button 
+                      <Button
                         size="sm"
-                        variant="outline"
+                        className="bg-[#4c735c] text-white hover:bg-[#3b5a49]"
                         onClick={() => openPopup("Approved", req.id)}
                         disabled={req.status !== "Pending"}
                       >
@@ -325,7 +393,7 @@ export const Inventory = () => {
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
+                        className="bg-red-600 text-white hover:bg-red-700"
                         onClick={() => openPopup("Rejected", req.id)}
                         disabled={req.status !== "Pending"}
                       >
@@ -333,9 +401,11 @@ export const Inventory = () => {
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-green-600 text-white hover:bg-green-700"
+                        className="bg-[#4c735c] text-white hover:bg-[#3b5a49]"
                         onClick={() => handleClaim(req.id)}
-                        disabled={req.status !== "Approved" || req.status === "Claimed"}
+                        disabled={
+                          req.status !== "Approved" || req.status === "Claimed"
+                        }
                       >
                         Mark as Claimed
                       </Button>
@@ -360,7 +430,7 @@ export const Inventory = () => {
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-[#4c735c] outline-none"
                 placeholder="Write your rejection reason..."
                 rows={4}
               ></textarea>
@@ -375,7 +445,7 @@ export const Inventory = () => {
               </button>
               <button
                 onClick={handleReport}
-                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg"
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg hover:bg-[#3b5a49]"
               >
                 Okay
               </button>
