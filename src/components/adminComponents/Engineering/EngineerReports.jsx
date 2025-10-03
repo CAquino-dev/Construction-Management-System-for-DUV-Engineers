@@ -17,7 +17,9 @@ export const EngineerReports = ({ selectedProject }) => {
   const getReports = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${selectedProject.id}`
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${
+          selectedProject.id
+        }`
       );
       setReports(res.data);
     } catch (error) {
@@ -29,7 +31,9 @@ export const EngineerReports = ({ selectedProject }) => {
   const loadComments = async (reportId) => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/getReportComments/${reportId}`
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/client/getReportComments/${reportId}`
       );
       setComments((prev) => ({ ...prev, [reportId]: res.data }));
     } catch (error) {
@@ -53,36 +57,34 @@ export const EngineerReports = ({ selectedProject }) => {
   };
 
   // Add comment
-const handleAddComment = async (e) => {
-  e.preventDefault();
-  if (!newComment.trim() || !activeReport) return;
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || !activeReport) return;
 
-  try {
-    const res = await axios.post(
-      `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/addComment/${activeReport.id}`,
-      {
-        milestoneId: null, // explicitly send null
-        userId,
-        comment: newComment.trim(),
-      }
-    );
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/addComment/${
+          activeReport.id
+        }`,
+        {
+          milestoneId: null, // explicitly send null
+          userId,
+          comment: newComment.trim(),
+        }
+      );
 
-    const savedComment = res.data;
+      const savedComment = res.data;
 
-    setComments((prev) => ({
-      ...prev,
-      [activeReport.id]: [
-        ...(prev[activeReport.id] || []),
-        savedComment,
-      ],
-    }));
+      setComments((prev) => ({
+        ...prev,
+        [activeReport.id]: [...(prev[activeReport.id] || []), savedComment],
+      }));
 
-    setNewComment("");
-  } catch (err) {
-    console.error("Error adding comment:", err);
-  }
-};
-
+      setNewComment("");
+    } catch (err) {
+      console.error("Error adding comment:", err);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -108,35 +110,40 @@ const handleAddComment = async (e) => {
               {/* Summary */}
               <p className="text-sm text-gray-600 mb-3">{report.summary}</p>
 
-              {/* File link */}
-              {report.file_url && (
-                <a
-                  href={`${import.meta.env.VITE_REACT_APP_API_URL}${report.file_url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-sm text-[#4c735c] font-medium hover:underline"
+              <div className="flex gap-4">
+                {report.file_url && (
+                  <a
+                    href={`${import.meta.env.VITE_REACT_APP_API_URL}${
+                      report.file_url
+                    }`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-sm text-[#4c735c] font-medium hover:underline"
+                  >
+                    📎 View Attached File
+                  </a>
+                )}
+
+                {/* Milestone info */}
+                {report.milestone_title && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Linked to milestone:{" "}
+                    <span className="font-medium text-gray-700">
+                      {report.milestone_title}
+                    </span>
+                  </p>
+                )}
+
+                {/* Open Comments */}
+                <button
+                  onClick={() => openModal(report)}
+                  className="cursor-pointer text-xs text-blue-500 font-semibold hover:underline"
                 >
-                  📎 View Attached File
-                </a>
-              )}
+                  View Comments
+                </button>
+              </div>
 
-              {/* Milestone info */}
-              {report.milestone_title && (
-                <p className="text-xs text-gray-500 mt-2">
-                  Linked to milestone:{" "}
-                  <span className="font-medium text-gray-700">
-                    {report.milestone_title}
-                  </span>
-                </p>
-              )}
-
-              {/* Open Comments */}
-              <button
-                onClick={() => openModal(report)}
-                className="mt-3 text-xs text-blue-500 underline"
-              >
-                View Comments
-              </button>
+              {/* File link */}
             </div>
           ))}
         </div>
@@ -160,27 +167,52 @@ const handleAddComment = async (e) => {
             <div className="max-h-96 overflow-y-auto mb-4 space-y-3">
               {comments[activeReport.id]?.length > 0 ? (
                 comments[activeReport.id].map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex items-start gap-3 border-b pb-2"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-semibold">
-                      {c.user_name ? c.user_name.charAt(0) : "?"}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-800">
-                          {c.user_id == userId ? "You" : c.user_name}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          ({c.role_name})
-                        </span>
-                      </div>
-                      <p className="text-gray-700 text-sm">{c.comment}</p>
-                      <span className="text-xs text-gray-400">
-                        {new Date(c.created_at).toLocaleString()}
-                      </span>
-                    </div>
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                    {comments[activeReport.id]?.length > 0 ? (
+                      comments[activeReport.id].map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-start gap-3 bg-white shadow-sm rounded-xl p-3 border border-gray-100"
+                        >
+                          {/* Avatar circle (initials) */}
+                          <div className="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 font-semibold rounded-full">
+                            {c.user_name?.charAt(0).toUpperCase() || "U"}
+                          </div>
+
+                          {/* Comment content */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-800">
+                                {c.user_id == userId ? "You" : c.user_name}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full
+                          ${
+                            c.role_name === "client"
+                              ? "bg-green-100 text-green-600"
+                              : c.role_name === "Engineer"
+                              ? "bg-indigo-100 text-indigo-600"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                              >
+                                {c.role_name}
+                              </span>
+
+                              <span className="text-xs text-gray-400 ml-auto">
+                                {new Date(c.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-gray-700 text-sm mt-1 leading-relaxed break-words">
+                              {c.comment}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-400 text-center italic">
+                        No comments yet.
+                      </p>
+                    )}
                   </div>
                 ))
               ) : (

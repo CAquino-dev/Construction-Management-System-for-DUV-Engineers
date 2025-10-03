@@ -8,6 +8,7 @@ export const MilestoneClient = ({ selectedProject }) => {
   const [newComment, setNewComment] = useState("");
   const [activeReport, setActiveReport] = useState(null); // report selected for modal
   const [activeMilestoneId, setActiveMilestoneId] = useState(null);
+  const [showReports, setShowReports] = useState(false);
 
   const userId = localStorage.getItem("userId");
 
@@ -20,7 +21,9 @@ export const MilestoneClient = ({ selectedProject }) => {
   const getMilestones = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestones/${selectedProject.id}`
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestones/${
+          selectedProject.id
+        }`
       );
       setMilestones(res.data.milestones);
     } catch (error) {
@@ -32,7 +35,9 @@ export const MilestoneClient = ({ selectedProject }) => {
   const getReports = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${selectedProject.id}`
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${
+          selectedProject.id
+        }`
       );
       const grouped = res.data.reduce((acc, report) => {
         if (!acc[report.milestone_id]) acc[report.milestone_id] = [];
@@ -49,7 +54,9 @@ export const MilestoneClient = ({ selectedProject }) => {
   const loadComments = async (reportId) => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/getReportComments/${reportId}`
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/client/getReportComments/${reportId}`
       );
       setComments((prev) => ({ ...prev, [reportId]: res.data }));
     } catch (error) {
@@ -81,14 +88,16 @@ export const MilestoneClient = ({ selectedProject }) => {
 
     try {
       const res = await axios.post(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/addComment/${activeReport.id}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/client/addComment/${
+          activeReport.id
+        }`,
         {
           milestoneId: activeMilestoneId,
           userId,
           comment: newComment,
         }
       );
-      
+
       await loadComments(activeReport.id);
       setNewComment("");
     } catch (err) {
@@ -153,38 +162,57 @@ export const MilestoneClient = ({ selectedProject }) => {
 
               {/* Reports linked to milestone */}
               <div className="mt-3">
-                <p className="text-sm font-medium text-gray-700">Reports:</p>
-                {reports[milestone.id]?.length > 0 ? (
-                  <ul className="list-disc list-inside mt-1 space-y-2">
-                    {reports[milestone.id].map((report) => (
-                      <li
-                        key={report.id}
-                        className="text-gray-600 text-sm border p-2 rounded flex justify-between items-center"
-                      >
-                        <div>
-                          <strong>{report.title}</strong> - {report.summary}
-                          {report.file_url && (
-                            <a
-                              href={`${import.meta.env.VITE_REACT_APP_API_URL}${report.file_url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline ml-2"
+                {/* Header / Toggle */}
+                <div
+                  onClick={() => setShowReports(!showReports)}
+                  className="flex items-center justify-between cursor-pointer"
+                >
+                  <p className="text-sm font-medium text-gray-700">Reports</p>
+                  <span className="text-xs text-blue-500 underline">
+                    {showReports ? "Hide" : "View"}
+                  </span>
+                </div>
+
+                {/* Collapsible reports */}
+                {showReports && (
+                  <>
+                    {reports[milestone.id]?.length > 0 ? (
+                      <ul className="list-disc list-inside mt-2 space-y-2">
+                        {reports[milestone.id].map((report) => (
+                          <li
+                            key={report.id}
+                            className="text-gray-600 text-sm border p-2 rounded flex justify-between items-center"
+                          >
+                            <div>
+                              <strong>{report.title}</strong> - {report.summary}
+                              {report.file_url && (
+                                <a
+                                  href={`${
+                                    import.meta.env.VITE_REACT_APP_API_URL
+                                  }${report.file_url}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline ml-2"
+                                >
+                                  View File
+                                </a>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => openModal(report, milestone.id)}
+                              className="text-xs text-blue-500 underline ml-2"
                             >
-                              View File
-                            </a>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => openModal(report, milestone.id)}
-                          className="text-xs text-blue-500 underline ml-2"
-                        >
-                          Comments
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500 text-sm">No reports yet.</p>
+                              Comments
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 text-sm mt-2">
+                        No reports yet.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -208,12 +236,12 @@ export const MilestoneClient = ({ selectedProject }) => {
             </h3>
 
             {/* Comments list */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {comments[activeReport.id]?.length > 0 ? (
                 comments[activeReport.id].map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-start gap-3 border-b pb-2"
+                    className="flex items-start gap-3 bg-white shadow-sm rounded-xl p-3 border border-gray-100"
                   >
                     {/* Avatar circle (initials) */}
                     <div className="w-10 h-10 flex items-center justify-center bg-blue-100 text-blue-600 font-semibold rounded-full">
@@ -226,19 +254,33 @@ export const MilestoneClient = ({ selectedProject }) => {
                         <span className="font-semibold text-gray-800">
                           {c.user_id == userId ? "You" : c.user_name}
                         </span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full
+                          ${
+                            c.role_name === "client"
+                              ? "bg-green-100 text-green-600"
+                              : c.role_name === "Engineer"
+                              ? "bg-indigo-100 text-indigo-600"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
                           {c.role_name}
                         </span>
+
                         <span className="text-xs text-gray-400 ml-auto">
                           {new Date(c.created_at).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-gray-700 text-sm mt-1">{c.comment}</p>
+                      <p className="text-gray-700 text-sm mt-1 leading-relaxed break-words">
+                        {c.comment}
+                      </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-400">No comments yet.</p>
+                <p className="text-sm text-gray-400 text-center italic">
+                  No comments yet.
+                </p>
               )}
             </div>
 
@@ -251,7 +293,7 @@ export const MilestoneClient = ({ selectedProject }) => {
                 onChange={(e) => setNewComment(e.target.value)}
                 className="flex-1 border rounded px-3 py-2 text-sm"
               />
-              <button className="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600">
+              <button className="bg-[#4c735c] text-white px-4 py-2 rounded text-sm hover:bg-blue-600">
                 Send
               </button>
             </form>

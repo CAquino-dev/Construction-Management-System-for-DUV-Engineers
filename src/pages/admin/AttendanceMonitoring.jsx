@@ -173,7 +173,7 @@ export const Attendance = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 mt-10">
+    <div className="container mx-auto p-6">
       <div className="bg-white shadow-md rounded-lg p-6 flex flex-col items-center">
         <h2 className="text-2xl font-bold mb-4">Attendance</h2>
         <p className="text-xl text-gray-800 mb-2">
