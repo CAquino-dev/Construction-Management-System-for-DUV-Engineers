@@ -227,7 +227,7 @@ const EmployeeProfile = () => {
             <DialogTitle>Salary Details</DialogTitle>
           </DialogHeader>
           {selectedSalary && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p>
                 <strong>Period:</strong>{" "}
                 {new Date(selectedSalary.period_start).toLocaleDateString()} -{" "}
@@ -258,6 +258,24 @@ const EmployeeProfile = () => {
               <p className="font-bold text-lg">
                 Final Salary: ₱{selectedSalary.final_salary.toLocaleString()}
               </p>
+
+              {/* ✅ Show signature if exists */}
+              {selectedSalary.signature_url ? (
+                <div className="mt-4">
+                  <strong>Employee Signature:</strong>
+                  <div className="border rounded-md mt-2 p-2 bg-gray-50">
+                    <img
+                      src={`${API}${selectedSalary.signature_url}`}
+                      alt="Employee Signature"
+                      className="max-h-32 object-contain"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-gray-500 italic">
+                  No signature recorded for this salary release.
+                </p>
+              )}
             </div>
           )}
         </DialogContent>

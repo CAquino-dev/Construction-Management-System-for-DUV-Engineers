@@ -490,29 +490,38 @@ const getEmployeeSalary = (req, res) => {
   const { id } = req.params;
 
   const sql = `
-SELECT 
-    e.employee_id AS employee_id,               
-    e.full_name,
-    p.period_start,
-    p.period_end,
-    p.total_hours_worked,
-    p.calculated_salary,
-    p.status,
-    p.overtime_pay,
-    p.philhealth_deduction,
-    p.sss_deduction,
-    p.pagibig_deduction,
-    p.total_deductions,
-    p.final_salary,
-    d.name AS department_name,          
-    es.hourly_rate                      
+    SELECT 
+        e.id AS employee_id,
+        e.full_name,
+        p.period_start,
+        p.period_end,
+        p.total_hours_worked,
+        p.calculated_salary,
+        pi.finance_status,                  
+        pi.payment_status AS status,        -- Released / Paid
+        pi.signature_url, -- store signature file path here
+        pi.paid_by,
+        pi.paid_at,
+        p.overtime_pay,
+        p.philhealth_deduction,
+        p.sss_deduction,
+        p.pagibig_deduction,
+        p.total_deductions,
+        p.final_salary,
+        d.name AS department_name,
+        es.hourly_rate
     FROM payroll p
-    JOIN users e ON p.employee_id = e.id   
-    JOIN departments d on e.department_id = d.id
-    JOIN employee_salary es ON e.id = es.employee_id 
+    JOIN users e 
+        ON p.employee_id = e.id
+    JOIN departments d 
+        ON e.department_id = d.id
+    JOIN employee_salary es 
+        ON e.id = es.employee_id
+    JOIN payslip_items pi 
+        ON pi.payroll_id = p.id
     WHERE e.id = ?
-    ORDER BY period_start DESC
-    LIMIT 10
+    ORDER BY p.period_start DESC
+    LIMIT 10;
   `;
 
   db.query(sql, [id], (err, results) => {
@@ -523,7 +532,6 @@ SELECT
     res.json(results);
   });
 };
-
 
 module.exports = { addEmployee, checkIn, checkOut, 
   getPermissions, getDepartments, attendanceStatus,

@@ -51,6 +51,7 @@ import { AttendancePage } from "./pages/admin/AttendancePage";
 import EmployeeProfile from "./pages/admin/EmployeeProfile";
 import PaymentPage from "./pages/admin/PaymentPage";
 import RequestPage from "./pages/admin/RequestPage";
+import SalaryReleaseInPerson from "./pages/admin/SalaryReleaseInPerson";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -109,6 +110,10 @@ const App = () => {
             <Route
               path="finance/approved-payroll-from-hr"
               element={<Finance />}
+            />
+            <Route
+              path="finance/salaryRelease"
+              element={<SalaryReleaseInPerson />}
             />
             <Route
               path="finance/view-contracts"

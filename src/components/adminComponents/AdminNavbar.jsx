@@ -431,6 +431,19 @@ const AdminNavbar = ({ children }) => {
                   </li>
                   <li>
                     <Link
+                      to="/admin-dashboard/finance/salaryRelease"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/salaryRelease"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Salary Release
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
                       to="/admin-dashboard/finance/view-contracts"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===

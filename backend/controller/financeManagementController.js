@@ -1,4 +1,6 @@
 const db = require("../config/db");
+const fs = require('fs');
+const path = require('path');
 
 const getFinance = (req, res) => {
     const query = `SELECT 
@@ -138,42 +140,71 @@ const getApprovedPayslips = (req, res) => {
 
 
 const financeUpdatePayslipStatus = (req, res) => {
-    const { payslipId, status, remarks, approvedBy } = req.body;
+  const { payslipId, status, remarks, approvedBy } = req.body;
+
+  if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
+    return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+  }
+
+  // Step 1: Update the finance status of the payslip
+  const updatePayslipQuery = `
+    UPDATE payslip 
+    SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() 
+    WHERE id = ?`;
   
-    if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
-        return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+  db.query(updatePayslipQuery, [status, remarks || null, approvedBy, payslipId], (err, result) => {
+    if (err) {
+      console.error("Error updating payslip status:", err);
+      return res.status(500).json({ error: "Failed to update payslip status." });
     }
-  
-    // Update the finance status of the payslip
-    const updatePayslipQuery = `UPDATE payslip 
-      SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() 
-      WHERE id = ?`;
-  
-    db.query(updatePayslipQuery, [status, remarks || null, approvedBy, payslipId], (err, result) => {
-      if (err) {
-        console.error("Error updating payslip status:", err);
-        return res.status(500).json({ error: "Failed to update payslip status." });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Payslip not found." });
+    }
+
+    // Step 2: Update the finance status of payslip items
+    const updatePayslipItemsQuery = `
+      UPDATE payslip_items 
+      SET finance_status = ?, finance_rejection_remarks = ?
+      WHERE payslip_id = ?`;
+
+    db.query(updatePayslipItemsQuery, [status, remarks || null, payslipId], (err2) => {
+      if (err2) {
+        console.error("Error updating payslip items' finance status:", err2);
+        return res.status(500).json({ error: "Failed to update payslip items' finance status." });
       }
-  
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Payslip not found." });
-      }
-  
-      // Update the finance status of the payslip items
-      const updatePayslipItemsQuery = `UPDATE payslip_items 
-        SET finance_status = ?, finance_rejection_remarks = ?
-        WHERE payslip_id = ?`;
-  
-      db.query(updatePayslipItemsQuery, [status, remarks || null, payslipId], (err2, result2) => {
-        if (err2) {
-          console.error("Error updating payslip items' finance status:", err2);
-          return res.status(500).json({ error: "Failed to update payslip items' finance status." });
-        }
-  
+
+      // ✅ Step 3: If finance approved → mark salaries as Released (not Paid yet)
+      if (status === "Approved by Finance") {
+        const releaseQuery = `
+          UPDATE payslip_items
+          SET 
+            payment_status = 'Released',
+            payment_remarks = ?,
+            paid_by = ?,
+            paid_at = NOW()
+          WHERE payslip_id = ? 
+            AND finance_status = 'Approved by Finance'
+            AND payment_status = 'Pending'`;
+
+        db.query(releaseQuery, [remarks || "Salaries released by Finance", approvedBy, payslipId], (err3, result3) => {
+          if (err3) {
+            console.error("Error releasing salaries:", err3);
+            return res.status(500).json({ error: "Payslip approved but failed to release salaries." });
+          }
+
+          return res.json({ 
+            message: `Payslip approved and ${result3.affectedRows} salaries marked as Released.` 
+          });
+        });
+      } else {
+        // If rejected → just confirm rejection
         res.json({ message: `Payslip and associated items have been ${status}.` });
-      });
+      }
     });
-  };
+  });
+};
+
 
   const financeProcessPayslipPayment = (req, res) => {
   const { payslipId, paymentStatus, remarks, paidBy } = req.body;
@@ -607,6 +638,141 @@ const getPmApprovedMilestones = (req, res) => {
   });
 };
 
+const uploadSalarySignature = (req, res) => {
+  const { base64Signature, payslipItemId, userId } = req.body;
+
+  if (!base64Signature || !payslipItemId || !userId) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Ensure salary signature folder exists
+  const salarySignatureDir = path.join(__dirname, "../public/salary_signatures");
+  if (!fs.existsSync(salarySignatureDir)) {
+    fs.mkdirSync(salarySignatureDir, { recursive: true });
+  }
+
+  // Save signature file
+  const signatureFileName = `salary_signature_${payslipItemId}_${Date.now()}.png`;
+  const signatureFilePath = path.join(salarySignatureDir, signatureFileName);
+
+  const base64Data = base64Signature.replace(/^data:image\/png;base64,/, "");
+  fs.writeFile(signatureFilePath, base64Data, "base64", (err) => {
+    if (err) {
+      console.error("Error saving salary signature:", err);
+      return res.status(500).json({ error: "Failed to save signature" });
+    }
+
+    // Update DB record
+    const query = `
+      UPDATE payslip_items
+      SET payment_status = 'Paid',
+          paid_by = ?,
+          paid_at = NOW(),
+          signature_url = ? 
+      WHERE id = ?
+    `;
+
+    db.query(
+      query,
+      [userId, `/salary_signatures/${signatureFileName}`, payslipItemId],
+      (dbErr, result) => {
+        if (dbErr) {
+          console.error("DB error updating payslip item:", dbErr);
+          return res.status(500).json({ error: "Database error" });
+        }
+
+        return res.status(200).json({
+          message: "Salary marked as Paid with signature",
+          payslipItemId,
+          signatureUrl: `/salary_signatures/${signatureFileName}`,
+        });
+      }
+    );
+  });
+};
+
+// ✅ Get payslips ready for salary release (Approved by Finance, Released but not Paid)
+const getReleasedPayslips = (req, res) => {
+  const query = `
+    SELECT 
+        ps.id AS payslip_id,
+        ps.title,
+        ps.period_start,
+        ps.period_end,
+        ps.created_at AS payslip_created_at,
+        creator.full_name AS created_by_name,
+        pi.id AS payslip_item_id,
+        pr.id AS payroll_id,
+        e.full_name AS employee_name,
+        pr.total_hours_worked,
+        pr.calculated_salary,
+        pr.overtime_pay,
+        pr.philhealth_deduction,
+        pr.sss_deduction,
+        pr.pagibig_deduction,
+        pr.total_deductions,
+        pr.final_salary,
+        pi.hr_status,
+        pi.finance_status,
+        pi.payment_status
+    FROM payslip ps
+    LEFT JOIN users creator ON ps.created_by = creator.id
+    LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+    LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+    LEFT JOIN users e ON pr.employee_id = e.id
+    WHERE pi.finance_status = 'Approved by Finance'
+      AND pi.payment_status = 'Released' -- released but not yet fully paid
+    ORDER BY ps.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching payslips for release:", err);
+      return res.status(500).json({ error: "Failed to fetch payslips for release." });
+    }
+
+    // Group items by payslip
+    const grouped = {};
+    results.forEach(row => {
+      if (!grouped[row.payslip_id]) {
+        grouped[row.payslip_id] = {
+          payslip_id: row.payslip_id,
+          title: row.title,
+          period_start: row.period_start,
+          period_end: row.period_end,
+          payslip_created_at: row.payslip_created_at,
+          created_by_name: row.created_by_name,
+          items: []
+        };
+      }
+
+      grouped[row.payslip_id].items.push({
+        payslip_item_id: row.payslip_item_id,
+        payroll_id: row.payroll_id,
+        employee_name: row.employee_name,
+        total_hours_worked: row.total_hours_worked,
+        calculated_salary: row.calculated_salary,
+        overtime_pay: row.overtime_pay,
+        philhealth_deduction: row.philhealth_deduction,
+        sss_deduction: row.sss_deduction,
+        pagibig_deduction: row.pagibig_deduction,
+        total_deductions: row.total_deductions,
+        final_salary: row.final_salary,
+        hr_status: row.hr_status,
+        finance_status: row.finance_status,
+        payment_status: row.payment_status
+      });
+    });
+
+    res.json({
+      success: true,
+      message: "Payslips ready for release fetched successfully",
+      data: Object.values(grouped)
+    });
+  });
+};
+
+
  
 
 
@@ -614,5 +780,6 @@ module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
-  approveContract, rejectContract, getPmApprovedMilestones
+  approveContract, rejectContract, getPmApprovedMilestones, uploadSalarySignature,
+  getReleasedPayslips
  };
