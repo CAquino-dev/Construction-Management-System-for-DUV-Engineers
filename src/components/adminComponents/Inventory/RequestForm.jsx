@@ -19,7 +19,9 @@ export const RequestForm = () => {
     const fetchItems = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/getInventoryItems`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/inventory/getInventoryItems`
         );
         setItems(res.data);
       } catch (err) {
@@ -36,7 +38,9 @@ export const RequestForm = () => {
 
     try {
       await axios.post(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/request/${userId}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/inventory/request/${userId}`,
         form
       );
       toast.success("Request submitted successfully");
@@ -49,9 +53,9 @@ export const RequestForm = () => {
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">📝 Request Office Supplies</h1>
+      <h1 className="text-2xl font-bold mb-6">Request Office Supplies</h1>
 
-      <Card className="shadow-lg">
+      <Card className="">
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4">
             {/* Item Dropdown */}
@@ -95,7 +99,10 @@ export const RequestForm = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button
+              type="submit"
+              className="w-full bg-[#4c735c] text-white hover:bg-[#4c735c]/90 cursor-pointer"
+            >
               Submit Request
             </Button>
           </form>

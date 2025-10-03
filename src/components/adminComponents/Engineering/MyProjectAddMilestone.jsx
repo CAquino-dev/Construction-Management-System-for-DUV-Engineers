@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X } from "@phosphor-icons/react";
 import ConfirmationModal from "../ConfirmationModal";
+import { toast } from "sonner";
 
 export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
   const [title, setTitle] = useState("");
@@ -23,17 +24,17 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
 
   const validateForm = () => {
     if (!title.trim() || !details.trim()) {
-      alert("Please fill in milestone title and details.");
+      toast.error("Please fill in milestone title and details.");
       return false;
     }
     if (!selectedBoqs.length) {
-      alert("Please select at least one BOQ item.");
+      toast.error("Please select at least one BOQ item.");
       return false;
     }
     // Check that each selected BOQ has MTO items
     for (let boqId of selectedBoqs) {
       if (!mto[boqId] || !mto[boqId].length) {
-        alert("Please add MTO items for each selected BOQ.");
+        toast.error("Please add MTO items for each selected BOQ.");
         return false;
       }
     }
@@ -69,14 +70,14 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
 
       if (response.ok) {
         const data = await response.json();
-        alert("Milestone Added Successfully");
+        toast.success("Milestone Added Successfully");
         onSave(data);
       } else {
         alert("An error occurred while adding the milestone");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error submitting milestone");
+      toast.error("Error submitting milestone");
     }
 
     setIsConfirmationModalOpen(false);
@@ -87,7 +88,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
       ...prev,
       [boqId]: [
         ...(prev[boqId] || []),
-        { description: "", unit: "", quantity: ""},
+        { description: "", unit: "", quantity: "" },
       ],
     }));
   };
