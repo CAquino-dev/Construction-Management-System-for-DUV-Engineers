@@ -674,6 +674,119 @@ const getPaymentTerms = (req, res) => {
   })
 };
 
+// ✅ Setup multer for site visit uploads
+const siteVisitStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(process.cwd(), "uploads/site_reports"));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, "sitevisit-" + uniqueSuffix + ext);
+  },
+});
+
+const siteVisitUpload = multer({
+  storage: siteVisitStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only PDF, JPG, and PNG files are allowed"));
+  },
+}).single("report_file"); // must match frontend field name
+
+// ✅ Controller: create site visit (callback style)
+const createSiteVisit = (req, res) => {
+  siteVisitUpload(req, res, (err) => {
+    if (err) {
+      console.error("Multer error:", err);
+      return res.status(400).json({ error: err.message });
+    }
+
+    const {
+      lead_id,
+      location,
+      dateVisited,
+      terrainType,
+      accessibility,
+      waterSource,
+      powerSource,
+      areaMeasurement,
+      notes,
+    } = req.body;
+
+    if (!lead_id || !location || !dateVisited) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const report_file = req.file ? req.file.filename : null;
+
+    const insertQuery = `
+      INSERT INTO site_visits 
+      (lead_id, location, date_visited, terrain_type, accessibility, water_source, power_source, area_measurement, notes, report_file_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    const values = [
+      lead_id,
+      location,
+      dateVisited,
+      terrainType || null,
+      accessibility || null,
+      waterSource || null,
+      powerSource || null,
+      areaMeasurement || null,
+      notes || null,
+      report_file,
+    ];
+
+    db.query(insertQuery, values, (error, results) => {
+      if (error) {
+        console.error("Error inserting site visit:", error);
+        return res.status(500).json({ error: "Failed to save site visit" });
+      }
+
+      // ✅ Update the lead status to 'site_visited'
+      const updateLeadStatusQuery = `
+        UPDATE leads 
+        SET status = 'site_visited' 
+        WHERE id = ?
+      `;
+
+      db.query(updateLeadStatusQuery, [lead_id], (statusErr) => {
+        if (statusErr) {
+          console.error("Error updating lead status:", statusErr);
+          return res.status(500).json({ error: "Site visit saved, but failed to update lead status" });
+        }
+
+        res.status(201).json({
+          message: "✅ Site visit saved and lead status updated to 'site_visited'",
+          siteVisitId: results.insertId,
+          report_file: report_file
+            ? `/uploads/site_reports/${report_file}`
+            : null,
+        });
+      });
+    });
+  });
+};
+
+
+const getScheduledSiteVisits = (req, res) => {
+    const query = `SELECT * FROM leads WHERE status = 'site_scheduled'`;
+
+    db.query(query, (error, results) => {
+        if (error) {
+            console.error('Error fetching leads:', error);
+            return res.status(500).json({ error: 'Failed to fetch leads' });
+        }
+
+        res.status(200).json(results);
+    });
+
+};
+
 module.exports = {
   createProposal,
   getProposalByToken,
@@ -685,5 +798,7 @@ module.exports = {
   getApprovedContracts,
   sendContractToClient,
   clientRejectContract,
-  getPaymentTerms
+  getPaymentTerms,
+  createSiteVisit,
+  getScheduledSiteVisits
 };

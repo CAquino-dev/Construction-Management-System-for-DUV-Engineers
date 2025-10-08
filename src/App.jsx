@@ -1,3 +1,4 @@
+import "leaflet/dist/leaflet.css";
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
@@ -52,6 +53,7 @@ import EmployeeProfile from "./pages/admin/EmployeeProfile";
 import PaymentPage from "./pages/admin/PaymentPage";
 import RequestPage from "./pages/admin/RequestPage";
 import SalaryReleaseInPerson from "./pages/admin/SalaryReleaseInPerson";
+import SiteVisit from "./pages/admin/SiteVisit";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -155,6 +157,10 @@ const App = () => {
               path="project/create/:contractId"
               element={<CreateProjectPage />}
             />
+            <Route
+              path="project/siteVisit"
+              element={<SiteVisit />}
+            />            
             <Route
               path="project/:id/milestone/:milestoneId/tasks"
               element={<MyProjectTaskBreakdown />}
