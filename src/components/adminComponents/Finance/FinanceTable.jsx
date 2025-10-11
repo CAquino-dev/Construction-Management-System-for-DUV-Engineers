@@ -13,9 +13,10 @@ export const FinanceTable = () => {
   useEffect(() => {
     const fetchFinanceRecords = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getApprovedPayslips`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getApprovedPayslips`
+        );
         const data = await response.json();
-        console.log(data.data);
         setFinanceRecords(data.data);
       } catch (error) {
         console.error("Error fetching payroll records:", error);
@@ -24,36 +25,43 @@ export const FinanceTable = () => {
     fetchFinanceRecords();
   }, []);
 
-  const updateStatus = async (id, newStatus) => {
-    console.log("payrollId:", id);
-    console.log("status", newStatus);
+  // 🔹 Release Salary API call
+  const releaseSalary = async (payslipId) => {
     const userId = localStorage.getItem("userId");
-
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/payroll/update-status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id, newStatus, userId }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/release-salary/${payslipId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ releasedBy: userId }),
+        }
+      );
 
       const data = await response.json();
       if (response.ok) {
+        // Update UI: mark payslip as released
         const updated = financeRecords.map((record) =>
-          record.payroll_id === id ? { ...record, status: newStatus } : record
+          record.payslip_id === payslipId
+            ? { ...record, is_released: 1, released_at: new Date().toISOString() }
+            : record
         );
         setFinanceRecords(updated);
       } else {
-        console.error("Error updating status:", data.error);
+        console.error("Error releasing salary:", data.error);
       }
     } catch (error) {
-      console.error("Error updating status:", error);
+      console.error("Error releasing salary:", error);
     }
   };
 
   const totalPages = Math.ceil(financeRecords.length / recordsPerPage);
-  const currentRecords = financeRecords.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
+  const currentRecords = financeRecords.slice(
+    (currentPage - 1) * recordsPerPage,
+    currentPage * recordsPerPage
+  );
 
   return (
     <div className="p-4">
@@ -66,17 +74,35 @@ export const FinanceTable = () => {
               <TableHead className="text-center text-white">End</TableHead>
               <TableHead className="text-center text-white">Created At</TableHead>
               <TableHead className="text-center text-white">Created By</TableHead>
+              <TableHead className="text-center text-white">Released</TableHead>
               <TableHead className="text-center text-white">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentRecords.map((record, index) => (
-              <TableRow key={record.payslip_id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
+              <TableRow
+                key={record.payslip_id}
+                className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}
+              >
                 <TableCell className="text-center p-2">{record.title}</TableCell>
-                <TableCell className="text-center p-2">{new Date(record.period_start).toLocaleDateString()}</TableCell>
-                <TableCell className="text-center p-2">{new Date(record.period_end).toLocaleDateString()}</TableCell>
-                <TableCell className="text-center p-2">{new Date(record.payslip_created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="text-center p-2">
+                  {new Date(record.period_start).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-center p-2">
+                  {new Date(record.period_end).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-center p-2">
+                  {new Date(record.payslip_created_at).toLocaleDateString()}
+                </TableCell>
                 <TableCell className="text-center p-2">{record.created_by_name}</TableCell>
+
+                {/* Released status */}
+                <TableCell className="text-center p-2">
+                  {record.is_released
+                    ? `✅ ${new Date(record.released_at).toLocaleDateString()}`
+                    : "❌ Not Released"}
+                </TableCell>
+
                 <TableCell className="text-center p-2">
                   <div className="flex justify-center gap-2">
                     <button
@@ -85,6 +111,15 @@ export const FinanceTable = () => {
                     >
                       <Eye size={18} />
                     </button>
+
+                    {!record.is_released && (
+                      <button
+                        onClick={() => releaseSalary(record.payslip_id)}
+                        className="bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-white hover:text-blue-600 cursor-pointer"
+                      >
+                        Release
+                      </button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -97,7 +132,9 @@ export const FinanceTable = () => {
       <Pagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
 
       {/* Finance Modal */}
-      {selectedRecord && <FinanceModal closeModal={() => setSelectedRecord(null)} record={selectedRecord} />}
+      {selectedRecord && (
+        <FinanceModal closeModal={() => setSelectedRecord(null)} record={selectedRecord} />
+      )}
     </div>
   );
 };

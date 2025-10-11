@@ -30,7 +30,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     }
   };
 
-  // --- Calculations ---
   const calculateMtoTotals = (mtoItems = []) =>
     mtoItems.reduce((sum, item) => {
       const qty = parseFloat(item.quantity) || 0;
@@ -48,7 +47,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     };
   });
 
-  // --- Handle MTO updates ---
   const handleMtoChange = (index, field, value) => {
     const updatedItems = [...selectedBoq.mto_items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
@@ -61,6 +59,11 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       ...selectedBoq,
       mto_items: [...(selectedBoq.mto_items || []), newItem],
     });
+  };
+
+  const removeMtoItem = (index) => {
+    const updatedItems = selectedBoq.mto_items.filter((_, i) => i !== index);
+    setSelectedBoq({ ...selectedBoq, mto_items: updatedItems });
   };
 
   const updateMto = async () => {
@@ -80,7 +83,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to update MTO");
 
-      // ✅ update the items state so UI refreshes with new data
       setItems((prev) =>
         prev.map((item) =>
           item.milestone_boq_id === selectedBoq.milestone_boq_id
@@ -89,7 +91,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
         )
       );
 
-      // close modal
       setSelectedBoq(null);
       toast.success("MTO updated successfully!");
     } catch (error) {
@@ -98,7 +99,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     }
   };
 
-  // --- Update Milestone Status ---
   const updateMilestoneStatus = async (newStatus) => {
     try {
       setStatusUpdating(true);
@@ -170,10 +170,10 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
           <div className="flex gap-3 mb-6">
             <button
               disabled={statusUpdating}
-              onClick={() => updateMilestoneStatus("PM Approved")}
+              onClick={() => updateMilestoneStatus("For Procurement")}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
             >
-              PM Approve
+              For Procurement
             </button>
             <button
               disabled={statusUpdating}
@@ -185,7 +185,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
           </div>
         )}
 
-        {/* --- Data Analysis Section --- */}
+        {/* Data Analysis */}
         {comparisonData.length > 0 && (
           <div className="my-6">
             <h3 className="text-lg font-semibold mb-2">BOQ vs MTO Analysis</h3>
@@ -273,6 +273,9 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                     <th className="border px-3 py-1 text-right">Quantity</th>
                     <th className="border px-3 py-1 text-right">Unit Cost</th>
                     <th className="border px-3 py-1 text-right">Total</th>
+                    {canModifyMto && (
+                      <th className="border px-3 py-1 text-center">Remove</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -344,12 +347,22 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                         <td className="border px-3 py-1 text-right">
                           {(mto.quantity * mto.unit_cost).toFixed(2)}
                         </td>
+                        {canModifyMto && (
+                          <td className="border px-3 py-1 text-center">
+                            <button
+                              onClick={() => removeMtoItem(idx)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <X size={18} />
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan="5"
+                        colSpan={canModifyMto ? 6 : 5}
                         className="text-center py-3 text-gray-500"
                       >
                         No MTO items found.
@@ -393,7 +406,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   </p>
                 </div>
 
-                {/* Pie Chart */}
                 <div>
                   <PieChart width={180} height={180}>
                     <Pie
@@ -427,8 +439,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                 </div>
               </div>
 
-              {/* Confirm */}
-              {canModifyMto === true && (
+              {canModifyMto && (
                 <button
                   onClick={updateMto}
                   disabled={

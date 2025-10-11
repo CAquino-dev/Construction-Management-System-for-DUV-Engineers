@@ -360,7 +360,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
             </div>
 
             {/* Customized Access */}
-            <div className="p-4 bg-gray-100 rounded-md mt-4">
+            {/* <div className="p-4 bg-gray-100 rounded-md mt-4">
               <div className="flex justify-between items-center mb-2">
                 <h4 className="text-sm font-semibold text-gray-700">
                   Customized Access
@@ -385,7 +385,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
                   </label>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Submit Button */}
