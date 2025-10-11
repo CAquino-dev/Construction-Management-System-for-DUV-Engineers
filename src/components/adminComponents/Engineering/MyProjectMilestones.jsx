@@ -8,6 +8,7 @@ const STATUS_COLORS = {
   "For Review": "bg-yellow-400",
   "PM Approved": "bg-green-500",
   "PM Rejected": "bg-red-500",
+  "For Procurement": "bg-pink-500",
   "Finance Approved": "bg-blue-500",
   "Finance Rejected": "bg-purple-500",
 };

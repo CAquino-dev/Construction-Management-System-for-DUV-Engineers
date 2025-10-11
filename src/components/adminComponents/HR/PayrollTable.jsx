@@ -236,9 +236,12 @@ export const PayrollTable = () => {
     if (range === "1-15") {
       startDate = `${year}-${month}-01`;
       endDate = `${year}-${month}-15`;
-    } else if (range === "15-31") {
-      startDate = `${year}-${month}-15`;
-      endDate = `${year}-${month}-31`;
+    } else if (range === '16-31') {
+      startDate = `${year}-${month}-16`;
+
+      // get actual last day of the month
+      const lastDay = new Date(year, parseInt(month), 0).getDate();
+      endDate = `${year}-${month}-${lastDay}`;
     }
 
     setStartDate(startDate);
@@ -328,7 +331,7 @@ export const PayrollTable = () => {
               Select Date Range
             </option>
             <option value="1-15">1-15</option>
-            <option value="15-31">15-31</option>
+            <option value="16-31">16-31</option>
           </select>
         </div>
 

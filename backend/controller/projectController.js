@@ -906,9 +906,45 @@ const getMilestoneTaskReports = (req, res) => {
   })
 };
 
+// Get Payment Schedule by Project ID
+const getPaymentScheduleByProject = (req, res) => {
+  const { projectId } = req.params;
+
+  const sql = `
+    SELECT 
+      ps.id AS schedule_id,
+      ps.milestone_name,
+      ps.due_date,
+      ps.amount,
+      ps.status,
+      ps.paid_date,
+      ps.created_at,
+      ep.project_name,
+      ep.client_id,
+      ep.contract_id
+    FROM payment_schedule ps
+    JOIN engineer_projects ep ON ps.contract_id = ep.contract_id
+    WHERE ep.id = ?
+    ORDER BY ps.due_date ASC
+  `;
+
+  db.query(sql, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching payment schedule:", err);
+      return res.status(500).json({ error: "Failed to fetch payment schedule" });
+    }
+
+    res.json({
+      results
+    });
+  });
+};
+
+
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
-  deleteTask, getReports, submitReport, getMilestoneTaskReports
+  deleteTask, getReports, submitReport, getMilestoneTaskReports, 
+  getPaymentScheduleByProject
 };

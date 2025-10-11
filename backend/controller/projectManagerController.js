@@ -265,7 +265,7 @@ const generateContract = (req, res) => {
   // Step 1: Get proposal + lead + payment term info
   const query = `
     SELECT p.*, l.client_name, l.email, l.phone_number, l.project_interest, 
-           l.budget, l.timeline, l.id AS lead_id,
+           p.budget_estimate, l.timeline, l.id AS lead_id,
            pt.id AS payment_term_id, pt.name AS payment_term_label
     FROM proposals p
     JOIN leads l ON p.lead_id = l.id
@@ -290,7 +290,7 @@ const generateContract = (req, res) => {
       title: data.title,
       description: data.description,
       scope_of_work: JSON.parse(data.scope_of_work || "[]"),
-      budget_estimate: data.budget,
+      budget_estimate: data.budget_estimate,
       start_date: data.start_date,   // ✅ use start_date
       end_date: data.end_date,       // ✅ use end_date
       payment_terms:
@@ -303,7 +303,7 @@ const generateContract = (req, res) => {
       email: data.email,
       phone_number: data.phone_number,
       project_interest: data.project_interest,
-      budget: data.budget,
+      budget: data.budget_estimate,
       start_date: data.start_date,   // ✅ use start_date
       end_date: data.end_date,       // ✅ use end_date
       lead_id: data.lead_id,
@@ -349,7 +349,7 @@ const generateContract = (req, res) => {
               data.lead_id,
               data.id,
               fileUrl,
-              data.budget, // total_amount = proposal budget
+              data.budget_estimate, // total_amount = proposal budget
               data.payment_term_id || null,
               formData.payment_terms,
               data.start_date,
@@ -605,8 +605,8 @@ const sendContractToClient = (req, res) => {
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: "caquino.dev@gmail.com",
-          pass: "ykvj ebtt uois mkns",
+          user: process.env.SMTP_EMAIL,
+          pass: process.env.SMTP_PASS,
         },
       });
 
@@ -674,6 +674,214 @@ const getPaymentTerms = (req, res) => {
   })
 };
 
+// ✅ Setup multer for site visit uploads
+const siteVisitStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(process.cwd(), "uploads/site_reports"));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, "sitevisit-" + uniqueSuffix + ext);
+  },
+});
+
+const siteVisitUpload = multer({
+  storage: siteVisitStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Only PDF, JPG, and PNG files are allowed"));
+  },
+}).single("report_file"); // must match frontend field name
+
+// ✅ Controller: create site visit (callback style)
+const createSiteVisit = (req, res) => {
+  siteVisitUpload(req, res, (err) => {
+    if (err) {
+      console.error("Multer error:", err);
+      return res.status(400).json({ error: err.message });
+    }
+
+    const {
+      lead_id,
+      location,
+      dateVisited,
+      terrainType,
+      accessibility,
+      waterSource,
+      powerSource,
+      areaMeasurement,
+      notes,
+    } = req.body;
+
+    if (!lead_id || !location || !dateVisited) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const report_file = req.file ? req.file.filename : null;
+
+    const insertQuery = `
+      INSERT INTO site_visits 
+      (lead_id, location, date_visited, terrain_type, accessibility, water_source, power_source, area_measurement, notes, report_file_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    const values = [
+      lead_id,
+      location,
+      dateVisited,
+      terrainType || null,
+      accessibility || null,
+      waterSource || null,
+      powerSource || null,
+      areaMeasurement || null,
+      notes || null,
+      report_file,
+    ];
+
+    db.query(insertQuery, values, (error, results) => {
+      if (error) {
+        console.error("Error inserting site visit:", error);
+        return res.status(500).json({ error: "Failed to save site visit" });
+      }
+
+      // ✅ Update the lead status to 'site_visited'
+      const updateLeadStatusQuery = `
+        UPDATE leads 
+        SET status = 'site_visited' 
+        WHERE id = ?
+      `;
+
+      db.query(updateLeadStatusQuery, [lead_id], (statusErr) => {
+        if (statusErr) {
+          console.error("Error updating lead status:", statusErr);
+          return res.status(500).json({ error: "Site visit saved, but failed to update lead status" });
+        }
+
+        res.status(201).json({
+          message: "✅ Site visit saved and lead status updated to 'site_visited'",
+          siteVisitId: results.insertId,
+          report_file: report_file
+            ? `/uploads/site_reports/${report_file}`
+            : null,
+        });
+      });
+    });
+  });
+};
+
+
+const getScheduledSiteVisits = (req, res) => {
+    const query = `SELECT * FROM leads WHERE status = 'site_scheduled'`;
+
+    db.query(query, (error, results) => {
+        if (error) {
+            console.error('Error fetching leads:', error);
+            return res.status(500).json({ error: 'Failed to fetch leads' });
+        }
+
+        res.status(200).json(results);
+    });
+
+};
+
+const getForProcurement = (req, res) => {
+  const query = 
+    `    SELECT
+      m.id AS milestone_id,
+      m.project_id,
+      m.timestamp,
+      m.title,
+      m.details,
+      m.status,
+      m.start_date,
+      m.due_date,
+
+      mb.id AS milestone_boq_id,
+      b.id AS boq_id,
+      b.item_no,
+      b.description AS boq_description,
+      b.unit AS boq_unit,
+      b.quantity AS boq_quantity,
+      b.unit_cost AS boq_unit_cost,
+      b.total_cost AS boq_total_cost,
+
+      mm.id AS mto_id,
+      mm.description AS mto_description,
+      mm.unit AS mto_unit,
+      mm.quantity AS mto_quantity,
+      mm.unit_cost AS mto_unit_cost,
+      mm.total_cost AS mto_total_cost
+    FROM milestones m
+    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+    LEFT JOIN boq b ON mb.boq_id = b.id
+    LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+    WHERE m.status = 'For Procurement'
+      ORDER BY m.due_date ASC`;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching milestones:", err);
+      return res.status(500).json({ error: "Failed to fetch milestones" });
+    }
+
+    const milestonesMap = new Map();
+
+    results.forEach(row => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          id: row.milestone_id,
+          project_id: row.project_id,
+          timestamp: row.timestamp,
+          title: row.title,
+          details: row.details,
+          status: row.status,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          boq_items: []
+        });
+      }
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      if (row.milestone_boq_id) {
+        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+
+        if (!boqItem) {
+          boqItem = {
+            milestone_boq_id: row.milestone_boq_id,
+            boq_id: row.boq_id,
+            item_no: row.item_no,
+            description: row.boq_description,
+            unit: row.boq_unit,
+            quantity: row.boq_quantity,
+            unit_cost: row.boq_unit_cost,
+            total_cost: row.boq_total_cost,
+            mto_items: []
+          };
+          milestone.boq_items.push(boqItem);
+        }
+
+        if (row.mto_id) {
+          boqItem.mto_items.push({
+            mto_id: row.mto_id,
+            description: row.mto_description,
+            unit: row.mto_unit,
+            quantity: row.mto_quantity,
+            unit_cost: row.mto_unit_cost,
+            total_cost: row.mto_total_cost
+          });
+        }
+      }
+    });
+
+    const milestones = Array.from(milestonesMap.values());
+    res.json({ milestones });
+  });
+};
+
 module.exports = {
   createProposal,
   getProposalByToken,
@@ -685,5 +893,8 @@ module.exports = {
   getApprovedContracts,
   sendContractToClient,
   clientRejectContract,
-  getPaymentTerms
+  getPaymentTerms,
+  createSiteVisit,
+  getScheduledSiteVisits, 
+  getForProcurement
 };
