@@ -22,10 +22,10 @@ import {
 } from "recharts";
 
 export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
-  // API call to update finance approval status
-  console.log(data);
+  const userId = localStorage.getItem("userId");
 
-  const userId = localStorage.getItem('userId');
+  console.log('finance data', data.id);
+
   const updateFinanceApproval = async (newStatus) => {
     try {
       const res = await fetch(
@@ -33,9 +33,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             status: newStatus,
-            financeId: userId
+            financeId: userId,
           }),
         }
       );
@@ -64,119 +64,150 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
     if (success) onClose();
   };
 
-  // 🔹 Prepare chart data (convert costs to numbers!)
-  const boqTotal =
-    data.boq_items?.reduce(
-      (sum, b) => sum + (parseFloat(b.total_cost) || 0),
-      0
-    ) || 0;
+  // ✅ Extract supplier and BOQ data safely
+  const supplier = data.approved_supplier || {};
+  const materials = supplier.items || [];
+  const boqItems = data.boq_items || [];
 
-  const mtoTotal =
-    data.boq_items?.reduce(
-      (sum, b) =>
-        sum +
-        (b.mto_items?.reduce(
-          (mtoSum, m) => mtoSum + (parseFloat(m.total_cost) || 0),
-          0
-        ) || 0),
-      0
-    ) || 0;
+  // ✅ Convert numeric strings to numbers properly
+  const totalCost = materials.reduce(
+    (sum, item) => sum + (parseFloat(item.total_cost) || 0),
+    0
+  );
 
-  const comparisonData = [
-    { name: "BOQ", value: boqTotal },
-    { name: "MTO", value: mtoTotal },
+  const boqTotal = boqItems.reduce(
+    (sum, item) => sum + (parseFloat(item.total_cost) || 0),
+    0
+  );
+
+  const chartData = materials.map((item) => ({
+    name: item.material_name,
+    value: parseFloat(item.total_cost) || 0,
+  }));
+
+  const COLORS = [
+    "#4CAF50",
+    "#FF9800",
+    "#2196F3",
+    "#9C27B0",
+    "#F44336",
+    "#00BCD4",
   ];
-
-  const COLORS = ["#4CAF50", "#FF9800"];
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[1100px] max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">Finance Review: {data.title}</h2>
+          <h2 className="text-lg font-bold">
+            Finance Review: {data.title || "Untitled Milestone"}
+          </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-black">
             <X size={24} />
           </button>
         </div>
 
         {/* Details */}
-        <div className="mb-4 space-y-2">
-          <p>Date: {data.date}</p>
-          <p>Due: {data.date_needed}</p>
+        <div className="mb-4 space-y-1">
           <p>
-            Status:{" "}
-            <strong
-              className={
+            <strong>Supplier:</strong> {supplier.supplier_name || "N/A"}
+          </p>
+          <p>
+            <strong>Milestone ID:</strong> {data.milestone_id}
+          </p>
+          <p>
+            <strong>Due Date:</strong>{" "}
+            {data.due_date
+              ? new Date(data.due_date).toLocaleDateString()
+              : "N/A"}
+          </p>
+          <p>
+            <strong>Status:</strong>{" "}
+            <span
+              className={`font-semibold ${
                 data.status === "Pending"
                   ? "text-yellow-600"
-                  : data.status === "Approved"
+                  : data.status === "Finance Approved"
                   ? "text-green-600"
-                  : "text-red-600"
-              }
+                  : data.status === "Finance Rejected"
+                  ? "text-red-600"
+                  : ""
+              }`}
             >
-              {data.status}
-            </strong>
+              {data.status || "Pending"}
+            </span>
           </p>
         </div>
 
-        {/* BOQ Table */}
-        <h3 className="text-md font-semibold mt-4">BOQ Items</h3>
+        {/* BOQ Summary */}
+        <div className="bg-gray-50 p-3 rounded-md mb-4">
+          <h3 className="font-semibold text-gray-800 mb-2">
+            💰 BOQ vs Supplier Comparison
+          </h3>
+          <p>
+            <strong>BOQ Budget:</strong>{" "}
+            ₱{boqTotal.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            })}
+          </p>
+          <p>
+            <strong>Supplier Total Quote:</strong>{" "}
+            ₱{totalCost.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            })}
+          </p>
+          <p>
+            <strong>Difference:</strong>{" "}
+            ₱{(boqTotal - totalCost).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+            })}{" "}
+            {boqTotal - totalCost > 0 ? "(Under budget)" : "(Over budget)"}
+          </p>
+        </div>
+
+        {/* Materials Table */}
+        <h3 className="text-md font-semibold mt-4 mb-2">
+          Approved Supplier Items
+        </h3>
         <Table className="mb-6">
           <TableHeader>
             <TableRow>
-              <TableHead>Item No</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Material</TableHead>
               <TableHead>Unit</TableHead>
               <TableHead>Quantity</TableHead>
+              <TableHead>Unit Price</TableHead>
               <TableHead>Total Cost</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.boq_items?.map((item, idx) => (
+            {materials.map((item, idx) => (
               <TableRow key={idx}>
-                <TableCell>{item.item_no}</TableCell>
-                <TableCell>{item.description}</TableCell>
+                <TableCell>{item.material_name}</TableCell>
                 <TableCell>{item.unit}</TableCell>
                 <TableCell>{item.quantity}</TableCell>
-                <TableCell>₱{parseFloat(item.total_cost).toLocaleString()}</TableCell>
+                <TableCell>
+                  ₱{parseFloat(item.unit_price).toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  ₱{parseFloat(item.total_cost).toLocaleString()}
+                </TableCell>
               </TableRow>
             ))}
-          </TableBody>
-        </Table>
-
-        {/* MTO Table */}
-        <h3 className="text-md font-semibold mt-4">MTO Breakdown</h3>
-        <Table className="mb-6">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Description</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Unit</TableHead>
-              <TableHead>Total Cost</TableHead>
+            <TableRow className="bg-gray-100 font-semibold">
+              <TableCell colSpan={4} className="text-right">
+                Total:
+              </TableCell>
+              <TableCell>₱{totalCost.toLocaleString()}</TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.boq_items?.flatMap((boq, idx) =>
-              boq.mto_items?.map((mto, mIdx) => (
-                <TableRow key={`${idx}-${mIdx}`}>
-                  <TableCell>{mto.description}</TableCell>
-                  <TableCell>{mto.quantity}</TableCell>
-                  <TableCell>{mto.unit}</TableCell>
-                  <TableCell>₱{parseFloat(mto.total_cost).toLocaleString()}</TableCell>
-                </TableRow>
-              ))
-            )}
           </TableBody>
         </Table>
 
         {/* Charts */}
         <div className="grid grid-cols-2 gap-6 my-6">
-          {/* Pie Chart */}
           <div className="flex justify-center">
             <PieChart width={300} height={300}>
               <Pie
-                data={comparisonData}
+                data={chartData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -184,7 +215,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {comparisonData.map((entry, index) => (
+                {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}
@@ -196,9 +227,8 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
             </PieChart>
           </div>
 
-          {/* Bar Chart */}
           <div className="flex justify-center">
-            <BarChart width={400} height={300} data={comparisonData}>
+            <BarChart width={400} height={300} data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />

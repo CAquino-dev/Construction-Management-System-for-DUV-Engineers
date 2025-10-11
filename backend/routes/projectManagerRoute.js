@@ -14,7 +14,8 @@ const {
   clientRejectContract,
   getPaymentTerms,
   createSiteVisit,
-  getScheduledSiteVisits
+  getScheduledSiteVisits,
+  getForProcurement
 } = require('../controller/projectManagerController');
 
 router.post('/contract/send-to-client/:id', sendContractToClient);
@@ -30,5 +31,6 @@ router.post('/generateContract/:proposalId', generateContract);
 router.post('/signature', uploadClientSignature);
 router.post('/createSiteVisit', createSiteVisit);
 router.get('/getSiteVisits', getScheduledSiteVisits);
+router.get('/getForProcurement', getForProcurement);
 
 module.exports = router;

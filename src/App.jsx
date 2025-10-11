@@ -54,6 +54,10 @@ import PaymentPage from "./pages/admin/PaymentPage";
 import RequestPage from "./pages/admin/RequestPage";
 import SalaryReleaseInPerson from "./pages/admin/SalaryReleaseInPerson";
 import SiteVisit from "./pages/admin/SiteVisit";
+import ProcurementPage from "./pages/admin/ProcurementPage";
+import SupplierManagement from "./pages/admin/SupplierManagement";
+import SupplierQuotePage from "./pages/userPages/SupplierQuotePage";
+import ProcurementReviewDashboard from "./pages/admin/ProcurementReviewDashboard";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -89,6 +93,10 @@ const App = () => {
             <Route
               path="contract/respond/:proposalId"
               element={<ContractRespond />}
+            />
+            <Route
+              path="supplier/quote/:token"
+              element={<SupplierQuotePage />}
             />
           </Route>
 
@@ -174,6 +182,9 @@ const App = () => {
               element={<RequestPage />}
             />
             <Route path="payment/:paymentId" element={<PaymentPage />} />
+            <Route path="procurement/procurement-page" element={<ProcurementPage />} />
+            <Route path="procurement/supplier-management" element={<SupplierManagement />} />
+            <Route path="procurement/procurement-dashboard" element={<ProcurementReviewDashboard />} />
           </Route>
         </Routes>
       </Router>

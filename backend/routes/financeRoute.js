@@ -4,13 +4,13 @@ const router = express.Router();
 const { getFinance, updatePayrollStatus, getApprovedPayslips, financeUpdatePayslipStatus, financeProcessPayslipPayment, 
     getCeoApprovedPayslips, createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject, 
     getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, approveContract, rejectContract
-    , getPmApprovedMilestones, uploadSalarySignature, getReleasedPayslips } = require('../controller/financeManagementController');
+    , getProcurementApprovedMilestones, uploadSalarySignature, getReleasedPayslips } = require('../controller/financeManagementController');
 
 router.get('/getFinance', getFinance);
 router.get('/getApprovedPayslips', getApprovedPayslips);
 router.get('/getCeoApprovedPayslips', getCeoApprovedPayslips);
 router.get('/getContracts', getContracts);
-router.get('/milestones/pm-approved', getPmApprovedMilestones);
+router.get('/procurementApproved', getProcurementApprovedMilestones);
 router.get('/getReleasedPayslips', getReleasedPayslips);
 router.put('/payroll/update-status', updatePayrollStatus);
 router.put('/updatePayslipStatus', financeUpdatePayslipStatus);

@@ -18,6 +18,7 @@ import {
   Clock,
   Briefcase,
   ClipboardText,
+  Handshake
 } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
@@ -35,6 +36,7 @@ const AdminNavbar = ({ children }) => {
   const [isSiteManagerOpen, setIsSiteManagerOpen] = useState(false); // Site Manager dropdown state
   const [isSalesOpen, setIsSalesOpen] = useState(false);
   const [isForemanOpen, setIsForemanOpen] = useState(false);
+  const [isProcurementOpen, setIsProcurementOpen] = useState(false);
   const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,6 +49,7 @@ const AdminNavbar = ({ children }) => {
   const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
   const toggleSalesDropdown = () => setIsSalesOpen(!isSalesOpen);
   const toggleForemanDropdown = () => setIsForemanOpen(!isForemanOpen);
+  const toggleProcurementDropdown = () => setIsProcurementOpen(!isForemanOpen);
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const toggleSiteManagerDropdown = () =>
@@ -404,6 +407,65 @@ const AdminNavbar = ({ children }) => {
                       }`}
                     >
                       Projects
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li>
+                <button
+                  onClick={toggleProcurementDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <Handshake size={20} /> Procurement
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isEngineerOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              {isProcurementOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/procurement-dashboard"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/procurement-dashboard"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Procurement Dashboard
+                    </Link>
+                  </li>                  
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/procurement-page"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/procurement-page"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Procurement
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/supplier-management"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/supplier-management"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Supplier Management
                     </Link>
                   </li>
                 </ul>

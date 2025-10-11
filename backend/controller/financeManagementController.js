@@ -541,102 +541,135 @@ const rejectContract = (req, res) => {
 //   });
 // };
 
-const getPmApprovedMilestones = (req, res) => {
-
-  const query = 
-    `    SELECT
+// GET /api/finance/procurement-approved
+const getProcurementApprovedMilestones = (req, res) => {
+  const query = `
+    SELECT 
       m.id AS milestone_id,
       m.project_id,
-      m.timestamp,
       m.title,
       m.details,
       m.status,
       m.start_date,
       m.due_date,
+      m.timestamp,
 
-      mb.id AS milestone_boq_id,
+      -- Approved supplier quote data
+      pq.id AS quote_id,
+      pq.supplier_id,
+      s.supplier_name,
+      pq.status AS quote_status,
+
+      pqi.id AS quote_item_id,
+      pqi.material_name,
+      pqi.unit AS quote_unit,
+      pqi.quantity AS quote_quantity,
+      pqi.unit_price AS quote_unit_price,
+
+      -- BOQ data
       b.id AS boq_id,
       b.item_no,
       b.description AS boq_description,
       b.unit AS boq_unit,
       b.quantity AS boq_quantity,
       b.unit_cost AS boq_unit_cost,
-      b.total_cost AS boq_total_cost,
+      b.total_cost AS boq_total_cost
 
-      mm.id AS mto_id,
-      mm.description AS mto_description,
-      mm.unit AS mto_unit,
-      mm.quantity AS mto_quantity,
-      mm.unit_cost AS mto_unit_cost,
-      mm.total_cost AS mto_total_cost
     FROM milestones m
-    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
-    LEFT JOIN boq b ON mb.boq_id = b.id
-    LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
-    WHERE m.status = 'PM Approved'
-       AND m.finance_approval_status = 'Pending'
-     ORDER BY m.due_date ASC`;
+    LEFT JOIN procurement_quotes pq 
+      ON pq.milestone_id = m.id AND pq.status = 'Selected'
+    LEFT JOIN suppliers s 
+      ON pq.supplier_id = s.id
+    LEFT JOIN procurement_quote_items pqi 
+      ON pq.id = pqi.quote_id
+    LEFT JOIN milestone_boq mb 
+      ON m.id = mb.milestone_id
+    LEFT JOIN boq b 
+      ON mb.boq_id = b.id
+    WHERE pq.status = 'Selected'
+    ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC
+  `;
 
   db.query(query, (err, results) => {
     if (err) {
-      console.error("Error fetching milestones:", err);
-      return res.status(500).json({ error: "Failed to fetch milestones" });
+      console.error("Error fetching procurement-approved milestones:", err);
+      return res.status(500).json({ message: "Failed to fetch milestones" });
     }
 
     const milestonesMap = new Map();
 
-    results.forEach(row => {
+    results.forEach((row) => {
       if (!milestonesMap.has(row.milestone_id)) {
         milestonesMap.set(row.milestone_id, {
-          id: row.milestone_id,
+          milestone_id: row.milestone_id,
           project_id: row.project_id,
-          timestamp: row.timestamp,
           title: row.title,
           details: row.details,
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
-          boq_items: []
+          timestamp: row.timestamp,
+          approved_supplier: {
+            supplier_id: row.supplier_id,
+            supplier_name: row.supplier_name,
+            quote_id: row.quote_id,
+            items: [],
+            total_quote: 0,
+          },
+          boq_items: [],
+          boq_total: 0,
+          _boq_ids: new Set(), // 🧠 temporary tracker for deduplication
         });
       }
 
       const milestone = milestonesMap.get(row.milestone_id);
 
-      if (row.milestone_boq_id) {
-        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+      // ✅ Add supplier quote items
+      if (row.quote_item_id) {
+        const totalCost =
+          parseFloat(row.quote_quantity || 0) *
+          parseFloat(row.quote_unit_price || 0);
 
-        if (!boqItem) {
-          boqItem = {
-            milestone_boq_id: row.milestone_boq_id,
-            boq_id: row.boq_id,
-            item_no: row.item_no,
-            description: row.boq_description,
-            unit: row.boq_unit,
-            quantity: row.boq_quantity,
-            unit_cost: row.boq_unit_cost,
-            total_cost: row.boq_total_cost,
-            mto_items: []
-          };
-          milestone.boq_items.push(boqItem);
-        }
+        milestone.approved_supplier.items.push({
+          quote_item_id: row.quote_item_id,
+          material_name: row.material_name,
+          unit: row.quote_unit,
+          quantity: row.quote_quantity,
+          unit_price: row.quote_unit_price,
+          total_cost: totalCost,
+        });
 
-        if (row.mto_id) {
-          boqItem.mto_items.push({
-            mto_id: row.mto_id,
-            description: row.mto_description,
-            unit: row.mto_unit,
-            quantity: row.mto_quantity,
-            unit_cost: row.mto_unit_cost,
-            total_cost: row.mto_total_cost
-          });
-        }
+        milestone.approved_supplier.total_quote += totalCost;
+      }
+
+      // ✅ Add BOQ items only once per boq_id
+      if (row.boq_id && !milestone._boq_ids.has(row.boq_id)) {
+        milestone.boq_items.push({
+          boq_id: row.boq_id,
+          item_no: row.item_no,
+          description: row.boq_description,
+          unit: row.boq_unit,
+          quantity: row.boq_quantity,
+          unit_cost: row.boq_unit_cost,
+          total_cost: parseFloat(row.boq_total_cost) || 0,
+        });
+
+        milestone.boq_total += parseFloat(row.boq_total_cost) || 0;
+        milestone._boq_ids.add(row.boq_id); // 🧩 Mark as added
       }
     });
 
-    const milestones = Array.from(milestonesMap.values());
+    // 🧹 Remove temporary _boq_ids before sending response
+    const milestones = Array.from(milestonesMap.values()).map((m) => {
+      delete m._boq_ids;
+      return m;
+    });
+
     res.json({ milestones });
   });
 };
+
+
 
 const uploadSalarySignature = (req, res) => {
   const { base64Signature, payslipItemId, userId } = req.body;
@@ -780,6 +813,6 @@ module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
-  approveContract, rejectContract, getPmApprovedMilestones, uploadSalarySignature,
+  approveContract, rejectContract, getProcurementApprovedMilestones, uploadSalarySignature,
   getReleasedPayslips
  };
