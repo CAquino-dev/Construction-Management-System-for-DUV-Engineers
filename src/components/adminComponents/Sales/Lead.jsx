@@ -10,6 +10,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import LeadModal from "./LeadModal";
+import ConfirmationModal from "../../adminComponents/ConfirmationModal";
 
 // Fix default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -110,6 +111,7 @@ const Lead = () => {
   const [loading, setLoading] = useState(false);
   const [position, setPosition] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   // 🧾 Fetch all leads
   useEffect(() => {
@@ -129,6 +131,28 @@ const Lead = () => {
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleOpenConfirm = () => {
+    // Required fields
+    const requiredFields = [
+      formData.client_name,
+      formData.email,
+      formData.project_interest,
+      formData.site_visit_date,
+      formData.site_visit_time,
+    ];
+
+    const hasEmpty = requiredFields.some(
+      (field) => !field || field.trim() === ""
+    );
+
+    if (hasEmpty) {
+      toast.error("⚠️ Please fill out all required fields before saving.");
+      return;
+    }
+
+    setIsConfirmModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
@@ -285,7 +309,7 @@ const Lead = () => {
                   style={{ height: "100%", width: "100%" }}
                 >
                   <TileLayer
-                    attribution='&copy; OpenStreetMap contributors'
+                    attribution="&copy; OpenStreetMap contributors"
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   <LocationSearchControl
@@ -297,7 +321,10 @@ const Lead = () => {
                       }))
                     }
                   />
-                  <LocationPicker position={position} setPosition={setPosition} />
+                  <LocationPicker
+                    position={position}
+                    setPosition={setPosition}
+                  />
                 </MapContainer>
               </div>
 
@@ -310,8 +337,9 @@ const Lead = () => {
 
             <div className="flex justify-end">
               <button
-                type="submit"
+                type="button"
                 className="bg-[#4c735c] shadow-md text-white px-5 py-2 rounded-lg hover:bg-[#3b5d49] transition"
+                onClick={handleOpenConfirm}
                 disabled={loading}
               >
                 {loading ? "Saving..." : "Save Lead & Schedule"}
@@ -351,6 +379,16 @@ const Lead = () => {
       {selectedLead && (
         <LeadModal lead={selectedLead} onClose={() => setSelectedLead(null)} />
       )}
+
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={() => {
+          setIsConfirmModalOpen(false);
+          handleSubmit(new Event("submit"));
+        }}
+        actionType="Save Lead"
+      />
     </div>
   );
 };
