@@ -564,7 +564,7 @@ const sendPurchaseOrderToSupplier = (req, res) => {
   const { po_id } = req.params;
   const { sent_by } = req.body;
 
-  // 1️⃣ Fetch PO details + Supplier info
+  // 1) Fetch PO + supplier
   const poQuery = `
     SELECT 
       po.id AS po_id,
@@ -585,8 +585,7 @@ const sendPurchaseOrderToSupplier = (req, res) => {
       console.error("Error fetching purchase order:", err);
       return res.status(500).json({ message: "Error fetching purchase order" });
     }
-
-    if (poResults.length === 0) {
+    if (!poResults || poResults.length === 0) {
       return res.status(404).json({ message: "Purchase order not found" });
     }
 
@@ -596,16 +595,16 @@ const sendPurchaseOrderToSupplier = (req, res) => {
       return res.status(400).json({ message: "Supplier email not found" });
     }
 
-    // 2️⃣ Fetch PO items
+    // 2) Fetch PO items (use the fields you actually have in purchase_order_items)
     const itemsQuery = `
-    SELECT 
-      material_name,
-      unit,
-      quantity,
-      unit_price,
-      (quantity * unit_price) AS total_price
-    FROM purchase_order_items
-    WHERE po_id = ?
+      SELECT 
+        material_name,
+        unit,
+        quantity,
+        unit_price,
+        (quantity * unit_price) AS total_price
+      FROM purchase_order_items
+      WHERE po_id = ?
     `;
 
     db.query(itemsQuery, [po_id], (itemErr, itemResults) => {
@@ -614,37 +613,31 @@ const sendPurchaseOrderToSupplier = (req, res) => {
         return res.status(500).json({ message: "Error fetching PO items" });
       }
 
-      // Generate HTML table rows
-      const itemsHTML = itemResults
-        .map(
-          (item, index) => `
+      // build items table rows
+      const itemsHTML = (itemResults || [])
+        .map((item, index) => `
           <tr>
             <td style="padding:8px; border:1px solid #ddd; text-align:center;">${index + 1}</td>
             <td style="padding:8px; border:1px solid #ddd;">${item.material_name}</td>
             <td style="padding:8px; border:1px solid #ddd; text-align:center;">${item.unit}</td>
             <td style="padding:8px; border:1px solid #ddd; text-align:center;">${item.quantity}</td>
-            <td style="padding:8px; border:1px solid #ddd; text-align:right;">₱${Number(item.unit_price).toLocaleString()}</td>
-            <td style="padding:8px; border:1px solid #ddd; text-align:right;">₱${Number(item.total_price).toLocaleString()}</td>
-          </tr>`
-        )
-        .join("");
+            <td style="padding:8px; border:1px solid #ddd; text-align:right;">₱${Number(item.unit_price || 0).toLocaleString()}</td>
+            <td style="padding:8px; border:1px solid #ddd; text-align:right;">₱${Number(item.total_price || 0).toLocaleString()}</td>
+          </tr>`).join("");
 
-      // ✉️ HTML Email Template
+      // 3) HTML email content
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; color: #333; background: #f9f9f9; padding: 20px;">
           <div style="max-width: 800px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
             <div style="background: #004aad; color: white; padding: 16px 24px;">
               <h2 style="margin: 0;">Purchase Order Notification</h2>
             </div>
-
             <div style="padding: 24px;">
               <p>Dear <strong>${po.supplier_name}</strong>,</p>
-
               <p>We are pleased to issue the following purchase order for your review and processing:</p>
-
               <table style="width:100%; border-collapse: collapse; margin-top: 16px;">
                 <tr><td style="padding:8px; border:1px solid #ddd;"><strong>PO Number:</strong></td><td style="padding:8px; border:1px solid #ddd;">${po.po_number}</td></tr>
-                <tr><td style="padding:8px; border:1px solid #ddd;"><strong>Total Amount:</strong></td><td style="padding:8px; border:1px solid #ddd;">₱${Number(po.total_amount).toLocaleString()}</td></tr>
+                <tr><td style="padding:8px; border:1px solid #ddd;"><strong>Total Amount:</strong></td><td style="padding:8px; border:1px solid #ddd;">₱${Number(po.total_amount || 0).toLocaleString()}</td></tr>
                 <tr><td style="padding:8px; border:1px solid #ddd;"><strong>Project ID:</strong></td><td style="padding:8px; border:1px solid #ddd;">${po.project_id}</td></tr>
                 <tr><td style="padding:8px; border:1px solid #ddd;"><strong>Milestone ID:</strong></td><td style="padding:8px; border:1px solid #ddd;">${po.milestone_id}</td></tr>
               </table>
@@ -662,7 +655,7 @@ const sendPurchaseOrderToSupplier = (req, res) => {
                   </tr>
                 </thead>
                 <tbody>
-                  ${itemsHTML}
+                  ${itemsHTML || ''}
                 </tbody>
               </table>
 
@@ -671,14 +664,12 @@ const sendPurchaseOrderToSupplier = (req, res) => {
               </p>
 
               <p style="margin-top: 24px;">Thank you for your continued partnership.</p>
-
               <p style="margin-top: 16px;">
                 Regards,<br/>
                 <strong>Procurement Department</strong><br/>
                 <span style="color: #004aad;">DUV ENGINEERS</span>
               </p>
             </div>
-
             <div style="background: #f1f1f1; text-align: center; padding: 12px; font-size: 12px; color: #666;">
               This is an automated email. Please do not reply directly to this message.
             </div>
@@ -686,7 +677,6 @@ const sendPurchaseOrderToSupplier = (req, res) => {
         </div>
       `;
 
-      // 3️⃣ Send email
       const mailOptions = {
         from: `"Procurement Department" <${process.env.SMTP_EMAIL}>`,
         to: po.supplier_email,
@@ -694,41 +684,61 @@ const sendPurchaseOrderToSupplier = (req, res) => {
         html: htmlContent,
       };
 
+      // 4) Send email
       transporter.sendMail(mailOptions, (mailErr, info) => {
         if (mailErr) {
           console.error("Error sending email:", mailErr);
           return res.status(500).json({ message: "Failed to send email to supplier" });
         }
 
-        console.log("Email sent:", info.response);
-
-        // 4️⃣ Update PO status
-        const updateQuery = `
+        // 5) Update purchase_orders status
+        const updatePOQuery = `
           UPDATE purchase_orders
-          SET status = 'Sent to Supplier',
+          SET status = 'Pending Delivery',
               sent_by = ?,
               sent_at = NOW()
           WHERE id = ?
         `;
 
-        db.query(updateQuery, [sent_by, po_id], (updateErr) => {
-          if (updateErr) {
-            console.error("Error updating PO status:", updateErr);
+        db.query(updatePOQuery, [sent_by, po_id], (updatePOErr) => {
+          if (updatePOErr) {
+            console.error("Error updating purchase_orders:", updatePOErr);
             return res.status(500).json({ message: "Email sent but failed to update PO status" });
           }
 
-          res.json({
-            message: `Purchase order ${po.po_number} sent to ${po.supplier_name} successfully.`,
-            po_id,
-            item_count: itemResults.length,
-            email_info: info.response,
+          // 6) Update milestone status (separate query)
+          const updateMilestoneQuery = `
+            UPDATE milestones
+            SET status = 'Pending Delivery'
+            WHERE id = ?
+          `;
+
+          db.query(updateMilestoneQuery, [po.milestone_id], (updateMilestoneErr) => {
+            if (updateMilestoneErr) {
+              console.error("Error updating milestone status:", updateMilestoneErr);
+              // We already updated PO, but milestone update failed — return success with warning
+              return res.status(200).json({
+                message: `PO sent (${info.response}) but failed to update milestone status.`,
+                po_id,
+                milestone_id: po.milestone_id,
+                item_count: itemResults ? itemResults.length : (itemResults === undefined ? 0 : itemResults.length),
+              });
+            }
+
+            // All good
+            return res.status(200).json({
+              message: `Purchase order ${po.po_number} sent to ${po.supplier_name} successfully. Milestone set to Pending Delivery.`,
+              po_id,
+              milestone_id: po.milestone_id,
+              item_count: itemResults ? itemResults.length : 0,
+              email_info: info.response,
+            });
           });
         });
       });
     });
   });
 };
-
 
 module.exports = { addSupplier, getSuppliers, updateSupplier, 
                    deleteSupplier, sendQuotationRequests, getQuoteByToken,
