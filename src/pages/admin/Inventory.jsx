@@ -19,13 +19,11 @@ export const Inventory = () => {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
   const [requests, setRequests] = useState([]);
-  const userId = localStorage.getItem("userId");
-
-  // 🔹 Popup state
   const [isOpen, setIsOpen] = useState(false);
   const [action, setAction] = useState("");
   const [reportId, setReportId] = useState("");
   const [comment, setComment] = useState("");
+  const userId = localStorage.getItem("userId");
 
   const openPopup = (action, reportId) => {
     setIsOpen(true);
@@ -131,7 +129,6 @@ export const Inventory = () => {
     setItems(items.filter((item) => item.id !== id));
   };
 
-  // 🔹 Update request status (Approve / Reject)
   const updateRequestStatus = async (id, status, rejection_note) => {
     try {
       await axios.put(
@@ -167,17 +164,19 @@ export const Inventory = () => {
   );
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Inventory Management</h1>
+    <div className="p-4 sm:p-6">
+      <h1 className="text-xl sm:text-2xl font-bold mb-6 text-center sm:text-left">
+        Inventory Management
+      </h1>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-wrap gap-3 justify-center sm:justify-start mb-6">
         <Button
           className={`${
             tab === "inventory"
-              ? "bg-[#4c735c] text-white hover:bg-[#4c735c]"
-              : "bg-gray-200 text-gray-700 hover:bg-[#4c735c]/50 cursor-pointer"
-          } px-4 py-2 rounded-lg`}
+              ? "bg-[#4c735c] text-white"
+              : "bg-gray-200 text-gray-700"
+          } px-4 py-2 rounded-lg text-sm sm:text-base`}
           onClick={() => setTab("inventory")}
         >
           Inventory Items
@@ -185,9 +184,9 @@ export const Inventory = () => {
         <Button
           className={`${
             tab === "requests"
-              ? "bg-[#4c735c] text-white hover:bg-[#4c735c]"
-              : "bg-gray-200 text-gray-700 hover:bg-[#4c735c]/50 cursor-pointer"
-          } px-4 py-2 rounded-lg`}
+              ? "bg-[#4c735c] text-white"
+              : "bg-gray-200 text-gray-700"
+          } px-4 py-2 rounded-lg text-sm sm:text-base`}
           onClick={() => setTab("requests")}
         >
           Item Requests
@@ -197,12 +196,11 @@ export const Inventory = () => {
       {/* Inventory Items */}
       {tab === "inventory" && (
         <>
-          {/* Add / Edit Form */}
           <Card className="mb-6">
             <CardContent>
               <form
                 onSubmit={handleSubmit}
-                className="grid grid-cols-5 gap-2 items-end"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"
               >
                 <Input
                   placeholder="Item name"
@@ -237,15 +235,14 @@ export const Inventory = () => {
                   }
                 />
 
-                {/* Buttons row */}
-                <div className="col-span-5 flex justify-end gap-2">
+                <div className="col-span-full flex justify-end gap-2 flex-wrap">
                   {editingId !== null ? (
                     <>
                       <Button
                         type="submit"
-                        className="bg-[#4c735c] hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm"
+                        className="bg-[#4c735c] hover:bg-[#3b5a49] text-white rounded-lg px-4 py-2 text-sm"
                       >
-                        Update Item
+                        Update
                       </Button>
                       <Button
                         type="button"
@@ -267,7 +264,7 @@ export const Inventory = () => {
                   ) : (
                     <Button
                       type="submit"
-                      className="bg-[#4c735c] hover:bg-[#3b5a49] text-white rounded-lg px-3 py-1 text-sm"
+                      className="bg-[#4c735c] hover:bg-[#3b5a49] text-white rounded-lg px-4 py-2 text-sm"
                     >
                       + Add Item
                     </Button>
@@ -278,151 +275,163 @@ export const Inventory = () => {
           </Card>
 
           {/* Search */}
-          <div className="mb-4 flex justify-between bg-white rounded-lg p-2">
+          <div className="mb-4 flex flex-col sm:flex-row justify-between items-center bg-white rounded-lg p-3 gap-2">
             <Input
               placeholder="Search items..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="max-w-xs border border-gray-300"
+              className="w-full sm:max-w-xs border border-gray-300"
             />
           </div>
 
-          {/* Inventory Table */}
+          {/* Scrollable Table */}
+          <div className="overflow-x-auto">
+            <Card>
+              <CardContent className="p-2 sm:p-4">
+                <table className="w-full text-sm sm:text-base border-collapse min-w-[700px]">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2 border">ID</th>
+                      <th className="p-2 border">Name</th>
+                      <th className="p-2 border">Category</th>
+                      <th className="p-2 border">Qty</th>
+                      <th className="p-2 border">Unit</th>
+                      <th className="p-2 border">Description</th>
+                      <th className="p-2 border text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="p-2 border">{item.id}</td>
+                        <td className="p-2 border">{item.name}</td>
+                        <td className="p-2 border">{item.category}</td>
+                        <td className="p-2 border">{item.quantity}</td>
+                        <td className="p-2 border">{item.unit}</td>
+                        <td className="p-2 border">{item.description}</td>
+                        <td className="p-2 border text-center">
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              size="sm"
+                              className="bg-[#4c735c] text-white"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <Pencil size={16} />
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-red-600 text-white"
+                              onClick={() => handleDelete(item.id)}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredItems.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan="7"
+                          className="text-center p-4 text-gray-500"
+                        >
+                          No items found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
+      {/* Requests */}
+      {tab === "requests" && (
+        <div className="overflow-x-auto">
           <Card>
-            <CardContent>
-              <table className="w-full border-collapse rounded-lg overflow-hidden">
+            <CardContent className="p-2 sm:p-4">
+              <table className="w-full text-sm sm:text-base min-w-[700px] border-collapse">
                 <thead>
-                  <tr className="bg-gray-100 text-left">
+                  <tr className="bg-gray-100">
                     <th className="border p-2">ID</th>
-                    <th className="border p-2">Name</th>
-                    <th className="border p-2">Category</th>
-                    <th className="border p-2">Quantity</th>
-                    <th className="border p-2">Unit</th>
-                    <th className="border p-2">Description</th>
+                    <th className="border p-2">Requester</th>
+                    <th className="border p-2">Item</th>
+                    <th className="border p-2">Qty</th>
+                    <th className="border p-2">Notes</th>
+                    <th className="border p-2">Status</th>
+                    <th className="border p-2">Date</th>
                     <th className="border p-2 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="border p-2">{item.id}</td>
-                      <td className="border p-2">{item.name}</td>
-                      <td className="border p-2">{item.category}</td>
-                      <td className="border p-2">{item.quantity}</td>
-                      <td className="border p-2">{item.unit}</td>
-                      <td className="border p-2">{item.description}</td>
-                      <td className="border p-2 flex gap-2 justify-center">
-                        <Button
-                          size="sm"
-                          className="bg-[#4c735c] text-white hover:bg-[#3b5a49]"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Pencil size={16} />
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="bg-red-600 text-white hover:bg-red-700"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                  {requests.map((req) => (
+                    <tr key={req.id} className="hover:bg-gray-50">
+                      <td className="p-2 border">{req.id}</td>
+                      <td className="p-2 border">{req.requester_name}</td>
+                      <td className="p-2 border">{req.item_name}</td>
+                      <td className="p-2 border">{req.quantity}</td>
+                      <td className="p-2 border">{req.notes}</td>
+                      <td
+                        className={`p-2 border font-semibold ${
+                          req.status === "Approved"
+                            ? "text-green-600"
+                            : req.status === "Rejected"
+                            ? "text-red-600"
+                            : "text-yellow-600"
+                        }`}
+                      >
+                        {req.status}
+                      </td>
+                      <td className="p-2 border">
+                        {new Date(req.request_date).toLocaleDateString()}
+                      </td>
+                      <td className="p-2 border text-center">
+                        <div className="flex flex-wrap justify-center gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-[#4c735c] text-white"
+                            onClick={() => openPopup("Approved", req.id)}
+                            disabled={req.status !== "Pending"}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-red-600 text-white"
+                            onClick={() => openPopup("Rejected", req.id)}
+                            disabled={req.status !== "Pending"}
+                          >
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-[#4c735c] text-white"
+                            onClick={() => handleClaim(req.id)}
+                            disabled={
+                              req.status !== "Approved" ||
+                              req.status === "Claimed"
+                            }
+                          >
+                            Claim
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
-                  {filteredItems.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="text-center p-4 text-gray-500">
-                        No items found.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
 
-      {/* Item Requests */}
-      {tab === "requests" && (
-        <Card>
-          <CardContent>
-            <table className="w-full border-collapse rounded-lg overflow-hidden">
-              <thead>
-                <tr className="bg-gray-100 text-left">
-                  <th className="border p-2">ID</th>
-                  <th className="border p-2">Requester</th>
-                  <th className="border p-2">Item</th>
-                  <th className="border p-2">Quantity</th>
-                  <th className="border p-2">Notes</th>
-                  <th className="border p-2">Status</th>
-                  <th className="border p-2">Date</th>
-                  <th className="border p-2 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-gray-50">
-                    <td className="border p-2">{req.id}</td>
-                    <td className="border p-2">{req.requester_name}</td>
-                    <td className="border p-2">{req.item_name}</td>
-                    <td className="border p-2">{req.quantity}</td>
-                    <td className="border p-2">{req.notes}</td>
-                    <td
-                      className={`border p-2 font-semibold ${
-                        req.status === "Approved"
-                          ? "text-green-600"
-                          : req.status === "Rejected"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                      }`}
-                    >
-                      {req.status}
-                    </td>
-                    <td className="border p-2">
-                      {new Date(req.request_date).toLocaleDateString()}
-                    </td>
-                    <td className="border p-2 flex gap-2 justify-center">
-                      <Button
-                        size="sm"
-                        className="bg-[#4c735c] text-white hover:bg-[#3b5a49]"
-                        onClick={() => openPopup("Approved", req.id)}
-                        disabled={req.status !== "Pending"}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-red-600 text-white hover:bg-red-700"
-                        onClick={() => openPopup("Rejected", req.id)}
-                        disabled={req.status !== "Pending"}
-                      >
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-[#4c735c] text-white hover:bg-[#3b5a49]"
-                        onClick={() => handleClaim(req.id)}
-                        disabled={
-                          req.status !== "Approved" || req.status === "Claimed"
-                        }
-                      >
-                        Mark as Claimed
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 🔹 Popup Modal for Approve / Reject */}
+      {/* Modal */}
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-96">
-            <h2 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50 px-4">
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4 text-center">
               {action === "Approved" ? "Approve Request" : "Reject Request"}
             </h2>
 
@@ -433,19 +442,19 @@ export const Inventory = () => {
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-[#4c735c] outline-none"
                 placeholder="Write your rejection reason..."
                 rows={4}
-              ></textarea>
+              />
             )}
 
-            <div className="flex justify-end mt-4 space-x-2">
+            <div className="flex justify-end mt-4 gap-2 flex-wrap">
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg"
+                className="px-4 py-2 bg-gray-300 rounded-lg w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 onClick={handleReport}
-                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg hover:bg-[#3b5a49]"
+                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg w-full sm:w-auto"
               >
                 Okay
               </button>
