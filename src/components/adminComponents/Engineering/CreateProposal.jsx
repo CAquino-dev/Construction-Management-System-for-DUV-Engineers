@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import ConfirmationModal from "../ConfirmationModal";
 
 const CreateProposal = () => {
   const [leads, setLeads] = useState([]);
@@ -21,6 +22,40 @@ const CreateProposal = () => {
   });
   const [showFormMobile, setShowFormMobile] = useState(false);
   const [paymentTerms, setPaymentTerms] = useState([]);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const handleOpenConfirm = () => {
+    if (!selectedLead) {
+      setMessage({ error: "Please select a lead first.", success: "" });
+      return;
+    }
+
+    const requiredFields = [
+      formData.title,
+      formData.description,
+      formData.scope_of_work[0],
+      formData.budget_estimate,
+      formData.start_date,
+      formData.end_date,
+      formData.payment_terms,
+      pdfFile,
+    ];
+
+    const hasEmpty = requiredFields.some(
+      (field) => !field || (typeof field === "string" && field.trim() === "")
+    );
+
+    if (hasEmpty) {
+      setMessage({
+        error:
+          "⚠️ Please fill out all required fields and upload a PDF before submitting.",
+        success: "",
+      });
+      return;
+    }
+
+    setIsConfirmModalOpen(true);
+  };
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/getLeads`)
@@ -34,18 +69,22 @@ const CreateProposal = () => {
         })
       );
 
-      const fetchPaymentTerms = async () => {
-        try {
-          const res = await axios.get(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/getPaymentTerms`);
-          if(res.data){
-            setPaymentTerms(res.data);
-            console.log(res.data);
-          }         
-        } catch (error) {
-           console.error("Error fetching attendance:", error);
+    const fetchPaymentTerms = async () => {
+      try {
+        const res = await axios.get(
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/projectManager/getPaymentTerms`
+        );
+        if (res.data) {
+          setPaymentTerms(res.data);
+          console.log(res.data);
         }
-      };
-      fetchPaymentTerms();
+      } catch (error) {
+        console.error("Error fetching attendance:", error);
+      }
+    };
+    fetchPaymentTerms();
   }, []);
 
   const handleLeadSelect = (lead) => {
@@ -103,12 +142,15 @@ const CreateProposal = () => {
     data.append("start_date", formData.start_date);
     data.append("end_date", formData.end_date);
     data.append("payment_term_id", formData.payment_terms); // the ID from select
-    data.append("payment_terms", paymentTerms.find(t => t.id == formData.payment_terms)?.name || "");
+    data.append(
+      "payment_terms",
+      paymentTerms.find((t) => t.id == formData.payment_terms)?.name || ""
+    );
     data.append("proposal_file", pdfFile);
 
     data.forEach((data) => {
       console.log(data);
-    })
+    });
 
     try {
       const res = await fetch(
@@ -284,26 +326,26 @@ const CreateProposal = () => {
                 required
                 className="border p-2 rounded w-full"
               />
-                <div>
-                  <label className="block font-medium">Start Date</label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    value={formData.start_date}
-                    onChange={handleChange}
-                    className="border rounded-lg p-2 w-full bg-gray-100"
-                  />
-                </div>
-                <div>
-                  <label className="block font-medium">End Date</label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    value={formData.end_date}
-                    onChange={handleChange}
-                    className="border rounded-lg p-2 w-full bg-gray-100"
-                  />
-                </div>
+              <div>
+                <label className="block font-medium">Start Date</label>
+                <input
+                  type="date"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleChange}
+                  className="border rounded-lg p-2 w-full bg-gray-100"
+                />
+              </div>
+              <div>
+                <label className="block font-medium">End Date</label>
+                <input
+                  type="date"
+                  name="end_date"
+                  value={formData.end_date}
+                  onChange={handleChange}
+                  className="border rounded-lg p-2 w-full bg-gray-100"
+                />
+              </div>
               <div>
                 <label className="block font-medium mb-1">Payment Terms</label>
                 <select
@@ -335,7 +377,8 @@ const CreateProposal = () => {
                 />
               </div>
               <button
-                type="submit"
+                type="button"
+                onClick={handleOpenConfirm}
                 className="bg-[#4c735c] text-white px-4 py-2 rounded cursor-pointer"
               >
                 Submit Proposal
@@ -347,6 +390,17 @@ const CreateProposal = () => {
             </div>
           )}
         </div>
+        <ConfirmationModal
+          isOpen={isConfirmModalOpen}
+          onClose={() => setIsConfirmModalOpen(false)}
+          onConfirm={() => {
+            setIsConfirmModalOpen(false);
+            handleSubmit(new Event("submit"));
+          }}
+          actionType={`Submit Proposal for ${
+            selectedLead?.client_name || "Lead"
+          }`}
+        />
       </div>
     </div>
   );
