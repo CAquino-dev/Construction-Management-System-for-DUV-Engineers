@@ -14,6 +14,7 @@ import {
 } from "../../components/ui/select";
 import { toast } from "sonner";
 import "sonner";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const SiteVisit = () => {
   const [leads, setLeads] = useState([]);
@@ -31,12 +32,29 @@ const SiteVisit = () => {
     notes: "",
     report_file: null,
   });
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const handleOpenConfirm = () => {
+    if (!selectedLead) {
+      toast.warning("⚠️ Please select a lead first.");
+      return;
+    }
+
+    if (!formData.location || !formData.dateVisited) {
+      toast.warning("⚠️ Location and Date are required.");
+      return;
+    }
+
+    setIsConfirmModalOpen(true);
+  };
 
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/getSiteVisits`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/projectManager/getSiteVisits`
         );
         setLeads(res.data);
       } catch (err) {
@@ -106,7 +124,9 @@ const SiteVisit = () => {
       });
 
       await axios.post(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/createSiteVisit`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/projectManager/createSiteVisit`,
         formDataToSend,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -310,8 +330,9 @@ const SiteVisit = () => {
               </div>
 
               <Button
-                type="submit"
-                className="w-full font-semibold"
+                type="button"
+                onClick={handleOpenConfirm}
+                className="w-full font-semibold cursor-pointer bg-[#4c735c] hover:bg-[#4c735c]/90 transition-colors duration-300"
                 disabled={loading}
               >
                 {loading ? "Saving..." : "Submit Site Visit Report"}
@@ -319,6 +340,15 @@ const SiteVisit = () => {
             </form>
           )}
         </CardContent>
+        <ConfirmationModal
+          isOpen={isConfirmModalOpen}
+          onClose={() => setIsConfirmModalOpen(false)}
+          onConfirm={() => {
+            setIsConfirmModalOpen(false);
+            handleSubmit(new Event("submit"));
+          }}
+          actionType="Submit Site Visit Report"
+        />
       </Card>
     </div>
   );
