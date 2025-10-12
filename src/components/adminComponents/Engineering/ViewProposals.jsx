@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PaginationComponent from "../Pagination";
+import ConfirmationModal from "../ConfirmationModal";
 
 const ViewProposals = () => {
   const [proposals, setProposals] = useState([]);
@@ -10,6 +11,8 @@ const ViewProposals = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedProposalId, setSelectedProposalId] = useState(null);
 
   useEffect(() => {
     const fetchProposalResponse = async () => {
@@ -26,6 +29,11 @@ const ViewProposals = () => {
 
     fetchProposalResponse();
   }, []);
+
+  const handleOpenConfirm = (proposalId) => {
+    setSelectedProposalId(proposalId);
+    setIsConfirmModalOpen(true);
+  };
 
   const handleGenerateContract = async (proposalId) => {
     setMessage({ success: "", error: "", approvalLink: "" });
@@ -82,7 +90,7 @@ const ViewProposals = () => {
   const isButtonDisabled = (status) => {
     if (!status) return false;
     const s = status.toLowerCase();
-    return s === "approved" || s === "rejected";
+    return s === "pending" || s === "rejected";
   };
 
   return (
@@ -157,7 +165,7 @@ const ViewProposals = () => {
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-[#4c735c] cursor-pointer"
                     }`}
-                    onClick={() => handleGenerateContract(p.id)}
+                    onClick={() => handleOpenConfirm(p.id)}
                     disabled={isButtonDisabled(p.status)} // ✅ disabled here
                   >
                     Generate Contract
@@ -230,6 +238,17 @@ const ViewProposals = () => {
           setCurrentPage={setCurrentPage}
         />
       </div>
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={() => {
+          if (selectedProposalId) {
+            handleGenerateContract(selectedProposalId);
+          }
+          setIsConfirmModalOpen(false);
+        }}
+        actionType="Generate Contract"
+      />
     </div>
   );
 };
