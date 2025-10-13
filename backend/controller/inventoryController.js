@@ -317,9 +317,268 @@ const getProjectInventory = (req, res) => {
     });
 };
 
+
+const getPendingDeliveries = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = `
+    SELECT 
+      po.id AS po_id,
+      po.po_number,
+      po.total_amount,
+      po.status,
+      s.supplier_name,
+      poi.id AS item_id,
+      poi.material_name,
+      poi.unit,
+      poi.quantity,
+      poi.unit_price,
+      poi.delivered_quantity,
+      (poi.quantity * poi.unit_price) AS total_price
+    FROM purchase_orders po
+    JOIN suppliers s ON po.supplier_id = s.id
+    JOIN purchase_order_items poi ON poi.po_id = po.id
+    WHERE po.project_id = ?
+      AND po.status = 'Pending Delivery'
+    ORDER BY po.created_at DESC
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("❌ Error fetching pending deliveries:", err);
+      return res
+        .status(500)
+        .json({ message: "Error fetching pending deliveries" });
+    }
+
+    if (results.length === 0) {
+      return res.json([]); // no deliveries
+    }
+
+    // ✅ Group rows by purchase order
+    const deliveries = {};
+
+    results.forEach((row) => {
+      if (!deliveries[row.po_id]) {
+        deliveries[row.po_id] = {
+          po_id: row.po_id,
+          po_number: row.po_number,
+          total_amount: row.total_amount,
+          status: row.status,
+          supplier_name: row.supplier_name,
+          materials: [],
+        };
+      }
+
+      // ✅ Calculate missing quantity
+      const deliveredQty = Number(row.delivered_quantity || 0);
+      const missingQty = Math.max(row.quantity - deliveredQty, 0);
+
+      deliveries[row.po_id].materials.push({
+        id: row.item_id,
+        material_name: row.material_name,
+        unit: row.unit,
+        quantity: Number(row.quantity),
+        delivered_quantity: deliveredQty,
+        missing_quantity: missingQty,
+        unit_price: Number(row.unit_price),
+        total_price: Number(row.total_price),
+      });
+    });
+
+    res.json(Object.values(deliveries));
+  });
+};
+
+
+const updateDeliveredQuantity = (req, res) => {
+    const { po_id, item_id, delivered_quantity, updated_by } = req.body;
+
+  if (!po_id || !item_id || delivered_quantity == null) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields: po_id, item_id, delivered_quantity.",
+    });
+  }
+
+  // Step 1: Get the current delivered and ordered quantities
+  const getItemQuery = `
+    SELECT quantity, delivered_quantity 
+    FROM purchase_order_items 
+    WHERE id = ?
+  `;
+
+  db.query(getItemQuery, [item_id], (err, result) => {
+    if (err) {
+      console.error("❌ Error fetching item:", err);
+      return res.status(500).json({ success: false, message: "Database error." });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ success: false, message: "Item not found." });
+    }
+
+    const { quantity, delivered_quantity: currentDelivered } = result[0];
+    const totalDelivered = Number(currentDelivered) + Number(delivered_quantity);
+
+    if (totalDelivered > quantity) {
+      return res.status(400).json({
+        success: false,
+        message: `Delivered quantity exceeds ordered amount (${quantity}).`,
+      });
+    }
+
+    // Step 2: Update delivered quantity
+    const updateQuery = `
+      UPDATE purchase_order_items
+      SET delivered_quantity = ?, updated_by = ?, updated_at = NOW()
+      WHERE id = ?
+    `;
+
+    db.query(updateQuery, [totalDelivered, updated_by, item_id], (err2) => {
+      if (err2) {
+        console.error("❌ Error updating delivered quantity:", err2);
+        return res.status(500).json({ success: false, message: "Failed to update delivery." });
+      }
+
+      // Step 3: Respond success
+      return res.status(200).json({
+        success: true,
+        message: "Delivered quantity updated successfully.",
+        data: {
+          po_id,
+          item_id,
+          delivered_quantity: totalDelivered,
+        },
+      });
+    });
+  });
+};
+
+const markAsDelivered = (req, res) => {
+  const { po_id } = req.params;
+  const { received_by, project_id } = req.body;
+
+  if (!po_id || !received_by || !project_id) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields: po_id, received_by, or project_id.",
+    });
+  }
+
+  // Step 1: Get all items in this PO
+  const getItemsQuery = `
+    SELECT id AS material_id, quantity, unit
+    FROM purchase_order_items
+    WHERE po_id = ?
+  `;
+
+  db.query(getItemsQuery, [po_id], (err, items) => {
+    if (err) {
+      console.error("❌ Error fetching PO items:", err);
+      return res.status(500).json({ success: false, message: "Database error." });
+    }
+
+    if (items.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "No items found for this purchase order." });
+    }
+
+    // Step 2: Check if all items are fully delivered
+    const checkIncomplete = `
+      SELECT COUNT(*) AS incomplete
+      FROM purchase_order_items
+      WHERE po_id = ? AND (delivered_quantity IS NULL OR delivered_quantity < quantity)
+    `;
+
+    db.query(checkIncomplete, [po_id], (err2, result) => {
+      if (err2) {
+        console.error("❌ Error checking delivery completeness:", err2);
+        return res.status(500).json({ success: false, message: "Database error." });
+      }
+
+      if (result[0].incomplete > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot mark as delivered. Some items are still pending delivery.",
+        });
+      }
+
+      // Step 3: Update PO status to 'Delivered'
+      const updatePO = `
+        UPDATE purchase_orders
+        SET status = 'Delivered',
+            received_by = ?,
+            received_at = NOW()
+        WHERE id = ?
+      `;
+
+      db.query(updatePO, [received_by, po_id], (err3, result2) => {
+        if (err3) {
+          console.error("❌ Error updating PO status:", err3);
+          return res.status(500).json({ success: false, message: "Failed to mark as delivered." });
+        }
+
+        if (result2.affectedRows === 0) {
+          return res.status(404).json({ success: false, message: "Purchase order not found." });
+        }
+
+        // Step 4: Insert delivered items into project inventory
+        const inventoryQuery = `
+          INSERT INTO project_inventory (project_id, material_id, quantity, unit)
+          VALUES (?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            quantity = CASE
+              WHEN ? = 'IN' THEN quantity + VALUES(quantity)
+              WHEN ? = 'OUT' THEN quantity - VALUES(quantity)
+              ELSE quantity
+            END
+        `;
+
+        let processed = 0;
+        items.forEach((item) => {
+          db.query(
+            inventoryQuery,
+            [
+              project_id,
+              item.material_id,
+              item.quantity,
+              item.unit,
+              'IN', // material movement direction
+              'IN',
+            ],
+            (err4) => {
+              if (err4) console.error("❌ Error updating project inventory:", err4);
+
+              processed++;
+              if (processed === items.length) {
+                return res.status(200).json({
+                  success: true,
+                  message:
+                    "Purchase order marked as delivered and items added to project inventory.",
+                  data: {
+                    po_id,
+                    received_by,
+                    received_at: new Date(),
+                    project_id,
+                  },
+                });
+              }
+            }
+          );
+        });
+      });
+    });
+  });
+};
+
+
+
 module.exports = { 
 getInventoryItems, updateInventoryItem, addInventoryItem, 
 inventoryRequest, getInventoryRequests, updateRequestStatus,
 getUserRequest, claimItem, getMaterialCatalog, createTransaction,
-getProjectInventory
+getProjectInventory, getPendingDeliveries, updateDeliveredQuantity,
+markAsDelivered
 };

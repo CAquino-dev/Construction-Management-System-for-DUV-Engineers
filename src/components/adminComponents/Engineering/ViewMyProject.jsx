@@ -148,7 +148,7 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
                 )}
                 {activeTab === 'inventory' && (
                     <div className='p-4'>
-                        <h4 className='text-lg font-semibold'>Expenses Tracking</h4>
+                        <h4 className='text-lg font-semibold'>Project Inventory</h4>
                         <ProjectInventory selectedProject={selectedProject} />
                     </div>
                 )}
