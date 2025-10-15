@@ -505,73 +505,117 @@ const markAsDelivered = (req, res) => {
         });
       }
 
-      // Step 3: Update PO status to 'Delivered'
-      const updatePO = `
-        UPDATE purchase_orders
-        SET status = 'Delivered',
-            received_by = ?,
-            received_at = NOW()
+      // Step 3: Get milestone_id linked to this PO
+      const getMilestoneQuery = `
+        SELECT milestone_id
+        FROM purchase_orders
         WHERE id = ?
       `;
 
-      db.query(updatePO, [received_by, po_id], (err3, result2) => {
+      db.query(getMilestoneQuery, [po_id], (err3, milestoneResult) => {
         if (err3) {
-          console.error("❌ Error updating PO status:", err3);
-          return res.status(500).json({ success: false, message: "Failed to mark as delivered." });
+          console.error("❌ Error fetching milestone ID:", err3);
+          return res.status(500).json({ success: false, message: "Database error." });
         }
 
-        if (result2.affectedRows === 0) {
-          return res.status(404).json({ success: false, message: "Purchase order not found." });
-        }
+        const milestoneId = milestoneResult[0]?.milestone_id;
 
-        // Step 4: Insert delivered items into project inventory
-        const inventoryQuery = `
-          INSERT INTO project_inventory (project_id, material_id, quantity, unit)
-          VALUES (?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE
-            quantity = CASE
-              WHEN ? = 'IN' THEN quantity + VALUES(quantity)
-              WHEN ? = 'OUT' THEN quantity - VALUES(quantity)
-              ELSE quantity
-            END
+        // Step 4: Update PO status to 'Delivered'
+        const updatePO = `
+          UPDATE purchase_orders
+          SET status = 'Delivered',
+              received_by = ?,
+              received_at = NOW()
+          WHERE id = ?
         `;
 
-        let processed = 0;
-        items.forEach((item) => {
-          db.query(
-            inventoryQuery,
-            [
-              project_id,
-              item.material_id,
-              item.quantity,
-              item.unit,
-              'IN', // material movement direction
-              'IN',
-            ],
-            (err4) => {
-              if (err4) console.error("❌ Error updating project inventory:", err4);
+        db.query(updatePO, [received_by, po_id], (err4, result2) => {
+          if (err4) {
+            console.error("❌ Error updating PO status:", err4);
+            return res.status(500).json({ success: false, message: "Failed to mark as delivered." });
+          }
 
-              processed++;
-              if (processed === items.length) {
-                return res.status(200).json({
-                  success: true,
-                  message:
-                    "Purchase order marked as delivered and items added to project inventory.",
-                  data: {
-                    po_id,
-                    received_by,
-                    received_at: new Date(),
-                    project_id,
-                  },
-                });
+          if (result2.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Purchase order not found." });
+          }
+
+          // Step 5: Insert delivered items into project inventory
+          const inventoryQuery = `
+            INSERT INTO project_inventory (project_id, material_id, quantity, unit)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              quantity = CASE
+                WHEN ? = 'IN' THEN quantity + VALUES(quantity)
+                WHEN ? = 'OUT' THEN quantity - VALUES(quantity)
+                ELSE quantity
+              END
+          `;
+
+          let processed = 0;
+          items.forEach((item) => {
+            db.query(
+              inventoryQuery,
+              [
+                project_id,
+                item.material_id,
+                item.quantity,
+                item.unit,
+                'IN', // movement direction
+                'IN',
+              ],
+              (err5) => {
+                if (err5) console.error("❌ Error updating project inventory:", err5);
+
+                processed++;
+
+                if (processed === items.length) {
+                  // Step 6: Update milestone status if linked
+                  if (milestoneId) {
+                    const updateMilestone = `
+                      UPDATE milestones
+                      SET status = 'Delivered'
+                      WHERE id = ?
+                    `;
+                    db.query(updateMilestone, [milestoneId], (err6) => {
+                      if (err6) console.error("❌ Error updating milestone:", err6);
+
+                      return res.status(200).json({
+                        success: true,
+                        message:
+                          "Purchase order marked as delivered, milestone updated, and items added to project inventory.",
+                        data: {
+                          po_id,
+                          received_by,
+                          received_at: new Date(),
+                          project_id,
+                          milestone_id: milestoneId,
+                        },
+                      });
+                    });
+                  } else {
+                    // No milestone linked — just return success
+                    return res.status(200).json({
+                      success: true,
+                      message:
+                        "Purchase order marked as delivered and items added to project inventory (no milestone linked).",
+                      data: {
+                        po_id,
+                        received_by,
+                        received_at: new Date(),
+                        project_id,
+                      },
+                    });
+                  }
+                }
               }
-            }
-          );
+            );
+          });
         });
       });
     });
   });
 };
+
 
 
 
