@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { MyProjectAddMilestone } from "./MyProjectAddMilestone";
 import { MyProjectViewMilestone } from "./MyProjectViewMilestone";
 
-const STATUS_COLORS = {
-  Draft: "bg-gray-400",
-  "For Review": "bg-yellow-400",
-  "PM Approved": "bg-green-500",
-  "PM Rejected": "bg-red-500",
-  "For Procurement": "bg-pink-500",
-  "Finance Approved": "bg-blue-500",
-  "Finance Rejected": "bg-purple-500",
+const STATUS_STYLES = {
+  Draft: "bg-gray-100 text-gray-700 border border-gray-300",
+  "For Review": "bg-yellow-100 text-yellow-800 border border-yellow-200",
+  "PM Approved": "bg-green-100 text-green-800 border border-green-200",
+  "PM Rejected": "bg-red-100 text-red-800 border border-red-200",
+  "Finance Approved": "bg-blue-100 text-blue-800 border border-blue-200",
+  "Finance Rejected": "bg-purple-100 text-purple-800 border border-purple-200",
+  "For Procurement": "bg-pink-100 text-pink-800 border border-pink-200",
+  "Pending Delivery": "bg-orange-100 text-orange-800 border border-orange-200",
+  Delivered: "bg-emerald-100 text-emerald-800 border border-emerald-200",
 };
 
 export const MyProjectMilestones = ({ selectedProject }) => {
@@ -20,7 +22,6 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
 
-  // Report form state
   const [report, setReport] = useState({
     title: "",
     summary: "",
@@ -72,7 +73,6 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     );
   };
 
-  // Report modal handlers
   const openReportModal = (milestone) => {
     setSelectedMilestone(milestone);
     setIsReportModalOpen(true);
@@ -135,18 +135,6 @@ export const MyProjectMilestones = ({ selectedProject }) => {
         )}
       </div>
 
-      {/* Status legend */}
-      <div className="flex flex-wrap gap-4 sm:gap-6 mb-6">
-        {Object.entries(STATUS_COLORS).map(([status, color]) => (
-          <div key={status} className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${color}`} />
-            <p className="text-xs sm:text-sm text-gray-700 font-medium">
-              {status}
-            </p>
-          </div>
-        ))}
-      </div>
-
       {/* Milestone list */}
       <div className="space-y-4 sm:space-y-6">
         {milestonesList.map((milestone) => (
@@ -154,16 +142,20 @@ export const MyProjectMilestones = ({ selectedProject }) => {
             key={milestone.id}
             className="bg-white shadow-md rounded-xl p-4 sm:p-6 border border-gray-200"
           >
-            {/* Status + Date */}
-            <div className="flex items-center gap-2 mb-2">
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  STATUS_COLORS[milestone.status] || "bg-gray-300"
-                }`}
-              />
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-gray-500">
                 {new Date(milestone.timestamp).toLocaleDateString()}
               </p>
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  STATUS_STYLES[milestone.status] ||
+                  "bg-gray-100 text-gray-700 border border-gray-300"
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                {milestone.status}
+              </span>
             </div>
 
             {/* Title & Details */}
@@ -199,20 +191,20 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 View Milestone
               </button>
               {milestone.status === "Finance Approved" && (
-                <button
-                  onClick={() => goToTaskBreakdown(milestone)}
-                  className="text-blue-600 text-sm sm:text-base font-medium hover:underline"
-                >
-                  Go to Task Breakdown
-                </button>
-              )}
-              {milestone.status === "Finance Approved" && (
-              <button
-                onClick={() => openReportModal(milestone)}
-                className="text-indigo-600 text-sm sm:text-base font-medium hover:underline"
-              >
-                Create Report
-              </button>
+                <>
+                  <button
+                    onClick={() => goToTaskBreakdown(milestone)}
+                    className="text-blue-600 text-sm sm:text-base font-medium hover:underline"
+                  >
+                    Go to Task Breakdown
+                  </button>
+                  <button
+                    onClick={() => openReportModal(milestone)}
+                    className="text-indigo-600 text-sm sm:text-base font-medium hover:underline"
+                  >
+                    Create Report
+                  </button>
+                </>
               )}
             </div>
           </div>

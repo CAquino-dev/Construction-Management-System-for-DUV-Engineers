@@ -4,7 +4,7 @@ const router = express.Router();
 const { addSupplier, getSuppliers, updateSupplier, 
     deleteSupplier, sendQuotationRequests, getQuoteByToken,
     submitSupplierQuote, getMilestonesWithQuotes, getQuotesByMilestone,
-    approveQuote, } = require('../controller/procurementController');
+    approveQuote, getPurchaseOrders, sendPurchaseOrderToSupplier } = require('../controller/procurementController');
 
 router.get('/getSuppliers', getSuppliers);
 router.get('/getQuoteByToken/:token', getQuoteByToken)
@@ -16,6 +16,8 @@ router.post('/submitSupplierQuote/:token', submitSupplierQuote);
 router.get("/quotes/milestones", getMilestonesWithQuotes);
 router.get("/quotes/milestone/:milestoneId", getQuotesByMilestone);
 router.post("/quotes/:quoteId/approve", approveQuote);
+router.get('/purchaseOrders', getPurchaseOrders);
+router.put("/purchaseOrders/send/:po_id", sendPurchaseOrderToSupplier);
 
 
 module.exports = router;

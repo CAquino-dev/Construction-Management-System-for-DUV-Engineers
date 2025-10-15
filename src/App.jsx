@@ -58,6 +58,7 @@ import ProcurementPage from "./pages/admin/ProcurementPage";
 import SupplierManagement from "./pages/admin/SupplierManagement";
 import SupplierQuotePage from "./pages/userPages/SupplierQuotePage";
 import ProcurementReviewDashboard from "./pages/admin/ProcurementReviewDashboard";
+import PurchaseOrderList from "./pages/admin/PurchaseOrderList";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -185,6 +186,7 @@ const App = () => {
             <Route path="procurement/procurement-page" element={<ProcurementPage />} />
             <Route path="procurement/supplier-management" element={<SupplierManagement />} />
             <Route path="procurement/procurement-dashboard" element={<ProcurementReviewDashboard />} />
+            <Route path="procurement/purchase-orders" element={<PurchaseOrderList />} />
           </Route>
         </Routes>
       </Router>
