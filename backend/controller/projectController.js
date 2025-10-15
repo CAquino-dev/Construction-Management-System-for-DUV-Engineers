@@ -35,67 +35,295 @@ const uploadReportsPDF = multer({
 
 
 const calculateEstimate = async (data) => {
-  const { projectType, materialType, sizeInSqm, location, budget } = data;  // Get projectType, materialType, area in sqm, location, and budget
+  const {
+    projectType,
+    materialType,
+    sizeInSqm,
+    location,
+    budget,
+    designComplexity,
+    numFloors,
+    foundationType,
+    roofType,
+    laborQuality,
+    timelineUrgency,
+    includePlumbing,
+    includeElectrical,
+    includeHVAC,
+    siteAccessibility,
+  } = data;
 
   try {
-    // Query to get the base cost from project_types based on the project type
-    const [projectTypeRows] = await db.promise().query(
-      'SELECT base_cost FROM project_types WHERE project_type = ?', [projectType]
-    );
+    // ----------------------------
+    // 1. BASE COST BASED ON IMAGE TIERS
+    // ----------------------------
+    const costTiers = {
+      'BARE': 23000,
+      'STANDARD': 32000,
+      'LUXURY': 44000,
+      'ICONIC': 65000
+    };
 
-    // Query to get the cost factor from materials based on the material type
-    const [materialRows] = await db.promise().query(
-      'SELECT cost_factor FROM materials WHERE material_type = ?', [materialType]
-    );
+    // Map user selections to cost tiers based on the image specifications
+    const getCostTier = (materialType, designComplexity) => {
+      // Based on the image: Concrete = Bare, Tiles = Standard/Luxury, Natural Stone = Iconic
+      if (materialType === 'Concrete') return 'BARE';
+      if (materialType === 'Steel') return 'STANDARD';
+      if (materialType === 'Wood') return 'LUXURY';
+      
+      // Fallback based on complexity
+      if (designComplexity === 'Simple') return 'BARE';
+      if (designComplexity === 'Moderate') return 'STANDARD';
+      if (designComplexity === 'Complex') return 'LUXURY';
+      
+      return 'STANDARD';
+    };
 
-    // Query to get the cost factor from locations based on the selected location
-    const [locationRows] = await db.promise().query(
-      'SELECT cost_factor FROM locations WHERE location = ?', [location]
-    );
+    const costTier = getCostTier(materialType, designComplexity);
+    const baseCost = costTiers[costTier];
 
-    // Query to get the cost per square meter from the sizes table based on the project type
-    const [sizeRows] = await db.promise().query(
-      'SELECT cost_per_sqm FROM sizes WHERE project_type = ?', [projectType]
-    );
+    // ----------------------------
+    // 2. COST FACTORS
+    // ----------------------------
+    const materialCostFactor = {
+      Concrete: 1.0,
+      Steel: 1.1,
+      Wood: 1.2,
+    }[materialType] || 1.0;
 
-    // If any of the rows are not found, return an error
-    if (projectTypeRows.length === 0 || materialRows.length === 0 || locationRows.length === 0 || sizeRows.length === 0) {
-      throw new Error('Invalid input data');
+    const locationCostFactor = {
+      Dasmarinas: 1.0,
+      Tagaytay: 1.15,
+      Silang: 1.08,
+    }[location] || 1.0;
+
+    const complexityFactor = {
+      Simple: 0.9,
+      Moderate: 1.0,
+      Complex: 1.2,
+    }[designComplexity] || 1.0;
+
+    const foundationFactor = {
+      Slab: 1.0,
+      Footing: 1.15,
+      Pile: 1.3,
+    }[foundationType] || 1.0;
+
+    const roofFactor = {
+      Gable: 1.0,
+      Flat: 1.1,
+      Metal: 1.05,
+    }[roofType] || 1.0;
+
+    const laborFactor = {
+      Standard: 1.0,
+      Skilled: 1.15,
+      Premium: 1.3,
+    }[laborQuality] || 1.0;
+
+    const timelineFactor = {
+      Normal: 1.0,
+      Rush: 1.2,
+      "Very Urgent": 1.4,
+    }[timelineUrgency] || 1.0;
+
+    const accessibilityFactor = {
+      Easy: 1.0,
+      Moderate: 1.08,
+      Difficult: 1.15,
+    }[siteAccessibility] || 1.0;
+
+    // ----------------------------
+    // 3. ADDITIONAL UTILITIES (Based on image specifications)
+    // ----------------------------
+    let utilityBreakdown = {};
+    let utilityCost = 0;
+
+    // Plumbing & Electrical are typically included in base construction
+    if (includePlumbing) {
+      utilityBreakdown.plumbing = 1500 * sizeInSqm;
+      utilityCost += utilityBreakdown.plumbing;
+    }
+    if (includeElectrical) {
+      utilityBreakdown.electrical = 1800 * sizeInSqm;
+      utilityCost += utilityBreakdown.electrical;
+    }
+    // HVAC is typically extra for luxury/iconic tiers
+    if (includeHVAC) {
+      utilityBreakdown.hvac = 2500 * sizeInSqm;
+      utilityCost += utilityBreakdown.hvac;
     }
 
-    // Retrieve the individual cost factors and convert them to numbers
-    const baseCost = parseFloat(projectTypeRows[0].base_cost);
-    const materialCostFactor = parseFloat(materialRows[0].cost_factor);
-    const locationCostFactor = parseFloat(locationRows[0].cost_factor);
-    const sizeCostPerSqm = parseFloat(sizeRows[0].cost_per_sqm);
+    // ----------------------------
+    // 4. BASE CALCULATIONS
+    // ----------------------------
+    const area = sizeInSqm * numFloors;
 
-    // Calculate the total cost by multiplying area (sizeInSqm) with the cost per square meter for the project type
-    const totalCost = (baseCost + materialCostFactor + locationCostFactor + sizeCostPerSqm) * sizeInSqm;
+    // Main structural cost based on image tiers
+    const structuralCost = baseCost * area;
+    
+    // Finishing costs vary by tier (higher tiers include better finishes)
+    const finishingMultiplier = {
+      'BARE': 0.15,
+      'STANDARD': 0.25,
+      'LUXURY': 0.35,
+      'ICONIC': 0.5
+    }[costTier];
+    
+    const finishingCost = area * baseCost * finishingMultiplier;
+    const foundationCost = area * baseCost * (foundationFactor - 1) * 0.1;
+    const roofingCost = area * baseCost * (roofFactor - 1) * 0.08;
+    const laborCost = area * baseCost * (laborFactor - 1) * 0.2;
 
-    // Check if the total cost exceeds the user's budget
+    // ----------------------------
+    // 5. SUMMATION WITH ADJUSTMENTS
+    // ----------------------------
+    let subtotal =
+      structuralCost +
+      finishingCost +
+      foundationCost +
+      roofingCost +
+      laborCost +
+      utilityCost;
+
+    const adjustmentFactor =
+      materialCostFactor *
+      locationCostFactor *
+      complexityFactor *
+      timelineFactor *
+      accessibilityFactor;
+
+    const adjustedTotal = subtotal * adjustmentFactor;
+
+    // ----------------------------
+    // 6. FORMATTING
+    // ----------------------------
+    const formatPeso = (val) => "₱" + Math.round(val).toLocaleString("en-PH");
+
+    // Breakdown summary
+    const breakdown = {
+      "Base Construction": structuralCost,
+      "Finishing Works": finishingCost,
+      "Foundation": foundationCost,
+      "Roofing": roofingCost,
+      "Labor": laborCost,
+      "Utilities": utilityCost,
+      "Location & Complexity Adjustments": adjustedTotal - subtotal,
+    };
+
+    const totalCost = adjustedTotal;
+    const costPerSqm = totalCost / area;
+
+    // ----------------------------
+    // 7. MESSAGE COMPOSITION - REFERENCING THE IMAGE
+    // ----------------------------
+    let message = `
+🏗️ **Construction Cost Estimate**
+*Based on 2024 Philippine Construction Cost Standards*
+
+📊 **Cost Tier Applied: ${costTier}**
+📍 **Reference:** ACDC 2024 Construction Cost Chart
+💵 **Base Rate:** ${formatPeso(costTiers[costTier])}/sqm
+
+------------------------------------------
+**Project Details:**
+- **Type:** ${projectType}
+- **Material:** ${materialType}
+- **Complexity:** ${designComplexity}
+- **Floors:** ${numFloors}
+- **Foundation:** ${foundationType}
+- **Roof:** ${roofType}
+- **Labor:** ${laborQuality}
+- **Timeline:** ${timelineUrgency}
+- **Location:** ${location}
+
+📐 **Total Floor Area:** ${area.toLocaleString()} sqm
+💰 **Estimated Total Cost:** ${formatPeso(totalCost)}
+📏 **Cost per sqm:** ${formatPeso(costPerSqm)}
+
+### 💸 Detailed Cost Breakdown:
+- Base Construction (${costTier} tier): ${formatPeso(structuralCost)}
+- Finishing Works: ${formatPeso(finishingCost)}
+- Foundation System: ${formatPeso(foundationCost)}
+- Roofing Structure: ${formatPeso(roofingCost)}
+- Labor Costs: ${formatPeso(laborCost)}
+- Utility Systems: ${formatPeso(utilityCost)}
+- Location & Complexity Adjustments: ${formatPeso(breakdown["Location & Complexity Adjustments"])}
+
+---
+
+**📈 Applied Adjustment Factors:**
+- Material (${materialType}): ${materialCostFactor}x
+- Location (${location}): ${locationCostFactor}x
+- Design Complexity: ${complexityFactor}x
+- Timeline: ${timelineFactor}x
+- Site Accessibility: ${accessibilityFactor}x
+- **Total Multiplier:** ${adjustmentFactor.toFixed(2)}x
+
+`;
+
+    // Budget comparison
     if (totalCost > budget) {
-      return { totalCost, message: 'The estimated cost exceeds your budget.' };
+      const shortfall = totalCost - budget;
+      message += `⚠️ **Budget Alert:** The estimated cost exceeds your budget of ${formatPeso(budget)} by ${formatPeso(shortfall)}.`;
+      message += `\n💡 **Suggestions:** Consider a ${getLowerTier(costTier)} finish, reduce area, or adjust specifications.`;
     } else {
-      return { totalCost, message: 'The estimated cost is within your budget.' };
+      const surplus = budget - totalCost;
+      message += `✅ **Budget Status:** Your budget of ${formatPeso(budget)} is sufficient with ${formatPeso(surplus)} remaining.`;
+      message += `\n💡 **Opportunity:** You could upgrade to ${getHigherTier(costTier)} or add features.`;
     }
 
+    // Reference to the image and disclaimers
+    message += `\n\n---
+**📋 Important Notes:**
+*This estimate is based on the ACDC 2024 Construction Cost Chart for Philippine residential construction.*
+*Rates are rules of thumb only and serve as a starting point for preliminary budgeting.*
+*Consult a licensed contractor for detailed costing based on your specific requirements.*
+
+**Factors that may impact final costs:**
+• Soil conditions & site preparation
+• Market fluctuations in material prices
+• Labor availability & skill levels
+• Design modifications & customizations
+• Permit fees & regulatory requirements
+
+*Ultra luxury houses can exceed beyond the costs included in the reference chart.*`;
+
+    return { 
+      totalCost: Math.round(totalCost), 
+      breakdown, 
+      message,
+      costTier,
+      baseCostPerSqm: costTiers[costTier],
+      reference: "ACDC 2024 Construction Cost Chart"
+    };
   } catch (error) {
     throw new Error(`Error calculating estimate: ${error.message}`);
   }
 };
 
+// Helper functions for tier suggestions
+function getLowerTier(currentTier) {
+  const tiers = ['BARE', 'STANDARD', 'LUXURY', 'ICONIC'];
+  const currentIndex = tiers.indexOf(currentTier);
+  return currentIndex > 0 ? tiers[currentIndex - 1] : 'BARE';
+}
+
+function getHigherTier(currentTier) {
+  const tiers = ['BARE', 'STANDARD', 'LUXURY', 'ICONIC'];
+  const currentIndex = tiers.indexOf(currentTier);
+  return currentIndex < tiers.length - 1 ? tiers[currentIndex + 1] : 'ICONIC';
+}
+
+
+
+// API Endpoint
 const getEstimate = async (req, res) => {
-  const { projectType, materialType, sizeInSqm, location, budget } = req.body; // Include budget in the request
   try {
-    // Call the calculateEstimate function and get the estimated cost
-    const { totalCost, message } = await calculateEstimate({ projectType, materialType, sizeInSqm, location, budget });
-
-    // Send the estimate and message as the response
+    const { totalCost, message } = await calculateEstimate(req.body);
     res.json({ totalCost, message });
-
   } catch (error) {
-    // Handle any errors that occur during the estimate calculation
-    res.status(500).json({ message: 'Error calculating estimate', error: error.message });
+    res.status(500).json({ message: "Error calculating estimate", error: error.message });
   }
 };
 
