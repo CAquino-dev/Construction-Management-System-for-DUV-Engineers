@@ -628,50 +628,54 @@ const rejectContract = (req, res) => {
 // GET /api/finance/procurement-approved
 const getProcurementApprovedMilestones = (req, res) => {
   const query = `
-    SELECT 
-      m.id AS milestone_id,
-      m.project_id,
-      m.title,
-      m.details,
-      m.status,
-      m.start_date,
-      m.due_date,
-      m.timestamp,
+SELECT 
+  m.id AS milestone_id,
+  m.project_id,
+  m.title,
+  m.details,
+  m.status,
+  m.start_date,
+  m.due_date,
+  m.timestamp,
 
-      -- Approved supplier quote data
-      pq.id AS quote_id,
-      pq.supplier_id,
-      s.supplier_name,
-      pq.status AS quote_status,
+  -- Supplier quote data
+  pq.id AS quote_id,
+  pq.supplier_id,
+  s.supplier_name,
+  pq.status AS quote_status,
 
-      pqi.id AS quote_item_id,
-      pqi.material_name,
-      pqi.unit AS quote_unit,
-      pqi.quantity AS quote_quantity,
-      pqi.unit_price AS quote_unit_price,
+  pqi.id AS quote_item_id,
+  pqi.material_name,
+  pqi.unit AS quote_unit,
+  pqi.quantity AS quote_quantity,
+  pqi.unit_price AS quote_unit_price,
 
-      -- BOQ data
-      b.id AS boq_id,
-      b.item_no,
-      b.description AS boq_description,
-      b.unit AS boq_unit,
-      b.quantity AS boq_quantity,
-      b.unit_cost AS boq_unit_cost,
-      b.total_cost AS boq_total_cost
+  -- BOQ data
+  b.id AS boq_id,
+  b.item_no,
+  b.description AS boq_description,
+  b.unit AS boq_unit,
+  b.quantity AS boq_quantity,
+  b.unit_cost AS boq_unit_cost,
+  b.total_cost AS boq_total_cost
 
-    FROM milestones m
-    LEFT JOIN procurement_quotes pq 
-      ON pq.milestone_id = m.id AND pq.status = 'Selected'
-    LEFT JOIN suppliers s 
-      ON pq.supplier_id = s.id
-    LEFT JOIN procurement_quote_items pqi 
-      ON pq.id = pqi.quote_id
-    LEFT JOIN milestone_boq mb 
-      ON m.id = mb.milestone_id
-    LEFT JOIN boq b 
-      ON mb.boq_id = b.id
-    WHERE pq.status = 'Selected'
-    ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC
+FROM milestones m
+LEFT JOIN procurement_quotes pq 
+  ON pq.milestone_id = m.id 
+  AND pq.status = 'Selected'
+LEFT JOIN suppliers s 
+  ON pq.supplier_id = s.id
+LEFT JOIN procurement_quote_items pqi 
+  ON pq.id = pqi.quote_id
+LEFT JOIN milestone_boq mb 
+  ON m.id = mb.milestone_id
+LEFT JOIN boq b 
+  ON mb.boq_id = b.id
+
+WHERE pq.status = 'Selected'
+  AND m.status NOT IN ('Finance Approved', 'Finance Rejected', "For Procurement", "Pending Delivery", "Delivered")
+
+ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
   `;
 
   db.query(query, (err, results) => {
