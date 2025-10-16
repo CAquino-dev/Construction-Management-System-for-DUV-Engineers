@@ -49,7 +49,7 @@ const AdminNavbar = ({ children }) => {
   const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
   const toggleSalesDropdown = () => setIsSalesOpen(!isSalesOpen);
   const toggleForemanDropdown = () => setIsForemanOpen(!isForemanOpen);
-  const toggleProcurementDropdown = () => setIsProcurementOpen(!isForemanOpen);
+  const toggleProcurementDropdown = () => setIsProcurementOpen(!isProcurementOpen);
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const toggleSiteManagerDropdown = () =>
@@ -99,7 +99,7 @@ const AdminNavbar = ({ children }) => {
         "/admin-dashboard/finance/approved-payroll-from-hr"
       )
     )
-      return "HR Payroll (Approved Records of HR)";
+      return "Employee Salary";
     if (
       location.pathname.startsWith(
         "/admin-dashboard/finance/approved-payroll-from-ceo"
@@ -514,20 +514,7 @@ const AdminNavbar = ({ children }) => {
                           : "hover:bg-[#5A8366]"
                       }`}
                     >
-                      HR Payroll (Approved Records of HR)
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/admin-dashboard/finance/salaryRelease"
-                      className={`block p-2 rounded-lg cursor-pointer ${
-                        location.pathname ===
-                        "/admin-dashboard/finance/salaryRelease"
-                          ? "bg-[#5A8366] text-white"
-                          : "hover:bg-[#5A8366]"
-                      }`}
-                    >
-                      Salary Release
+                      Employee Salary
                     </Link>
                   </li>
                   <li>
@@ -566,7 +553,7 @@ const AdminNavbar = ({ children }) => {
                           : "hover:bg-[#5A8366]"
                       }`}
                     >
-                      Clients Payment
+                      Finance Payment
                     </Link>
                   </li>
                 </ul>
