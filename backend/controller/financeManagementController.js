@@ -399,14 +399,14 @@ const updateFinanceApprovalStatus = (req, res) => {
   const milestoneId = req.params.id;
   const { status, financeId } = req.body;
 
-  // Only allow Finance-related statuses
-  if (!status || !['Finance Approved', 'Finance Rejected'].includes(status)) {
+  if (!status || !["Finance Approved", "Finance Rejected"].includes(status)) {
     return res.status(400).json({ error: "Invalid or missing status" });
   }
 
   const approvalDate = new Date();
 
-  const query = `
+  // 1️⃣ Update milestone status
+  const updateMilestoneQuery = `
     UPDATE milestones
     SET status = ?, 
         finance_approved_by = ?, 
@@ -414,15 +414,99 @@ const updateFinanceApprovalStatus = (req, res) => {
     WHERE id = ?
   `;
 
-  db.query(query, [status, financeId, approvalDate, milestoneId], (err, result) => {
+  db.query(updateMilestoneQuery, [status, financeId, approvalDate, milestoneId], (err, result) => {
     if (err) {
       console.error("Error updating finance approval status:", err);
       return res.status(500).json({ error: "Failed to update finance approval status" });
     }
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Milestone not found" });
     }
-    res.json({ message: "Finance approval status updated successfully" });
+
+    // 2️⃣ If status = Finance Approved → auto-generate Purchase Order
+    if (status === "Finance Approved") {
+      const getQuoteQuery = `
+        SELECT pq.id AS quote_id, pq.supplier_id, pq.milestone_id, m.project_id
+        FROM procurement_quotes pq
+        JOIN milestones m ON pq.milestone_id = m.id
+        WHERE pq.milestone_id = ? AND pq.status = 'Selected'
+      `;
+
+      db.query(getQuoteQuery, [milestoneId], (err, results) => {
+        if (err) {
+          console.error("Error fetching approved quote:", err);
+          return res.status(500).json({ message: "Error fetching approved quote" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ message: "No selected supplier quote found" });
+        }
+
+        const { quote_id, supplier_id, project_id } = results[0];
+        const poNumber = `PO-${Date.now()}`;
+
+        // 3️⃣ Insert into purchase_orders
+        const insertPOQuery = `
+          INSERT INTO purchase_orders (project_id, milestone_id, quote_id, supplier_id, po_number, created_by)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `;
+
+        db.query(
+          insertPOQuery,
+          [project_id, milestoneId, quote_id, supplier_id, poNumber, financeId],
+          (err, result) => {
+            if (err) {
+              console.error("Error creating purchase order:", err);
+              return res.status(500).json({ message: "Error creating purchase order" });
+            }
+
+            const po_id = result.insertId;
+
+            // 4️⃣ Copy all quote items into purchase_order_items
+            const copyItemsQuery = `
+              INSERT INTO purchase_order_items (po_id, material_name, unit, quantity, unit_price, total_cost)
+              SELECT ?, material_name, unit, quantity, unit_price, (quantity * unit_price)
+              FROM procurement_quote_items
+              WHERE quote_id = ?
+            `;
+
+            db.query(copyItemsQuery, [po_id, quote_id], (err2) => {
+              if (err2) {
+                console.error("Error copying PO items:", err2);
+                return res.status(500).json({ message: "Error copying PO items" });
+              }
+
+              // 5️⃣ Compute total
+              const totalQuery = `
+                UPDATE purchase_orders
+                SET total_amount = (
+                  SELECT SUM(total_cost) FROM purchase_order_items WHERE po_id = ?
+                )
+                WHERE id = ?
+              `;
+
+              db.query(totalQuery, [po_id, po_id], (err3) => {
+                if (err3) {
+                  console.error("Error computing PO total:", err3);
+                  return res.status(500).json({ message: "Error computing PO total" });
+                }
+
+                console.log(`✅ Purchase Order generated: ${poNumber}`);
+                res.json({
+                  message: "Finance approved and Purchase Order generated successfully",
+                  po_id,
+                  po_number: poNumber,
+                });
+              });
+            });
+          }
+        );
+      });
+    } else {
+      // 3️⃣ If Finance Rejected, no PO created
+      res.json({ message: "Finance rejected milestone successfully" });
+    }
   });
 };
 

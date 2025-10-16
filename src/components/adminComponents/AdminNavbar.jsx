@@ -457,6 +457,19 @@ const AdminNavbar = ({ children }) => {
                   </li>
                   <li>
                     <Link
+                      to="/admin-dashboard/procurement/purchase-orders"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/purchase-orders"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                    >
+                      Purchase Orders
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
                       to="/admin-dashboard/procurement/supplier-management"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
