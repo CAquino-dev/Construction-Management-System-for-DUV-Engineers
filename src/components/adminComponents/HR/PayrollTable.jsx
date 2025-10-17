@@ -12,6 +12,7 @@ import { DateRangePicker } from "../../ui/calendar";
 import { EmployeePayrollModal } from "./EmployeePayrollModal";
 import { Eye } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import ConfirmationModal from "../ConfirmationModal";
 
 const initialPayrollRecords = [
   {
@@ -90,6 +91,7 @@ export const PayrollTable = () => {
   const [payslipRemarks, setPayslipRemarks] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedRange, setSelectedRange] = useState("");
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const userId = localStorage.getItem("userId");
 
@@ -341,22 +343,23 @@ export const PayrollTable = () => {
             className="bg-none text-[#4c735c] px-4 py-2 rounded-md border border-[#4c735c] hover:bg-[#4c735c] hover:text-white w-full sm:w-auto cursor-pointer"
             onClick={() => setIsPayslipModalOpen(true)}
           >
-            Create Payslip
+            Generate Payroll
           </button>
+
           {isPayslipModalOpen && (
             <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
               <div className="bg-white p-6 rounded-md shadow-md w-full max-w-md">
                 <h2 className="text-lg font-semibold mb-4">Create Payslip</h2>
                 <input
                   type="text"
-                  placeholder="Enter payslip title"
+                  placeholder="Enter Payroll title"
                   value={payslipTitle}
                   onChange={(e) => setPayslipTitle(e.target.value)}
                   className="w-full p-2 border rounded-md mb-4"
                 />
                 <input
                   type="text"
-                  placeholder="Enter payslip remarks"
+                  placeholder="Enter Payroll remarks"
                   value={payslipRemarks}
                   onChange={(e) => setPayslipRemarks(e.target.value)}
                   className="w-full p-2 border rounded-md mb-4"
@@ -374,14 +377,38 @@ export const PayrollTable = () => {
                   </button>
                   <button
                     className="px-4 py-2 bg-[#4c735c] text-white rounded-md"
-                    onClick={handleCreatePayslip}
+                    onClick={() => {
+                      if (
+                        !payslipTitle ||
+                        !payslipRemarks ||
+                        !startDate ||
+                        !endDate
+                      ) {
+                        toast.error(
+                          "Please fill in all fields before generating."
+                        );
+                        return;
+                      }
+                      setIsConfirmModalOpen(true);
+                    }}
                   >
-                    Create
+                    Generate
                   </button>
                 </div>
               </div>
             </div>
           )}
+
+          {/* ✅ Confirmation modal */}
+          <ConfirmationModal
+            isOpen={isConfirmModalOpen}
+            onClose={() => setIsConfirmModalOpen(false)}
+            onConfirm={() => {
+              setIsConfirmModalOpen(false);
+              handleCreatePayslip();
+            }}
+            actionType="Generate Payroll"
+          />
         </div>
       </div>
 
