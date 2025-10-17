@@ -120,10 +120,22 @@ const ApprovedContracts = () => {
                     </p>
                     <p>
                       <strong>Status:</strong>{" "}
-                      <span className="text-green-600 capitalize">
+                      <span
+                        className={`capitalize font-semibold ${
+                          contract.contract_status.toLowerCase() === "signed"
+                            ? "text-green-600"
+                            : contract.contract_status.toLowerCase() ===
+                              "rejected"
+                            ? "text-red-600"
+                            : contract.contract_status.toLowerCase() === "draft"
+                            ? "text-yellow-600"
+                            : "text-gray-600"
+                        }`}
+                      >
                         {contract.contract_status}
                       </span>
                     </p>
+
                     <p>
                       <strong>Signed At:</strong>{" "}
                       {contract.contract_signed_at
