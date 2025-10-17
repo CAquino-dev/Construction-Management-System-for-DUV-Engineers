@@ -34,7 +34,7 @@ export const Projects = () => {
   }, []);
 
   return (
-    <div className="p-4 h-screen">
+    <div className="py-4 h-screen">
       {selectedProject ? (
         <>
           {role === "Foreman" ? (

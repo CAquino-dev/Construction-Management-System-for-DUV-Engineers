@@ -1,32 +1,51 @@
-import React from 'react';
-import duvLogo from '../../assets/duvLogo.jpg';
+import React from "react";
+import duvLogo from "../../assets/duvLogo.jpg";
 
 export const ProjectCard = ({ project }) => {
   return (
-    <div className="card bg-white shadow-lg rounded-lg overflow-hidden cursor-pointer hover:shadow-xl">
-      <div className="flex flex-col sm:flex-row">
-        {/* Left side: Project Image */}
-        <div className="w-full sm:w-1/3 p-2">
-          <img
-            src={duvLogo}
-            alt={project.projectname_}
-            className="w-full h-full object-cover rounded-lg"
-            style={{ maxWidth: '100%' }} // Ensure image scales nicely
-          />
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-300 cursor-pointer">
+      <div className="flex flex-col sm:flex-row p-4">
+        {/* Image Section */}
+        <div className="flex-shrink-0 mb-3 sm:mb-0 sm:mr-4 flex justify-center sm:justify-start">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
+            <img
+              src={duvLogo}
+              alt={project.project_name}
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
 
-        {/* Right side: Project Details */}
-        <div className="w-full sm:w-2/3 p-4">
-          <h3 className="text-lg font-semibold text-gray-800">{project.project_name}</h3>
-          <p className="text-sm text-gray-600">
-            <strong>Engineer:</strong> {project.engineer_name}
-          </p>
-          <p className="text-sm text-gray-600">
-            <strong>Start Date:</strong> {new Date(project.start_date).toLocaleDateString()}
-          </p>
-          <p className="text-sm text-gray-600">
-            <strong>End Date:</strong> {new Date(project.end_date).toLocaleDateString()}
-          </p>
+        {/* Content Section */}
+        <div className="flex-1">
+          {/* Project Title */}
+          <h3 className="text-lg font-bold text-gray-900 mb-3">
+            {project.project_name}
+          </h3>
+
+          {/* Project Details */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-3">
+              <span className="text-gray-400 text-sm">👷</span>
+              <div>
+                <p className="text-xs text-gray-500">Engineer</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {project.engineer_name}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <span className="text-gray-400 text-sm">📅</span>
+              <div>
+                <p className="text-xs text-gray-500">Timeline</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  {new Date(project.start_date).toLocaleDateString()} -{" "}
+                  {new Date(project.end_date).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

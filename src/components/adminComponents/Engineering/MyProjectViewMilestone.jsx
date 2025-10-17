@@ -103,7 +103,9 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     try {
       setStatusUpdating(true);
       const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/update-status`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/engr/milestones/update-status`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

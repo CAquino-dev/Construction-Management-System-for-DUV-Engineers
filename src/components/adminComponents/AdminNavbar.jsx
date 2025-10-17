@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   List,
   UserCircleCheck,
@@ -18,7 +18,7 @@ import {
   Clock,
   Briefcase,
   ClipboardText,
-  Handshake
+  Handshake,
 } from "@phosphor-icons/react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
@@ -40,6 +40,42 @@ const AdminNavbar = ({ children }) => {
   const toggleFeedbackDropdown = () => setIsFeedbackOpen(!isFeedbackOpen);
   const location = useLocation();
   const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
+
+  // ADD THIS - Fetch user data when component loads
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (userId) {
+          const response = await fetch(
+            `${
+              import.meta.env.VITE_REACT_APP_API_URL
+            }/api/employees/getEmployeeInformation/${userId}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            setUserData(data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // ADD THIS - Function to get user initials
+  const getInitials = (name) => {
+    if (!name) return "US"; // Default to 'US' if no name
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const toggleProfileDropdown = () =>
     setProfileDropdownOpen(!profileDropdownOpen);
@@ -49,7 +85,8 @@ const AdminNavbar = ({ children }) => {
   const toggleEngineerDropdown = () => setIsEngineerOpen(!isEngineerOpen);
   const toggleSalesDropdown = () => setIsSalesOpen(!isSalesOpen);
   const toggleForemanDropdown = () => setIsForemanOpen(!isForemanOpen);
-  const toggleProcurementDropdown = () => setIsProcurementOpen(!isProcurementOpen);
+  const toggleProcurementDropdown = () =>
+    setIsProcurementOpen(!isProcurementOpen);
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const toggleSiteManagerDropdown = () =>
@@ -58,12 +95,6 @@ const AdminNavbar = ({ children }) => {
   const menuItems = [
     // { name: "Dashboard", icon: <House size={20} />, href: "/admin-dashboard" },
     // { name: "Users", icon: <User size={20} />, href: "/admin-dashboard/user-management", permission: "can_access_user" },
-    {
-      name: "Inventory",
-      icon: <Package size={20} />,
-      href: "/admin-dashboard/inventory",
-      permission: "can_access_inventory_management",
-    },
     {
       name: "CEO Dashboard",
       icon: <UserCircleCheck size={20} />,
@@ -74,11 +105,6 @@ const AdminNavbar = ({ children }) => {
       name: "Attendance Monitoring",
       icon: <Clock size={20} />,
       href: "/admin-dashboard/AttendanceMonitoring",
-    },
-    {
-      name: "Item Request",
-      icon: <ClipboardText size={20} />,
-      href: "/admin-dashboard/ItemRequest",
     },
   ];
 
@@ -135,30 +161,47 @@ const AdminNavbar = ({ children }) => {
           {currentPage}
         </h1>
 
-        {/* Profile Section */}
-        <div className="relative hover:text-gray-400 cursor-pointer">
+        {/* Profile Section - UPDATED */}
+        <div className="relative">
           <button
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
             onClick={toggleProfileDropdown}
           >
-            <div className="w-8 h-8 bg-black rounded-full"></div>{" "}
-            {/* Profile Picture */}
+            {/* Profile Picture with Dynamic Initials */}
+            <div className="w-8 h-8 bg-[#4c735c] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+              {userData ? getInitials(userData.full_name) : "US"}
+            </div>
             <p className="text-sm font-semibold text-gray-800 hidden md:block">
-              Christian Aquino
+              {userData ? userData.full_name : "User"}
             </p>
-            <CaretDown size={18} className="text-gray-800" />
+            <CaretDown
+              size={18}
+              className={`text-gray-600 transition-transform ${
+                profileDropdownOpen ? "rotate-180" : ""
+              }`}
+            />
           </button>
 
           {profileDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 border border-gray-200 z-50">
               <Link to="/admin-dashboard/profile">
-                <button className="block px-4 py-2 text-black hover:bg-gray-200/80 cursor-pointer w-full">
-                  Profile
+                <button
+                  onClick={() => setProfileDropdownOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer w-full text-left transition-colors"
+                >
+                  <User size={16} />
+                  <span>Profile</span>
                 </button>
               </Link>
-              <button className="block px-4 py-2 text-black hover:bg-gray-200/80 cursor-pointer w-full">
-                {" "}
-                Logout
+              <button
+                onClick={() => {
+                  setProfileDropdownOpen(false);
+                  setIsLogoutModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer w-full text-left transition-colors"
+              >
+                <SignOut size={16} />
+                <span>Logout</span>
               </button>
             </div>
           )}
@@ -413,20 +456,20 @@ const AdminNavbar = ({ children }) => {
               )}
             </li>
             <li>
-                <button
-                  onClick={toggleProcurementDropdown}
-                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-                >
-                  <span className="flex items-center gap-3 font-semibold">
-                    <Handshake size={20} /> Procurement
-                  </span>
-                  <CaretDown
-                    size={20}
-                    className={`transform transition-all ${
-                      isEngineerOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+              <button
+                onClick={toggleProcurementDropdown}
+                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+              >
+                <span className="flex items-center gap-3 font-semibold">
+                  <Handshake size={20} /> Procurement
+                </span>
+                <CaretDown
+                  size={20}
+                  className={`transform transition-all ${
+                    isEngineerOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
               {isProcurementOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
@@ -441,7 +484,7 @@ const AdminNavbar = ({ children }) => {
                     >
                       Procurement Dashboard
                     </Link>
-                  </li>                  
+                  </li>
                   <li>
                     <Link
                       to="/admin-dashboard/procurement/procurement-page"
