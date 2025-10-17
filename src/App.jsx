@@ -36,7 +36,7 @@ import { Attendance } from "./pages/admin/AttendanceMonitoring";
 import { SendFeedback } from "./pages/userPages/SendFeedback";
 import { LoadingSpinner } from "./components/userComponents/LoadingSpinner";
 import { FinanceBudgetSupplyRequest } from "./pages/admin/FinanceBudgetSupplyRequest";
-import { FinancePayment } from "./pages/admin/FinancePayment";
+import FinancePayment from './pages/admin/FinancePayment';
 import { AppointmentRequestPage } from "./pages/userPages/AppointmentRequestPage";
 import Appointment from "./pages/admin/Appointment";
 import { AddClient } from "./pages/admin/AddClient";

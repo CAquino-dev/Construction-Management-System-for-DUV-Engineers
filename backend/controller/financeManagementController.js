@@ -1,6 +1,7 @@
 const db = require("../config/db");
 const fs = require('fs');
 const path = require('path');
+const multer = require("multer");
 
 const getFinance = (req, res) => {
     const query = `SELECT 
@@ -628,50 +629,54 @@ const rejectContract = (req, res) => {
 // GET /api/finance/procurement-approved
 const getProcurementApprovedMilestones = (req, res) => {
   const query = `
-    SELECT 
-      m.id AS milestone_id,
-      m.project_id,
-      m.title,
-      m.details,
-      m.status,
-      m.start_date,
-      m.due_date,
-      m.timestamp,
+SELECT 
+  m.id AS milestone_id,
+  m.project_id,
+  m.title,
+  m.details,
+  m.status,
+  m.start_date,
+  m.due_date,
+  m.timestamp,
 
-      -- Approved supplier quote data
-      pq.id AS quote_id,
-      pq.supplier_id,
-      s.supplier_name,
-      pq.status AS quote_status,
+  -- Supplier quote data
+  pq.id AS quote_id,
+  pq.supplier_id,
+  s.supplier_name,
+  pq.status AS quote_status,
 
-      pqi.id AS quote_item_id,
-      pqi.material_name,
-      pqi.unit AS quote_unit,
-      pqi.quantity AS quote_quantity,
-      pqi.unit_price AS quote_unit_price,
+  pqi.id AS quote_item_id,
+  pqi.material_name,
+  pqi.unit AS quote_unit,
+  pqi.quantity AS quote_quantity,
+  pqi.unit_price AS quote_unit_price,
 
-      -- BOQ data
-      b.id AS boq_id,
-      b.item_no,
-      b.description AS boq_description,
-      b.unit AS boq_unit,
-      b.quantity AS boq_quantity,
-      b.unit_cost AS boq_unit_cost,
-      b.total_cost AS boq_total_cost
+  -- BOQ data
+  b.id AS boq_id,
+  b.item_no,
+  b.description AS boq_description,
+  b.unit AS boq_unit,
+  b.quantity AS boq_quantity,
+  b.unit_cost AS boq_unit_cost,
+  b.total_cost AS boq_total_cost
 
-    FROM milestones m
-    LEFT JOIN procurement_quotes pq 
-      ON pq.milestone_id = m.id AND pq.status = 'Selected'
-    LEFT JOIN suppliers s 
-      ON pq.supplier_id = s.id
-    LEFT JOIN procurement_quote_items pqi 
-      ON pq.id = pqi.quote_id
-    LEFT JOIN milestone_boq mb 
-      ON m.id = mb.milestone_id
-    LEFT JOIN boq b 
-      ON mb.boq_id = b.id
-    WHERE pq.status = 'Selected'
-    ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC
+FROM milestones m
+LEFT JOIN procurement_quotes pq 
+  ON pq.milestone_id = m.id 
+  AND pq.status = 'Selected'
+LEFT JOIN suppliers s 
+  ON pq.supplier_id = s.id
+LEFT JOIN procurement_quote_items pqi 
+  ON pq.id = pqi.quote_id
+LEFT JOIN milestone_boq mb 
+  ON m.id = mb.milestone_id
+LEFT JOIN boq b 
+  ON mb.boq_id = b.id
+
+WHERE pq.status = 'Selected'
+  AND m.status NOT IN ('Finance Approved', 'Finance Rejected', "For Procurement", "Pending Delivery", "Delivered")
+
+ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
   `;
 
   db.query(query, (err, results) => {
@@ -889,14 +894,203 @@ const getReleasedPayslips = (req, res) => {
   });
 };
 
+const getDeliveredPurchaseOrders = (req, res) => {
+  const query = `
+    SELECT 
+      po.id AS po_id,
+      po.project_id,
+      p.project_name,
+      s.supplier_name,
+      po.total_amount,
+      po.status,
+      po.payment_status,
+      po.received_at AS delivery_date
+    FROM purchase_orders po
+    JOIN engineer_projects p ON po.project_id = p.id
+    JOIN suppliers s ON po.supplier_id = s.id
+    WHERE po.status = 'Delivered' 
+      AND po.payment_status = 'Unpaid'
+    ORDER BY po.received_at DESC
+  `;
 
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching delivered purchase orders:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching delivered purchase orders.",
+        error: err,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Delivered and unpaid purchase orders fetched successfully.",
+      data: results,
+    });
+  });
+};
  
+// --- Setup Multer storage ---
+const financeStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let folder = "finance_attachments";
+    if (file.fieldname === "signature") {
+      folder = "finance_signatures";
+    }
 
+    const uploadPath = path.join(__dirname, `../../public/${folder}`);
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}_${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({ storage: financeStorage });
+
+const processFinancePayment = (req, res) => {
+  const {
+    paymentType, // purchase_order, payslip, invoice, etc.
+    referenceId,
+    paymentMethod,
+    referenceNumber,
+    bankName,
+    accountNumber,
+    transactionDate,
+    amount,
+    notes,
+    userId,
+  } = req.body;
+
+  if (!paymentType || !referenceId || !paymentMethod || !amount || !userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields (paymentType, referenceId, paymentMethod, amount, userId).",
+    });
+  }
+
+  // Extract uploaded files
+  const signatureFile = req.files?.signature?.[0];
+  const attachmentFiles = req.files?.attachments || [];
+
+  const signaturePath = signatureFile
+    ? `/public/finance_signatures/${signatureFile.filename}`
+    : null;
+
+  const attachments = attachmentFiles.map((file) => ({
+    name: file.originalname,
+    path: `/public/finance_attachments/${file.filename}`,
+  }));
+
+  const insertQuery = `
+    INSERT INTO finance_payments (
+      payment_type,
+      reference_id,
+      payment_method,
+      reference_number,
+      bank_name,
+      account_number,
+      transaction_date,
+      amount,
+      notes,
+      attachments,
+      recipient_signature,
+      processed_by,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+  `;
+
+  db.query(
+    insertQuery,
+    [
+      paymentType,
+      referenceId,
+      paymentMethod,
+      referenceNumber || null,
+      bankName || null,
+      accountNumber || null,
+      transactionDate || null,
+      amount || 0,
+      notes || null,
+      JSON.stringify(attachments),
+      signaturePath,
+      userId,
+    ],
+    (err) => {
+      if (err) {
+        console.error("❌ Error inserting payment record:", err);
+        return res.status(500).json({ success: false, message: "Error saving payment record" });
+      }
+
+      // Update related record based on payment type
+      let updateQuery = "";
+      let queryParams = [];
+
+      switch (paymentType) {
+        case "purchase_order":
+          updateQuery = `
+            UPDATE purchase_orders
+            SET payment_status = 'Paid',
+                paid_at = NOW(),
+                paid_by = ?
+            WHERE id = ?
+          `;
+          queryParams = [userId, referenceId];
+          break;
+
+        case "payslip":
+          updateQuery = `
+            UPDATE payslip_items
+            SET payment_status = 'Paid',
+                paid_at = NOW()
+            WHERE id = ?
+          `;
+          queryParams = [referenceId];
+          break;
+
+        case "invoice":
+          updateQuery = `
+            UPDATE subcontractor_invoices
+            SET payment_status = 'Paid',
+                paid_at = NOW()
+            WHERE id = ?
+          `;
+          queryParams = [referenceId];
+          break;
+
+        default:
+          return res.status(200).json({
+            success: true,
+            message: "Payment recorded (unknown paymentType — no status update).",
+          });
+      }
+
+      db.query(updateQuery, queryParams, (err2) => {
+        if (err2) {
+          console.error("❌ Error updating related record:", err2);
+          return res.status(500).json({
+            success: false,
+            message: "Payment recorded, but failed to update related record.",
+          });
+        }
+
+        res.status(200).json({
+          success: true,
+          message: "✅ Payment processed and record marked as paid.",
+        });
+      });
+    }
+  );
+};
 
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
   approveContract, rejectContract, getProcurementApprovedMilestones, uploadSalarySignature,
-  getReleasedPayslips
+  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment
  };
