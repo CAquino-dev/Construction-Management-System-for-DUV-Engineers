@@ -1,208 +1,303 @@
-import React, { useEffect, useRef, useState } from 'react';
-import SignatureCanvas from 'react-signature-canvas';
-import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import React, { useEffect, useRef, useState } from "react";
+import SignatureCanvas from "react-signature-canvas";
+import { useParams } from "react-router-dom";
+import axios from "axios";
+import { FinalModal } from "../../components/FinalModal";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
+import { toast } from "sonner";
 
 const ContractRespond = () => {
   const { proposalId } = useParams();
   const [contract, setContract] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [responseStatus, setResponseStatus] = useState('');
-  const [message, setMessage] = useState({ error: '', success: '' });
+  const [message, setMessage] = useState({ error: "", success: "" });
 
   const sigPad = useRef();
   const [showSignPad, setShowSignPad] = useState(false);
   const [trimmedSignature, setTrimmedSignature] = useState(null);
 
+  // Modals
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionNotes, setRejectionNotes] = useState("");
+
+  // Button disable states
+  const [isSigned, setIsSigned] = useState(false);
+  const [isRejected, setIsRejected] = useState(false);
+
+  // Fetch contract
   useEffect(() => {
     const getContract = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/contract/${proposalId}`);
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/projectManager/contract/${proposalId}`
+        );
         if (response.ok) {
           const data = await response.json();
           setContract(data);
+
+          // Handle existing status
+          if (data.status === "signed") setIsSigned(true);
+          if (data.status === "rejected") setIsRejected(true);
         } else {
-          setMessage({ error: 'Failed to fetch contract.', success: '' });
+          setMessage({ error: "Failed to fetch contract.", success: "" });
         }
       } catch (err) {
-        setMessage({ error: 'An error occurred.', success: '' });
+        setMessage({ error: "An error occurred.", success: "" });
       } finally {
         setLoading(false);
       }
     };
-
     getContract();
   }, [proposalId]);
 
   const clearSignature = () => sigPad.current.clear();
 
-const handleSaveSignature = async () => {
-  if (sigPad.current.isEmpty()) {
-    alert("Please provide a signature.");
-    return;
-  }
-
-  const canvas = sigPad.current.getCanvas();
-  const dataURL = canvas.toDataURL("image/png");
-  setTrimmedSignature(dataURL);
-
-  try {
-    // 1. Save signature
-    const response = await axios.post(
-      `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signature`,
-      {
-        base64Signature: dataURL,
-        proposalId: proposalId,
-      }
-    );
-
-    setResponseStatus("Successfully saved the signature!");
-    setMessage({ success: response.data.message, error: "" });
-    setShowSignPad(false);
-
-    // 2. Auto-generate payment schedule
-    try {
-      const scheduleRes = await axios.post(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/payment-schedule/${proposalId}`
-      );
-
-      console.log("Payment schedule generated:", scheduleRes.data.schedule);
-
-      // 3. Send invoice for the first schedule automatically
-      try {
-        const invoiceRes = await axios.post(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/invoice/send-next`,
-          { contractId: scheduleRes.data.contractId } // use the returned contractId
-        );
-
-        console.log("Invoice sent:", invoiceRes.data);
-        setMessage(prev => ({ ...prev, success: `Invoice sent to client. ${invoiceRes.data.invoiceNumber}` }));
-      } catch (invErr) {
-        console.error("Invoice sending failed:", invErr.response?.data || invErr.message);
-        setMessage(prev => ({ ...prev, error: "Failed to send invoice." }));
-      }
-
-    } catch (err) {
-      console.error("Schedule generation failed:", err.response?.data || err.message);
-      setMessage(prev => ({ ...prev, error: "Failed to generate payment schedule." }));
+  // Submit digital signature
+  const submitSignature = async () => {
+    if (sigPad.current.isEmpty()) {
+      toast.error("Please provide a signature.");
+      return;
     }
 
-  } catch (err) {
-    setMessage({
-      error: err.response?.data?.error || "Signature upload failed.",
-      success: "",
-    });
-  }
-};
+    const dataURL = sigPad.current.getCanvas().toDataURL("image/png");
+    setTrimmedSignature(dataURL);
+    setShowConfirmModal(false);
 
+    try {
+      const response = await axios.post(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/projectManager/signature`,
+        { base64Signature: dataURL, proposalId }
+      );
 
+      toast.success("Signature submitted successfully!");
+      setMessage({ success: response.data.message, error: "" });
+      setShowSignPad(false);
+      setIsSigned(true); // ✅ Disable buttons after success
+
+      // Auto-generate payment schedule + invoice
+      try {
+        const scheduleRes = await axios.post(
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/payments/payment-schedule/${proposalId}`
+        );
+
+        await axios.post(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/invoice/send-next`,
+          { contractId: scheduleRes.data.contractId }
+        );
+
+        toast.success("Invoice sent to client successfully.");
+      } catch {
+        toast.error("Failed to generate payment schedule or send invoice.");
+      }
+    } catch (err) {
+      toast.error("Signature upload failed.");
+      setMessage({
+        error: err.response?.data?.error || "Signature upload failed.",
+        success: "",
+      });
+    }
+  };
+
+  // Reject contract
   const handleRejectContract = async () => {
-    const notes = window.prompt("Please provide a reason for rejection:");
-    if (!notes || !notes.trim()) {
-      alert("Rejection notes are required.");
+    if (!rejectionNotes.trim()) {
+      toast.error("Please provide a rejection note.");
       return;
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/contracts/${proposalId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ client_rejection_notes: notes }),
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/projectManager/contracts/${proposalId}/reject`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ client_rejection_notes: rejectionNotes }),
+        }
+      );
 
       const data = await response.json();
       if (response.ok) {
-        setMessage({ success: "Contract rejected successfully.", error: '' });
+        toast.success("Contract has been rejected successfully.");
+        setMessage({ success: "Contract rejected successfully.", error: "" });
+        setShowRejectModal(false);
+        setRejectionNotes("");
+        setIsRejected(true); // ✅ Disable buttons after rejection
       } else {
-        setMessage({ error: data.error || 'Failed to reject contract.', success: '' });
+        toast.error("Failed to reject contract.");
       }
-    } catch (err) {
-      setMessage({ error: 'Error rejecting contract.', success: '' });
+    } catch {
+      toast.error("Error rejecting contract.");
     }
   };
 
   if (loading) return <p className="p-4">Loading contract...</p>;
 
   return (
-    <div className="mt-20">
-      <h1 className="text-2xl font-bold mb-4">Contract Review</h1>
+    <div className="mt-20 px-4 sm:px-8 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Contract Review</h1>
 
+      {/* Contract PDF */}
       {contract?.contract_file_url ? (
         <iframe
-          src={`${import.meta.env.VITE_REACT_APP_API_URL}${contract.contract_file_url}`}
+          src={`${import.meta.env.VITE_REACT_APP_API_URL}${
+            contract.contract_file_url
+          }`}
           title="Contract PDF"
-          className="w-full h-[600px] rounded border"
+          className="w-full h-[60vh] sm:h-[80vh] rounded-lg border shadow-sm"
         />
       ) : (
         <p>No contract found for this proposal.</p>
       )}
 
-      {/* Action buttons */}
+      {/* Action Buttons */}
       {contract?.status === "draft" && (
-        <div className="flex gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 mt-6">
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            disabled={isSigned || isRejected}
+            className={`px-4 py-2 rounded-lg shadow transition ${
+              isSigned || isRejected
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
             onClick={() => setShowSignPad(true)}
           >
-            Sign Digitally
+            ✍️ Sign Digitally
           </button>
-          <button className="bg-green-600 text-white px-4 py-2 rounded">
-            Sign In Person
-          </button>
+
           <button
-            className="bg-red-600 text-white px-4 py-2 rounded"
-            onClick={handleRejectContract}
+            disabled={isSigned || isRejected}
+            className={`px-4 py-2 rounded-lg shadow transition ${
+              isSigned || isRejected
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 text-white hover:bg-green-700"
+            }`}
           >
-            Reject Contract
+            🧾 Sign In Person
+          </button>
+
+          <button
+            disabled={isSigned || isRejected}
+            className={`px-4 py-2 rounded-lg shadow transition ${
+              isSigned || isRejected
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-red-600 text-white hover:bg-red-700"
+            }`}
+            onClick={() => setShowRejectModal(true)}
+          >
+            ❌ Reject Contract
           </button>
         </div>
       )}
 
-      {contract?.status === "signed" && (
+      {/* Status Messages */}
+      {isSigned && (
         <p className="text-green-700 font-medium mt-4">
-          ✅ This contract has already been signed.
+          ✅ This contract has been signed.
         </p>
       )}
-
-      {contract?.status === "rejected" && (
+      {isRejected && (
         <p className="text-red-700 font-medium mt-4">
           ❌ This contract was rejected.
         </p>
       )}
 
-      {showSignPad && (
-        <div className="border p-4 bg-gray-50 rounded">
+      {/* Signature Preview */}
+      {trimmedSignature && (
+        <div className="mt-6">
+          <p className="font-medium mb-2">Your Digital Signature Preview:</p>
+          <img
+            src={trimmedSignature}
+            alt="Signature Preview"
+            className="border w-full max-w-xs rounded shadow"
+          />
+        </div>
+      )}
+
+      {/* Signature Modal */}
+      <FinalModal isOpen={showSignPad} onClose={() => setShowSignPad(false)}>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          Sign Contract Digitally
+        </h2>
+        <div className="border border-gray-300 bg-gray-50 rounded-lg p-2 flex justify-center">
           <SignatureCanvas
             penColor="black"
             ref={sigPad}
-            canvasProps={{ width: 500, height: 200, className: 'border border-black' }}
+            canvasProps={{
+              width: 300,
+              height: 150,
+              className: "bg-white rounded-md border shadow-inner w-full",
+            }}
           />
-          <div className="mt-2 flex gap-2">
-            <button className="bg-gray-300 px-3 py-1 rounded" onClick={clearSignature}>Clear</button>
-            <button className="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleSaveSignature}>Submit Signature</button>
-          </div>
         </div>
-      )}
-
-      {trimmedSignature && (
-        <div className="mt-4">
-          <p className="mb-2 font-medium">Preview:</p>
-          <img src={trimmedSignature} alt="Signature Preview" className="border w-[300px]" />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            className="bg-gray-300 px-3 py-1.5 rounded-md hover:bg-gray-400 transition"
+            onClick={clearSignature}
+          >
+            Clear
+          </button>
+          <button
+            className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition"
+            onClick={() => setShowConfirmModal(true)}
+          >
+            Submit
+          </button>
         </div>
-      )}
+      </FinalModal>
 
-      {responseStatus && (
-        <p className="mt-4 font-medium text-green-700">{responseStatus}</p>
-      )}
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={submitSignature}
+        title="Confirm Signature Submission"
+        message="Are you sure you want to submit this digital signature? Once submitted, this contract will be marked as signed."
+        confirmText="Yes, Submit"
+        cancelText="Cancel"
+      />
 
-      {message.error && (
-        <p className="text-red-600 mt-2">{message.error}</p>
-      )}
-      {message.success && (
-        <p className="text-green-600 mt-2">{message.success}</p>
-      )}
+      {/* Rejection Modal */}
+      <FinalModal
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+      >
+        <h2 className="text-xl font-semibold mb-3 text-gray-800">
+          Reject Contract
+        </h2>
+        <p className="text-sm text-gray-600 mb-3">
+          Please provide a reason for rejecting this contract:
+        </p>
+        <textarea
+          className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-red-400"
+          rows={4}
+          value={rejectionNotes}
+          onChange={(e) => setRejectionNotes(e.target.value)}
+          placeholder="Enter your reason here..."
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            className="bg-gray-300 text-gray-800 px-4 py-1.5 rounded-md hover:bg-gray-400 transition"
+            onClick={() => setShowRejectModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            className="bg-red-600 text-white px-4 py-1.5 rounded-md hover:bg-red-700 transition"
+            onClick={handleRejectContract}
+          >
+            Confirm Rejection
+          </button>
+        </div>
+      </FinalModal>
     </div>
   );
 };

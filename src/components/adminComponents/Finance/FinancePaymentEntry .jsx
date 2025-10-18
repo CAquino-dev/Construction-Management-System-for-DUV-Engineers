@@ -11,7 +11,9 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
     const fetchSchedule = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getPaymentScheduleByProject/${selectedProject.id}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/project/getPaymentScheduleByProject/${selectedProject.id}`
         );
         if (!res.ok) throw new Error("Failed to fetch payment schedule");
         const data = await res.json();
@@ -36,7 +38,9 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
   const handlePay = async (amount, scheduleId) => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/payments/create-checkout-session`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/payments/create-checkout-session`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
