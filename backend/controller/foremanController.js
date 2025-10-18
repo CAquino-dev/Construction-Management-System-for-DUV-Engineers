@@ -332,22 +332,24 @@ const foremanReport = (req, res) => {
       return res.status(400).json({ error: err.message || "File upload failed" });
     }
 
-    const { title, taskId, summary, created_by, report_type } = req.body;
+    const { title, taskId, summary, created_by, report_type, project_id } = req.body;
 
-    if (!taskId || !title || !created_by) {
-      return res.status(400).json({ error: "taskId, title, and created_by are required" });
+    if (!taskId || !title || !created_by || !project_id) {
+      return res.status(400).json({
+        error: "taskId, title, created_by, and project_id are required",
+      });
     }
 
     const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
 
     const insertQuery = `
-      INSERT INTO reports (task_id, title, summary, file_url, created_by, report_type, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO reports (project_id, task_id, title, summary, file_url, created_by, report_type, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     db.query(
       insertQuery,
-      [taskId, title, summary || null, fileUrl, created_by, report_type || "Update"],
+      [project_id, taskId, title, summary || null, fileUrl, created_by, report_type || "Update"],
       (err, result) => {
         if (err) {
           console.error("Error inserting report:", err);
@@ -364,7 +366,7 @@ const foremanReport = (req, res) => {
           db.query(updateTaskQuery, [taskId], (updateErr) => {
             if (updateErr) {
               console.error("Error updating task status:", updateErr);
-              // don’t fail the request, just log
+              // Don’t fail the request, just log
             }
           });
         }
@@ -373,6 +375,7 @@ const foremanReport = (req, res) => {
           message: "Report submitted successfully",
           report: {
             id: result.insertId,
+            project_id,
             task_id: taskId,
             title,
             summary,
@@ -490,23 +493,23 @@ const getForemanReports = (req, res) => {
   const { foremanId } = req.params;
 
   const query = `
-    SELECT 
-      r.id,
-      mt.title AS task_title,
-      m.title AS milestone_title,
-      r.title,
-      r.summary,
-      r.file_url,
-      r.report_type,
-      r.created_at,
-      r.review_status,
-      r.review_comment,
-      u.full_name AS foreman_name
-    FROM reports r
-    LEFT JOIN milestone_tasks mt ON mt.id = r.task_id
-    LEFT JOIN milestones m ON m.id = mt.milestone_id
-    LEFT JOIN users u ON u.id = r.created_by
-    WHERE u.id = ?;
+  SELECT 
+    r.id,
+    mt.title AS task_title,
+    m.title AS milestone_title,
+    r.title,
+    r.summary,
+    r.file_url,
+    r.report_type,
+    r.created_at,
+    r.review_status,
+    r.review_comment,
+    u.full_name AS foreman_name
+  FROM reports r
+  LEFT JOIN milestone_tasks mt ON mt.id = r.task_id
+  LEFT JOIN milestones m ON m.id = mt.milestone_id
+  LEFT JOIN users u ON u.id = r.created_by
+  WHERE r.project_id = ?;
   `;
 
   db.query(query, [foremanId], (err, results) => {

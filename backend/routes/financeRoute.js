@@ -12,7 +12,7 @@ const {
   financeUpdatePayslipStatus,
   financeProcessPayslipPayment,
   getCeoApprovedPayslips,
-  createPayment,
+  clientPayment,
   getProjectsWithPendingPayments,
   getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer,
@@ -25,6 +25,7 @@ const {
   getReleasedPayslips,
   getDeliveredPurchaseOrders,
   processFinancePayment,
+  recordClientCashPayment
 } = require("../controller/financeManagementController");
 
 // Ensure finance_signatures folder exists
@@ -56,7 +57,7 @@ router.get("/getReleasedPayslips", getReleasedPayslips);
 router.put("/payroll/update-status", updatePayrollStatus);
 router.put("/updatePayslipStatus", financeUpdatePayslipStatus);
 router.put("/updatePaymentStatus", financeProcessPayslipPayment);
-router.post("/payments", createPayment);
+router.post("/payments", clientPayment);
 router.post("/contracts/:id/approve", approveContract);
 router.post("/salary/paySalary", uploadSalarySignature);
 router.post("/contracts/:id/reject", rejectContract);
@@ -75,5 +76,7 @@ router.post(
   ]),
   processFinancePayment
 );
+
+router.post("/recordClientCashPayment", recordClientCashPayment);
 
 module.exports = router;

@@ -16,6 +16,27 @@ import { toast } from "sonner";
 import "sonner";
 import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
+// Map components
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix default marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
 const SiteVisit = () => {
   const [leads, setLeads] = useState([]);
   const [selectedLead, setSelectedLead] = useState("");
@@ -156,6 +177,21 @@ const SiteVisit = () => {
     }
   };
 
+  // Check if lead has valid coordinates
+  const hasValidCoordinates = (lead) => {
+    return lead && lead.latitude && lead.longitude && 
+           !isNaN(parseFloat(lead.latitude)) && 
+           !isNaN(parseFloat(lead.longitude));
+  };
+
+  // Get map center coordinates
+  const getMapCenter = () => {
+    if (hasValidCoordinates(leadDetails)) {
+      return [parseFloat(leadDetails.latitude), parseFloat(leadDetails.longitude)];
+    }
+    return [14.5995, 120.9842]; // Default center (Manila area)
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Step 1: Select Lead */}
@@ -200,7 +236,7 @@ const SiteVisit = () => {
               </p>
               <p>
                 <span className="font-medium">Contact:</span>{" "}
-                {leadDetails.contact_number || "N/A"}
+                {leadDetails.phone_number || "N/A"}
               </p>
               <p>
                 <span className="font-medium">Project Interest:</span>{" "}
@@ -210,6 +246,12 @@ const SiteVisit = () => {
                 <span className="font-medium">Preferred Site Location:</span>{" "}
                 {leadDetails.site_location || "Not specified"}
               </p>
+              {hasValidCoordinates(leadDetails) && (
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Coordinates:</span>{" "}
+                  {parseFloat(leadDetails.latitude).toFixed(6)}, {parseFloat(leadDetails.longitude).toFixed(6)}
+                </p>
+              )}
               <p>
                 <span className="font-medium">Visit Notes:</span>{" "}
                 {leadDetails.site_visit_notes || "None yet"}
@@ -250,6 +292,60 @@ const SiteVisit = () => {
                     required
                   />
                 </div>
+              </div>
+
+              {/* Read-only Map Section */}
+              {hasValidCoordinates(leadDetails) && (
+                <div>
+                  <Label className="block mb-2">📍 Site Location Map</Label>
+                  <div className="h-64 w-full rounded-lg overflow-hidden relative border">
+                    <MapContainer
+                      center={getMapCenter()}
+                      zoom={15}
+                      style={{ height: "100%", width: "100%" }}
+                      zoomControl={true}
+                      dragging={false}
+                      scrollWheelZoom={false}
+                      doubleClickZoom={false}
+                      boxZoom={false}
+                      keyboard={false}
+                    >
+                      <TileLayer
+                        attribution="&copy; OpenStreetMap contributors"
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <Marker position={getMapCenter()}>
+                        <Popup>
+                          <div className="text-center">
+                            <strong>{leadDetails.client_name}</strong><br />
+                            {leadDetails.site_location}<br />
+                            <small>
+                              {parseFloat(leadDetails.latitude).toFixed(6)}, {parseFloat(leadDetails.longitude).toFixed(6)}
+                            </small>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    </MapContainer>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Site Location: {parseFloat(leadDetails.latitude).toFixed(6)}, {parseFloat(leadDetails.longitude).toFixed(6)}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Map shows the lead's preferred site location
+                  </p>
+                </div>
+              )}
+
+              {!hasValidCoordinates(leadDetails) && leadDetails && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-yellow-800 text-sm">
+                    <span className="font-semibold">Note:</span> No location coordinates available for this lead. 
+                    The site location map cannot be displayed.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Terrain Type</Label>
                   <Input

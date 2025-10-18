@@ -190,7 +190,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
               >
                 View Milestone
               </button>
-              {milestone.status === "Finance Approved" && (
+              {milestone.status === "Delivered" && (
                 <>
                   <button
                     onClick={() => goToTaskBreakdown(milestone)}

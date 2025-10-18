@@ -281,7 +281,7 @@ const getCeoApprovedPayslips = (req, res) => {
   });
 };
 
-const createPayment = (req, res) => {
+const clientPayment = (req, res) => {
   const {
     milestone_id,
     payment_date,
@@ -327,10 +327,22 @@ const createPayment = (req, res) => {
 // Get projects with milestones pending payment
 const getProjectsWithPendingPayments = (req, res) => {
   const query = `
-    SELECT DISTINCT p.id, p.project_name
-    FROM engineer_projects p
-    JOIN milestones m ON m.project_id = p.id
-    WHERE m.progress_status = 'For Payment'
+    SELECT 
+      ep.id AS project_id,
+      ep.project_name,
+      ep.client_id,
+      ep.contract_id,
+      ps.id AS schedule_id,
+      ps.milestone_name AS payment_name,
+      ps.due_date,
+      ps.amount,
+      ps.status,
+      ps.paid_date,
+      ps.created_at
+    FROM payment_schedule ps
+    JOIN engineer_projects ep ON ps.contract_id = ep.contract_id
+    WHERE ps.status = 'Pending'
+    ORDER BY ep.id, ps.due_date ASC
   `;
 
   db.query(query, (err, results) => {
@@ -338,9 +350,39 @@ const getProjectsWithPendingPayments = (req, res) => {
       console.error('Error fetching projects:', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
-    res.json(results);
+
+    // Group by project
+    const grouped = results.reduce((acc, row) => {
+      const projectId = row.project_id;
+      if (!acc[projectId]) {
+        acc[projectId] = {
+          project_id: row.project_id,
+          project_name: row.project_name,
+          client_id: row.client_id,
+          contract_id: row.contract_id,
+          pending_payments: [],
+        };
+      }
+      acc[projectId].pending_payments.push({
+        schedule_id: row.schedule_id,
+        payment_name: row.payment_name,
+        due_date: row.due_date,
+        amount: row.amount,
+        status: row.status,
+        paid_date: row.paid_date,
+        created_at: row.created_at,
+      });
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      success: true,
+      message: 'Projects with pending payments retrieved successfully',
+      data: Object.values(grouped),
+    });
   });
 };
+
 
 // Get milestones with 'For Payment' status by project ID
 const getMilestonesForPaymentByProject = (req, res) => {
@@ -674,7 +716,7 @@ LEFT JOIN boq b
   ON mb.boq_id = b.id
 
 WHERE pq.status = 'Selected'
-  AND m.status NOT IN ('Finance Approved', 'Finance Rejected', "For Procurement", "Pending Delivery", "Delivered")
+  AND m.status NOT IN ('Finance Approved', 'Finance Rejected', "Pending Delivery", "Delivered")
 
 ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
   `;
@@ -1087,10 +1129,128 @@ const processFinancePayment = (req, res) => {
   );
 };
 
+const clientPaymentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let folder = "finance_attachments";
+    if (file.fieldname === "client_signature") folder = "finance_signatures";
+
+    const uploadPath = path.join(__dirname, `../../public/${folder}`);
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}_${uniqueSuffix}${ext}`);
+  },
+});
+
+const clientPaymentUpload = multer({ storage: clientPaymentStorage }).fields([
+  { name: "proof_photo", maxCount: 1 },
+  { name: "client_signature", maxCount: 1 },
+]);
+
+const recordClientCashPayment = (req, res) => {
+  clientPaymentUpload(req, res, (err) => {
+    if (err) {
+      console.error("❌ Upload Error:", err);
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    const {
+      payment_schedule_id,
+      payment_date,
+      amount_paid,
+      payment_method,
+      reference_number,
+      notes,
+      processed_by
+    } = req.body;
+
+    if (!payment_schedule_id || !amount_paid || !payment_method) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields (payment_schedule_id, amount_paid, payment_method).",
+      });
+    }
+
+    const proofPhoto = req.files?.proof_photo?.[0];
+    const signature = req.files?.client_signature?.[0];
+
+    const proofPhotoPath = proofPhoto ? `/public/finance_attachments/${proofPhoto.filename}` : null;
+    const signaturePath = signature ? `/public/finance_signatures/${signature.filename}` : null;
+
+    const insertQuery = `
+      INSERT INTO finance_payments (
+        payment_type,
+        reference_id,
+        payment_method,
+        reference_number,
+        transaction_date,
+        amount,
+        notes,
+        attachments,
+        recipient_signature,
+        processed_by,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    db.query(
+      insertQuery,
+      [
+        "client payment",
+        payment_schedule_id,
+        payment_method,
+        reference_number || null,
+        payment_date || new Date(),
+        amount_paid || 0,
+        notes || null,
+        proofPhotoPath
+          ? JSON.stringify([{ name: proofPhoto.originalname, path: proofPhotoPath }])
+          : null,
+        signaturePath,
+        processed_by,
+      ],
+      (err, result) => {
+        if (err) {
+          console.error("❌ Error inserting finance payment:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Database error saving payment record.",
+          });
+        }
+
+        const updateQuery = `
+          UPDATE payment_schedule
+          SET status = 'Paid', paid_date = ?
+          WHERE id = ?
+        `;
+
+        db.query(updateQuery, [payment_date || new Date(), payment_schedule_id], (err2) => {
+          if (err2) {
+            console.error("❌ Error updating payment_schedule:", err2);
+            return res.status(500).json({
+              success: false,
+              message: "Payment recorded but failed to update schedule status.",
+            });
+          }
+
+          return res.status(200).json({
+            success: true,
+            message: "✅ Client payment recorded and marked as paid.",
+          });
+        });
+      }
+    );
+  });
+};
+
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
-  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
+  clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
   approveContract, rejectContract, getProcurementApprovedMilestones, uploadSalarySignature,
-  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment
+  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment
  };

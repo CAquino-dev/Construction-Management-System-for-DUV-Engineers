@@ -59,6 +59,7 @@ import SupplierManagement from "./pages/admin/SupplierManagement";
 import SupplierQuotePage from "./pages/userPages/SupplierQuotePage";
 import ProcurementReviewDashboard from "./pages/admin/ProcurementReviewDashboard";
 import PurchaseOrderList from "./pages/admin/PurchaseOrderList";
+import { ClientPayment } from "./pages/admin/ClientPayment";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -153,6 +154,7 @@ const App = () => {
             <Route path="ceo-dashboard" element={<CeoDashboard />} />
             <Route path="AttendanceMonitoring" element={<Attendance />} />
             <Route path="finance/financePayment" element={<FinancePayment />} />
+            <Route path="finance/clientPayment" element={<ClientPayment />} />
             <Route path="appointment" element={<Appointment />} />
             <Route path="site-manager/add-client" element={<AddClient />} />
             <Route path="sales/lead" element={<LeadManagement />} />

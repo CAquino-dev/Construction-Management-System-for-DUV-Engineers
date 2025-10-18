@@ -82,7 +82,7 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
           <table className="w-full border border-gray-200 rounded-lg">
             <thead className="bg-gray-100 text-left">
               <tr>
-                <th className="px-4 py-2 border">Milestone</th>
+                <th className="px-4 py-2 border">Payment Name</th>
                 <th className="px-4 py-2 border">Due Date</th>
                 <th className="px-4 py-2 border">Amount</th>
                 <th className="px-4 py-2 border">Status</th>
