@@ -61,7 +61,7 @@ const sendInvoiceForNextSchedule = (req, res) => {
 
           const invoiceId = result.insertId;
 
-          // 4. Create PayMongo Checkout Session with invoice_id metadata
+          // 4. Create PayMongo Checkout Session with both invoice_id and payment_schedule_id in metadata
           axios.post(
             "https://api.paymongo.com/v1/checkout_sessions",
             {
@@ -82,7 +82,8 @@ const sendInvoiceForNextSchedule = (req, res) => {
                   success_url: `${process.env.FRONTEND_URL}/payment/success`,
                   cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
                   metadata: {
-                    invoice_id: invoiceId,   // 🔑 used later in webhook
+                    invoice_id: invoiceId,            // used in webhook
+                    payment_schedule_id: schedule.schedule_id,  // ✅ added
                     contract_id: contractId,
                   },
                 },
@@ -145,7 +146,5 @@ const sendInvoiceForNextSchedule = (req, res) => {
     });
   });
 };
-
-
 
 module.exports = { sendInvoiceForNextSchedule };

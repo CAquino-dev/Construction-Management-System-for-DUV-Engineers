@@ -122,6 +122,7 @@ const handlePayMongoWebhook = (req, res) => {
   const paymentId = paymentData?.id; // pay_xxx
   const metadata = paymentData?.attributes?.metadata;
   const invoiceId = metadata?.invoice_id;
+  const paymentScheduleId = metadata?.payment_schedule_id; // 👈 Add this in your PayMongo metadata if not already
 
   console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}`);
 
@@ -134,6 +135,7 @@ const handlePayMongoWebhook = (req, res) => {
           updated_at = NOW()
       WHERE id = ?
     `;
+
     db.query(updateInvoiceQuery, [paymentId, invoiceId], (err) => {
       if (err) {
         console.error("❌ Failed to update invoice:", err);
@@ -141,7 +143,30 @@ const handlePayMongoWebhook = (req, res) => {
       }
 
       console.log(`✅ Invoice ${invoiceId} marked as Paid`);
-      return res.sendStatus(200);
+
+      // ✅ Update payment_schedule status to Paid
+      if (paymentScheduleId) {
+        const updateScheduleQuery = `
+          UPDATE payment_schedule
+          SET status = 'Paid',
+              paid_date = NOW(),
+              updated_at = NOW()
+          WHERE id = ?
+        `;
+
+        db.query(updateScheduleQuery, [paymentScheduleId], (err2) => {
+          if (err2) {
+            console.error("❌ Failed to update payment schedule:", err2);
+            return res.sendStatus(500);
+          }
+
+          console.log(`✅ Payment Schedule ${paymentScheduleId} marked as Paid`);
+          return res.sendStatus(200);
+        });
+      } else {
+        // if no payment_schedule_id in metadata
+        return res.sendStatus(200);
+      }
     });
   } else {
     res.sendStatus(200); // ignore other events
