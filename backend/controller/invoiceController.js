@@ -115,11 +115,141 @@ const sendInvoiceForNextSchedule = (req, res) => {
                 to: schedule.email,
                 subject: `Invoice ${invoiceNumber} - Contract #${contractId}`,
                 html: `
-                  <p>Hi ${schedule.client_name},</p>
-                  <p>Please pay your invoice for Contract #${contractId}:</p>
-                  <p>Amount due: ₱${parseFloat(schedule.amount).toLocaleString()}</p>
-                  <p>Due date: ${new Date(schedule.due_date).toLocaleDateString()}</p>
-                  <p><a href="${checkoutUrl}">Click here to pay now</a></p>
+                    <html>
+                  <head>
+                      <meta charset="UTF-8">
+                      <style>
+                          body {
+                              font-family: 'Arial', sans-serif;
+                              line-height: 1.6;
+                              color: #333;
+                              max-width: 600px;
+                              margin: 0 auto;
+                              padding: 20px;
+                          }
+                          .header {
+                              background-color: #4c735c;
+                              color: white;
+                              padding: 20px;
+                              text-align: center;
+                              border-radius: 8px 8px 0 0;
+                          }
+                          .content {
+                              background-color: #f9f9f9;
+                              padding: 25px;
+                              border-radius: 0 0 8px 8px;
+                          }
+                          .invoice-details {
+                              background-color: white;
+                              border-left: 4px solid #4c735c;
+                              padding: 15px;
+                              margin: 20px 0;
+                              border-radius: 4px;
+                          }
+                          .payment-button {
+                              display: inline-block;
+                              background-color: #4c735c;
+                              color: white;
+                              padding: 12px 30px;
+                              text-decoration: none;
+                              border-radius: 5px;
+                              font-weight: bold;
+                              margin: 15px 0;
+                          }
+                          .payment-options {
+                              background-color: #e8f5e8;
+                              border: 1px solid #4c735c;
+                              padding: 20px;
+                              margin: 20px 0;
+                              border-radius: 8px;
+                          }
+                          .footer {
+                              text-align: center;
+                              margin-top: 25px;
+                              padding-top: 20px;
+                              border-top: 1px solid #ddd;
+                              color: #666;
+                              font-size: 14px;
+                          }
+                          .amount {
+                              font-size: 24px;
+                              font-weight: bold;
+                              color: #2c5530;
+                          }
+                          .due-date {
+                              color: #d9534f;
+                              font-weight: bold;
+                          }
+                          .option-title {
+                              color: #4c735c;
+                              font-weight: bold;
+                              margin-bottom: 10px;
+                          }
+                      </style>
+                  </head>
+                  <body>
+                      <div class="header">
+                          <h1>💰 Payment Request</h1>
+                      </div>
+                      
+                      <div class="content">
+                          <p>Dear ${schedule.client_name},</p>
+                          
+                          <p>This is a friendly reminder regarding your upcoming payment for the construction project.</p>
+                          
+                          <div class="invoice-details">
+                              <h3>Invoice Details:</h3>
+                              <p><strong>Contract Reference:</strong> #${contractId}</p>
+                              <p><strong>Amount Due:</strong> <span class="amount">₱${parseFloat(schedule.amount).toLocaleString()}</span></p>
+                              <p><strong>Due Date:</strong> <span class="due-date">${new Date(schedule.due_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
+                          </div>
+
+                          <div class="payment-options">
+                              <h3 class="option-title">💳 Payment Options</h3>
+                              
+                              <p><strong>Option 1: Online Payment (Recommended)</strong></p>
+                              <p>Pay securely online using the link below:</p>
+                              <div style="text-align: center;">
+                                  <a href="${checkoutUrl}" class="payment-button">
+                                      💳 Pay Invoice Online
+                                  </a>
+                              </div>
+
+                              <p style="margin-top: 20px;"><strong>Option 2: In-Person Payment</strong></p>
+                              <p>You can also pay in person at our office:</p>
+                              <p>
+                                  <strong>DUV Engineers Office</strong><br>
+                                  [Your Office Address]<br>
+                                  [City, Province, Zip Code]<br>
+                                  📞 [Your Phone Number]
+                              </p>
+                              <p><strong>Office Hours:</strong><br>
+                                  Monday - Friday: 8:00 AM - 5:00 PM<br>
+                                  Saturday: 9:00 AM - 12:00 PM<br>
+                                  <em>Closed on Sundays and holidays</em>
+                              </p>
+                              <p>Please bring this invoice reference (#${contractId}) when making your payment.</p>
+                          </div>
+
+                          <p><strong>Important:</strong> Please ensure payment is made by the due date to avoid any delays in your project timeline.</p>
+                          
+                          <p>If you have already made this payment, please disregard this email. For any questions or concerns regarding this invoice, please don't hesitate to contact our finance department.</p>
+                          
+                          <p>Thank you for your prompt attention to this matter.</p>
+                      </div>
+                      
+                      <div class="footer">
+                          <p>Best regards,<br>
+                          <strong>DUV Engineers Team</strong></p>
+                          <p>📞 Contact: [Your Phone Number]<br>
+                          📧 Email: [Your Email Address]<br>
+                          📍 Address: [Your Office Address]</p>
+                          <p style="font-size: 12px; color: #999;">
+                              This is an automated email. Please do not reply to this message.
+                          </p>
+                      </div>
+                  </body>
+                  </html>
                 `,
               };
 

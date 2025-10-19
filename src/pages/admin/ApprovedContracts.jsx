@@ -56,48 +56,85 @@ const ApprovedContracts = () => {
     }
   };
 
-  const handleUploadSignedContract = async () => {
-    if (!selectedContract || !signatureFile) {
-      toast.error("Please select a signed contract image");
-      return;
+const handleUploadSignedContract = async () => {
+  if (!selectedContract || !signatureFile) {
+    toast.error("Please select a signed contract image");
+    return;
+  }
+
+  setUploading((prev) => ({ ...prev, [selectedContract.id]: true }));
+
+  try {
+    const formData = new FormData();
+    formData.append('signature_photo', signatureFile);
+
+    // Debug logging
+    console.log('Uploading contract:', selectedContract.id);
+    console.log('File:', signatureFile.name);
+
+    const res = await fetch(
+      `${BASE_URL}/api/projectManager/uploadSignInPerson/${selectedContract.id}`,
+      {
+        method: "POST",
+        body: formData,
+        // Don't set Content-Type header - let browser set it with boundary
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || "Failed to upload signed contract.");
     }
 
-    setUploading((prev) => ({ ...prev, [selectedContract.id]: true }));
+    toast.success("Signed contract uploaded successfully.");
+    handleCloseUploadModal();
+    fetchContracts();
 
+    // Auto-generate payment schedule + invoice
     try {
-      const formData = new FormData();
-      formData.append('signature_photo', signatureFile);
-
-      formData.forEach((form) => {
-        console.log(form);
-      });
-
-      console.log(selectedContract.id);
-
-      const res = await fetch(
-        `${BASE_URL}/api/projectManager/uploadSignInPerson/${selectedContract.id}`,
+      const scheduleRes = await fetch(
+        `${BASE_URL}/api/payments/payment-schedule/${selectedContract.id}`,
         {
           method: "POST",
-          body: formData,
         }
       );
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error(`Error: ${result.error || "Failed to upload signed contract."}`);
-      } else {
-        toast.success("Signed contract uploaded successfully.");
-        handleCloseUploadModal();
-        fetchContracts();
+      if (!scheduleRes.ok) {
+        throw new Error("Failed to generate payment schedule");
       }
-    } catch (err) {
-      console.error("Error uploading signed contract:", err);
-      toast.error("An error occurred while uploading the contract.");
-    } finally {
-      setUploading((prev) => ({ ...prev, [selectedContract.id]: false }));
+
+      const scheduleData = await scheduleRes.json();
+
+      // Send first invoice
+      const invoiceRes = await fetch(
+        `${BASE_URL}/api/invoice/send-next`,
+        {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ contractId: scheduleData.contractId || selectedContract.id })
+        }
+      );
+
+      if (!invoiceRes.ok) {
+        throw new Error("Failed to send invoice");
+      }
+
+      toast.success("Payment schedule generated and invoice sent to client successfully.");
+    } catch (paymentErr) {
+      console.error("Payment/invoice error:", paymentErr);
+      toast.error("Contract uploaded but failed to generate payment schedule or send invoice.");
     }
-  };
+
+  } catch (err) {
+    console.error("Error uploading signed contract:", err);
+    toast.error(err.message || "An error occurred while uploading the contract.");
+  } finally {
+    setUploading((prev) => ({ ...prev, [selectedContract.id]: false }));
+  }
+};
 
   // Filter contracts based on view mode
   const filteredContracts = contracts.filter((contract) => {
