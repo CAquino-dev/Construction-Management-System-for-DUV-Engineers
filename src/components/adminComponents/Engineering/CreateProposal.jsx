@@ -322,19 +322,9 @@ const CreateProposal = () => {
               {message.error && (
                 <p className="font-semibold">{message.error}</p>
               )}
-              {message.approvalLink && (
                 <div className="mt-2">
-                  <p className="text-sm">Approval Link:</p>
-                  <a
-                    href={message.approvalLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline break-all"
-                  >
-                    {message.approvalLink}
-                  </a>
+                  <p className="text-sm">Approval Link has been sent to client</p>
                 </div>
-              )}
             </div>
           )}
           {selectedLead ? (

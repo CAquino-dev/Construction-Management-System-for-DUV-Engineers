@@ -4,6 +4,8 @@ const FinanceContracts = () => {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const userId = localStorage.getItem('userId');
+
   useEffect(() => {
     const fetchContracts = async () => {
       try {
@@ -24,7 +26,10 @@ const FinanceContracts = () => {
   }, []);
 
   const handleAction = async (id, action) => {
-    let body = {};
+    let body = {
+      finance_id: userId,
+      status: action === "approve" ? "approved" : "rejected",
+    };
 
     if (action === "reject") {
       const notes = window.prompt("Please provide rejection notes:");
@@ -35,13 +40,12 @@ const FinanceContracts = () => {
       body.finance_rejection_notes = notes;
     }
 
+    console.log(body);
     try {
       const response = await fetch(
-        `${
-          import.meta.env.VITE_REACT_APP_API_URL
-        }/api/finance/contracts/${id}/${action}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/updateContractApprovalStatus/${id}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
@@ -49,13 +53,16 @@ const FinanceContracts = () => {
         }
       );
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
+        throw new Error(data.error || `Failed to ${action} contract`);
       }
 
+      alert(`Contract ${action}d successfully!`);
       setContracts((prev) => prev.filter((c) => c.contract_id !== id));
     } catch (err) {
       console.error(`Failed to ${action} contract`, err);
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -157,21 +164,10 @@ const FinanceContracts = () => {
                           <span className="text-gray-400">⏱️</span>
                           <span className="font-medium">Timeline:</span>
                         </div>
-                        <p>{contract.timeline_estimate}</p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-gray-400">📅</span>
-                          <span className="font-medium">Signed:</span>
-                        </div>
-                        <p>
-                          {contract.contract_signed_at
-                            ? new Date(
-                                contract.contract_signed_at
-                              ).toLocaleDateString()
-                            : "Not signed"}
-                        </p>
+                          {contract.proposal_start_date && contract.proposal_end_date 
+                            ? `${new Date(contract.proposal_start_date).toLocaleDateString()} - ${new Date(contract.proposal_end_date ).toLocaleDateString()}`
+                            : "Not specified"
+                          }
                       </div>
                     </div>
 
