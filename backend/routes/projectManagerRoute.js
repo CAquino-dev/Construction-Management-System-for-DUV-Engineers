@@ -15,7 +15,9 @@ const {
   getPaymentTerms,
   createSiteVisit,
   getScheduledSiteVisits,
-  getForProcurement
+  getForProcurement,
+  signInPerson,
+  uploadSignInPersonContract
 } = require('../controller/projectManagerController');
 
 router.post('/contract/send-to-client/:id', sendContractToClient);
@@ -32,5 +34,7 @@ router.post('/signature', uploadClientSignature);
 router.post('/createSiteVisit', createSiteVisit);
 router.get('/getSiteVisits', getScheduledSiteVisits);
 router.get('/getForProcurement', getForProcurement);
+router.put('/signInPerson/:contractId', signInPerson);
+router.post('/uploadSignInPerson/:contractId', uploadSignInPersonContract);
 
 module.exports = router;

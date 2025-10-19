@@ -93,7 +93,7 @@ const App = () => {
               element={<ProposalRespond />}
             />
             <Route
-              path="contract/respond/:proposalId"
+              path="contract/respond/:contractId"
               element={<ContractRespond />}
             />
             <Route
