@@ -1,107 +1,250 @@
-import React from 'react';
-import Footer from '../../components/userComponents/Footer';
-import img1 from '../../assets/img1.png';
-import { Gear, User, ThumbsUp, House, Hammer } from '@phosphor-icons/react';
+import React from "react";
+import Footer from "../../components/userComponents/Footer";
+import img1 from "../../assets/img1.png";
 
 const Homepage = () => {
   const services = [
     {
-      title: 'Architecture',
-      icon: Gear,
-      description: 'Lorem ipsum dolor sit amet. Eum velit omnis ut cupiditate nihil ea tenetur quam ut repellat velit in perspiciatis rerum? Et adipisci ipsam ut voluptatem nulla ad nihil quas ex reiciendis explicabo.'
+      title: "Residential Construction",
+      description:
+        "Custom home building and residential projects tailored to your vision and lifestyle needs with quality craftsmanship.",
     },
     {
-      title: 'Houses',
-      icon: House,
-      description: 'Lorem ipsum dolor sit amet. Eum velit omnis ut cupiditate nihil ea tenetur quam ut repellat velit in perspiciatis rerum? Et adipisci ipsam ut voluptatem nulla ad nihil quas ex reiciendis explicabo.'
+      title: "Renovation & Repair",
+      description:
+        "Complete renovation services and structural repairs to transform and maintain your property's value and functionality.",
     },
-    {
-      title: 'Repairing',
-      icon: Hammer,
-      description: 'Lorem ipsum dolor sit amet. Eum velit omnis ut cupiditate nihil ea tenetur quam ut repellat velit in perspiciatis rerum? Et adipisci ipsam ut voluptatem nulla ad nihil quas ex reiciendis explicabo.'
-    }
   ];
 
   const projects = [
-    { img: img1, desc: 'Design of 40,000 sqm prefabricated steel logistics building' },
-    { img: img1, desc: 'Design and construction Management of 1,00 sqm Religious Regional House' },
-    { img: img1, desc: 'Design of 40 ton Crane Turbine Generator Building for 1x30MW Geothermal Plant' }
+    {
+      img: img1,
+      desc: "Modern Family Residence - 3,500 sqft contemporary home with sustainable materials",
+    },
+    {
+      img: img1,
+      desc: "Office Complex Renovation - Complete overhaul of 10,000 sqft commercial space",
+    },
+    {
+      img: img1,
+      desc: "Community Center Project - New construction of multi-purpose community facility",
+    },
+  ];
+
+  const constructionFeatures = [
+    {
+      title: "Commercial Construction",
+      description:
+        "Expert commercial building solutions for offices and facilities with full project management",
+    },
+    {
+      title: "Construction Management",
+      description:
+        "Professional project oversight from planning to completion ensuring quality and timelines",
+    },
+    {
+      title: "Quality Assurance",
+      description:
+        "Rigorous quality control and 5-year workmanship warranty on all construction work",
+    },
+  ];
+
+  const constructionStats = [
+    {
+      number: "15+",
+      label: "Years Experience",
+    },
+    {
+      number: "200+",
+      label: "Projects Completed",
+    },
+    {
+      number: "100%",
+      label: "Client Satisfaction",
+    },
   ];
 
   return (
     <>
-      <div className="relative pt-16">
-        <div className="absolute -top-10 -left-4 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-[#4c735c] rounded-lg z-10"></div>
-        <div className="bg-gray-900 flex flex-col md:flex-row justify-between px-6 sm:px-10 md:px-20 py-10 relative z-10 items-center gap-y-15">
-          <div className="text-white text-center md:text-left md:w-1/2">
-            <h2 className="text-2xl md:text-4xl font-bold">CRAFTING ARCHITECTURAL WONDERS</h2>
-            <p className="mt-4 text-sm md:text-base">
-              Lorem ipsum dolor sit amet. Eum velit omnis ut cupiditate nihil ea tenetur quam ut repellat velit in perspiciatis rerum? Et adipisci ipsam ut voluptatem nulla ad nihil quas ex reiciendis explicabo.
-            </p>
-            {/* <div className="flex flex-col sm:flex-row gap-4 mt-10">
-              <button className="bg-[#4c735c] text-black px-6 py-2 rounded-md">Contact Us</button>
-              <button className="border text-[#4c735c] px-6 py-2 rounded-md">Free Consultation</button>
-            </div> */}
-          </div>
-          <div className="relative w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg md:w-1/2">
-            <div className="absolute -top-4 -left-4 w-full h-full bg-[#4c735c] rounded-lg -z-10"></div>
-            <img src={img1} alt="" className="relative z-20 rounded-lg w-full" />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col justify-center items-center pt-10">
-        <div className='flex flex-col md:flex-row border-2 border shadow-2xl'>
-          {[{ icon: Gear, text: 'Who we are' }, { icon: User, text: 'What we do' }, { icon: ThumbsUp, text: 'Why choose us?' }].map((item, index) => (
-            <div key={index} className={`flex flex-col items-center font-semibold px-10 py-8 md:px-20 md:py-10 text-xl md:text-2xl ${index === 1 ? 'bg-gray-100' : ''}`}>
-              <item.icon className='bg-[#4c735c] text-white p-2 rounded-full mb-2' size={82} />
-              <p>{item.text}</p>
+      {/* Hero Section */}
+      <div className="relative min-h-screen flex items-center justify-center bg-gray-900 pt-16 overflow-hidden">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+            <div className="text-white text-center lg:text-left lg:w-1/2">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
+                BUILDING YOUR VISION WITH PRECISION
+              </h1>
+              <p className="mt-4 sm:mt-6 text-base sm:text-lg lg:text-xl text-gray-300 max-w-2xl leading-relaxed">
+                Professional construction services with over 15 years of
+                experience in residential and commercial projects. Quality
+                craftsmanship meets innovative design in every structure we
+                build.
+              </p>
             </div>
-          ))}
+
+            <div className="relative w-full max-w-md lg:max-w-lg lg:w-1/2 mt-8 lg:mt-0">
+              <div className="absolute -top-4 -left-4 w-full h-full bg-[#4c735c] rounded-2xl -z-10"></div>
+              <img
+                src={img1}
+                alt="Construction Project"
+                className="relative z-20 rounded-2xl w-full shadow-2xl"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className='mt-4'>
-        <div className='flex flex-col md:flex-row justify-between px-6 sm:px-10 md:px-20 py-10 relative z-10 items-center gap-y-15'>
-          <div>
-            <h3 className='text-2xl md:text-4xl font-bold'>About us</h3>
-            <h4 className='text-xl md:text-2xl font-semibold mt-2 text-[#4c735c]'>We Build for your comfort</h4>
-            <p className="mt-4 text-sm md:text-base">
-              Lorem ipsum dolor sit amet. Eum velit omnis ut cupiditate nihil ea tenetur quam ut repellat velit in perspiciatis rerum? Et adipisci ipsam ut voluptatem nulla ad nihil quas ex reiciendis explicabo.
+      {/* Construction Features Section */}
+      <div className="py-12 lg:py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+              Our Construction Expertise
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+            {constructionFeatures.map((item, index) => (
+              <div
+                key={index}
+                className="flex flex-col items-center text-center p-8 lg:p-10 rounded-2xl transition-all duration-300 bg-gray-50 hover:shadow-lg"
+              >
+                <div className="bg-[#4c735c] w-16 h-16 rounded-2xl flex items-center justify-center mb-4 lg:mb-6">
+                  <span className="text-white text-lg font-bold">
+                    {index + 1}
+                  </span>
+                </div>
+                <h3 className="text-lg lg:text-xl font-semibold text-gray-900 mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-gray-600 text-sm lg:text-base">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Construction Stats Section */}
+      <div className="py-12 lg:py-16 bg-[#4c735c] text-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
+              Our Construction Journey
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto">
+            {constructionStats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl lg:text-4xl font-bold mb-2">
+                  {stat.number}
+                </div>
+                <div className="text-white/80 text-lg">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* About Section */}
+      <div className="py-12 lg:py-20 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
+            <div className="lg:w-1/2">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
+                Building Excellence Since 2008
+              </h2>
+              <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mt-2 lg:mt-4 text-[#4c735c]">
+                Quality Construction You Can Trust
+              </h3>
+              <p className="mt-4 lg:mt-6 text-base lg:text-lg text-gray-600 leading-relaxed">
+                With over 15 years in the construction industry, we've built a
+                reputation for quality, reliability, and exceptional
+                craftsmanship. Our team of licensed professionals brings
+                expertise to every project, big or small.
+              </p>
+              <p className="mt-4 text-base lg:text-lg text-gray-600 leading-relaxed">
+                We believe in transparent communication, strict adherence to
+                timelines, and uncompromising quality standards. Your vision is
+                our blueprint for success.
+              </p>
+            </div>
+
+            <div className="lg:w-1/2 mt-8 lg:mt-0">
+              <div className="relative">
+                <div className="absolute -bottom-4 -right-4 w-full h-full bg-[#4c735c] rounded-2xl -z-10"></div>
+                <img
+                  src={img1}
+                  alt="Construction site"
+                  className="relative z-20 rounded-2xl w-full shadow-xl"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Services Section */}
+      <div className="py-12 lg:py-20 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 lg:mb-16">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4c735c]">
+              Our Construction Services
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+            {services.map((service, index) => (
+              <div
+                key={index}
+                className="bg-gray-50 p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#4c735c] w-16 h-16 rounded-2xl flex items-center justify-center mb-4 lg:mb-6 mx-auto">
+                  <span className="text-white text-lg font-bold">
+                    {index + 1}
+                  </span>
+                </div>
+                <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3 lg:mb-4 text-center">
+                  {service.title}
+                </h3>
+                <p className="text-gray-600 text-center leading-relaxed">
+                  {service.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Projects Section */}
+      <div className="py-12 lg:py-20 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 lg:mb-16">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#4c735c] mb-4">
+              Our Construction Projects
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Showcasing our expertise in diverse construction projects across
+              residential and commercial sectors
             </p>
           </div>
-          <div>
-            <img src={img1} alt="" className="relative z-20 rounded-lg w-full" />
-          </div>
-        </div>
-      </div>
 
-      <div className='py-10 bg-gray-100'>
-        <div className='text-center mb-10'>
-          <p className='text-3xl font-semibold text-[#4c735c]'>What We Do</p>
-        </div>
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto px-5'>
-          {services.map((service, index) => {
-            const Icon = service.icon;
-            return (
-              <div key={index} className='bg-white p-6 shadow-lg rounded-lg text-center'>
-                <Icon className='bg-[#4c735c] text-white p-4 rounded-full mb-4 mx-auto' size={82} />
-                <p className='text-xl font-bold mb-2'>{service.title}</p>
-                <p className='text-gray-600'>{service.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className='pt-10'>
-        <div className='text-center mb-10'>
-          <p className='text-3xl font-semibold text-[#4c735c] mb-4'>Our Projects</p>
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto px-5'>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto">
             {projects.map((project, index) => (
-              <div key={index} className='bg-white p-6 shadow-lg rounded-lg text-center'>
-                <img src={project.img} alt='' className='rounded-lg mb-4 mx-auto' />
-                <p>{project.desc}</p>
+              <div
+                key={index}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+              >
+                <img
+                  src={project.img}
+                  alt="Construction project"
+                  className="w-full h-48 lg:h-56 object-cover"
+                />
+                <div className="p-6 lg:p-8">
+                  <p className="text-gray-700 text-center leading-relaxed">
+                    {project.desc}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
