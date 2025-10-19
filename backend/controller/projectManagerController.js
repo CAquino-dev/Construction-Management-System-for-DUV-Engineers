@@ -953,13 +953,39 @@ const signInPerson = (req, res) => {
   });
 };
 
-const upload = multer({ storage });
-
 const uploadSignInPersonContract = (req, res) => {
-  upload.single("signature_photo")(req, res, (err) => {
+  // Configure multer specifically for signed contracts
+  const signedContractStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      // Ensure signed directory exists
+      if (!fs.existsSync(signedDir)) {
+        fs.mkdirSync(signedDir, { recursive: true });
+      }
+      cb(null, signedDir);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const fileName = `signed_contract_${req.params.contractId}_${Date.now()}${ext}`;
+      cb(null, fileName);
+    }
+  });
+
+  const signedContractUpload = multer({
+    storage: signedContractStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
+  }).single("signature_photo");
+
+  signedContractUpload(req, res, (err) => {
     if (err) {
       console.error("Upload error:", err);
-      return res.status(500).json({ error: "Failed to upload file" });
+      return res.status(500).json({ error: "Failed to upload file: " + err.message });
     }
 
     const { contractId } = req.params;
@@ -973,20 +999,26 @@ const uploadSignInPersonContract = (req, res) => {
       UPDATE contracts
       SET status = 'signed',
           sign_method = 'in_person',
-          contract_file_url = ?
+          contract_file_url = ?,
+          contract_signed_at = NOW()
       WHERE id = ?
     `;
 
-    db.query(updateQuery, [fileUrl, contractId], (dbErr) => {
+    db.query(updateQuery, [fileUrl, contractId], (dbErr, result) => {
       if (dbErr) {
         console.error("Database error:", dbErr);
         return res.status(500).json({ error: "Failed to update contract record" });
       }
 
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Contract not found" });
+      }
+
       res.status(200).json({
         success: true,
         message: "In-person signed contract uploaded successfully.",
-        fileUrl,
+        fileUrl: `${req.protocol}://${req.get("host")}${fileUrl}`,
+        contractId: contractId
       });
     });
   });
