@@ -59,7 +59,11 @@ const createLead = (req, res) => {
 
 
 const getLeads = (req, res) => {
-    const query = `SELECT * FROM leads WHERE status NOT IN ('approved') ORDER BY created_at DESC`;
+    const query = `SELECT l.*
+FROM leads l
+INNER JOIN site_visits sv ON sv.lead_id = l.id
+WHERE l.status NOT IN ('approved')
+ORDER BY l.created_at DESC;`;
 
     db.query(query, (error, results) => {
         if (error) {

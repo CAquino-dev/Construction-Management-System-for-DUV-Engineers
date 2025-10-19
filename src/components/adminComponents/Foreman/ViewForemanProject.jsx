@@ -22,6 +22,8 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   const [reportTab, setReportTab] = useState("create"); // "create" | "sent"
   const [myReports, setMyReports] = useState([]);
 
+  console.log('project id' ,selectedProject.id)
+
 
   const ganttRef = useRef(null);
 
@@ -93,7 +95,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     const fetchReports = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getReports/${userId}`
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getReports/${selectedProject.id}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -183,6 +185,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
       formData.append("taskId", report.task_id);
       formData.append("report_type", report.report_type);
       formData.append("created_by", userId);
+      formData.append("project_id", selectedProject.id);
       if (report.file) {
         formData.append("report_file", report.file); // field name must match backend multer field
       }

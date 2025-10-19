@@ -243,7 +243,8 @@ const getProposalResponse = (req, res) => {
       proposals.status,
       proposals.created_at,
       proposals.responded_at,
-      proposals.approved_by_ip
+      proposals.approved_by_ip,
+      proposals.rejection_notes
     FROM proposals
     JOIN leads ON proposals.lead_id = leads.id
     ORDER BY proposals.responded_at DESC, proposals.created_at DESC
