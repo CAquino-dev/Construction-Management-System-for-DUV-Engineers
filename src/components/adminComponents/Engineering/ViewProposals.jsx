@@ -120,6 +120,25 @@ const ViewProposals = () => {
     }
   };
 
+  // Parse scope of work safely
+  const parseScopeOfWork = (scopeString) => {
+    if (!scopeString) return [];
+    try {
+      // Handle different formats in your data
+      if (scopeString.startsWith('"')) {
+        scopeString = scopeString.replace(/^"+|"+$/g, '');
+      }
+      if (scopeString.includes('\\"')) {
+        scopeString = scopeString.replace(/\\"/g, '"');
+      }
+      const parsed = JSON.parse(scopeString);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (error) {
+      console.error('Error parsing scope of work:', error);
+      return [scopeString];
+    }
+  };
+
   // Toggle proposal details
   const toggleProposalDetails = (proposalId) => {
     setExpandedProposal(expandedProposal === proposalId ? null : proposalId);
@@ -151,19 +170,6 @@ const ViewProposals = () => {
             </span>
             <p className="font-semibold">{message.success || message.error}</p>
           </div>
-          {message.approvalLink && (
-            <div className="mt-2 pl-6">
-              <p className="text-sm font-medium">Approval Link:</p>
-              <a
-                href={message.approvalLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline break-all text-sm"
-              >
-                {message.approvalLink}
-              </a>
-            </div>
-          )}
         </div>
       )}
 
@@ -175,13 +181,15 @@ const ViewProposals = () => {
               <th className="p-4 text-left font-semibold text-gray-700 border-b">Proposal Details</th>
               <th className="p-4 text-left font-semibold text-gray-700 border-b">Client</th>
               <th className="p-4 text-left font-semibold text-gray-700 border-b">Status</th>
-              <th className="p-4 text-left font-semibold text-gray-700 border-b">Responded At</th>
+              <th className="p-4 text-left font-semibold text-gray-700 border-b">Submitted</th>
+              <th className="p-4 text-left font-semibold text-gray-700 border-b">Responded</th>
               <th className="p-4 text-left font-semibold text-gray-700 border-b">Actions</th>
             </tr>
           </thead>
           <tbody>
             {paginatedProposals.map((p) => {
               const statusInfo = getStatusInfo(p.status);
+              const scopeOfWork = parseScopeOfWork(p.scope_of_work);
               return (
                 <React.Fragment key={p.id}>
                   <tr className="hover:bg-gray-50 transition-colors border-b">
@@ -190,12 +198,12 @@ const ViewProposals = () => {
                         <div>
                           <div className="font-semibold text-gray-900">{p.title}</div>
                           <div className="text-sm text-gray-500 mt-1">
-                            Budget: ₱{p.budget_estimate || "N/A"}
+                            {p.description ? `${p.description.substring(0, 60)}${p.description.length > 60 ? '...' : ''}` : "No description"}
                           </div>
                         </div>
                         <button
                           onClick={() => toggleProposalDetails(p.id)}
-                          className="text-gray-500 hover:text-gray-700 p-1 rounded"
+                          className="text-gray-500 hover:text-gray-700 p-1 rounded transition-colors"
                         >
                           {expandedProposal === p.id ? "▲" : "▼"}
                         </button>
@@ -203,14 +211,14 @@ const ViewProposals = () => {
                     </td>
                     <td className="p-4">
                       <div className="font-medium text-gray-900">{p.client_name}</div>
-                      {p.email && (
-                        <div className="text-sm text-gray-500">{p.email}</div>
-                      )}
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.badge}`}>
                         {p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : "Unknown"}
                       </span>
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {formatDate(p.created_at)}
                     </td>
                     <td className="p-4 text-sm text-gray-600">
                       {formatDate(p.responded_at)}
@@ -231,56 +239,63 @@ const ViewProposals = () => {
                   </tr>
                   {expandedProposal === p.id && (
                     <tr className="bg-gray-50 border-b">
-                      <td colSpan="5" className="p-4">
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-semibold text-gray-700">Description:</span>
-                            <p className="mt-1 text-gray-600">{p.description || "No description provided"}</p>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-700">Scope of Work:</span>
-                            <ul className="mt-1 list-disc list-inside text-gray-600">
-                              {p.scope_of_work && JSON.parse(p.scope_of_work).map((item, index) => (
-                                <li key={index}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-700">Timeline:</span>
-                            <p className="mt-1 text-gray-600">
-                              {p.start_date && p.end_date 
-                                ? `${new Date(p.start_date).toLocaleDateString()} - ${new Date(p.end_date).toLocaleDateString()}`
-                                : "Not specified"
-                              }
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-semibold text-gray-700">Payment Terms:</span>
-                            <p className="mt-1 text-gray-600">{p.payment_terms || "Not specified"}</p>
-                          </div>
-                          {p.approved_by_ip && p.approved_by_ip.toLowerCase() !== "n/a" && (
+                      <td colSpan="6" className="p-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm">
+                          <div className="space-y-4">
                             <div>
-                              <span className="font-semibold text-gray-700">IP Address:</span>
-                              <p className="mt-1 text-gray-600">{p.approved_by_ip}</p>
+                              <span className="font-semibold text-gray-700">Description:</span>
+                              <p className="mt-1 text-gray-600">{p.description || "No description provided"}</p>
                             </div>
-                          )}
-                          {/* Rejection Message Display */}
-                          {p.status && p.status.toLowerCase() === "rejected" && p.rejection_notes && (
-                            <div className="col-span-2">
-                              <span className="font-semibold text-red-700">Rejection Reason:</span>
-                              <div className="mt-1 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-red-800">{p.rejection_notes}</p>
+                            <div>
+                              <span className="font-semibold text-gray-700">Scope of Work:</span>
+                              <ul className="mt-1 space-y-1 text-gray-600">
+                                {scopeOfWork.map((item, index) => (
+                                  <li key={index} className="flex items-start">
+                                    <span className="text-green-600 mr-2 mt-1">•</span>
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <div>
+                              <span className="font-semibold text-gray-700">Timeline:</span>
+                              <p className="mt-1 text-gray-600">
+                                {p.start_date && p.end_date 
+                                  ? `${new Date(p.start_date).toLocaleDateString()} - ${new Date(p.end_date).toLocaleDateString()}`
+                                  : "Not specified"
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-semibold text-gray-700">Payment Terms:</span>
+                              <p className="mt-1 text-gray-600">{p.payment_terms || "Not specified"}</p>
+                            </div>
+                            {p.approved_by_ip && p.approved_by_ip.toLowerCase() !== "n/a" && (
+                              <div>
+                                <span className="font-semibold text-gray-700">Approved By IP:</span>
+                                <p className="mt-1 text-gray-600">{p.approved_by_ip}</p>
                               </div>
-                            </div>
-                          )}
-                          {p.status && p.status.toLowerCase() === "rejected" && !p.rejection_notes && (
-                            <div className="col-span-2">
-                              <span className="font-semibold text-red-700">Rejection Reason:</span>
-                              <div className="mt-1 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                <p className="text-red-800 italic">No reason provided</p>
+                            )}
+                            {/* Rejection Message Display */}
+                            {p.status && p.status.toLowerCase() === "rejected" && p.rejection_notes && (
+                              <div>
+                                <span className="font-semibold text-red-700">Rejection Reason:</span>
+                                <div className="mt-1 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                  <p className="text-red-800">{p.rejection_notes}</p>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
+                            {p.status && p.status.toLowerCase() === "rejected" && !p.rejection_notes && (
+                              <div>
+                                <span className="font-semibold text-red-700">Rejection Reason:</span>
+                                <div className="mt-1 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                  <p className="text-red-800 italic">No reason provided</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -296,13 +311,14 @@ const ViewProposals = () => {
       <div className="md:hidden space-y-4">
         {paginatedProposals.map((p) => {
           const statusInfo = getStatusInfo(p.status);
+          const scopeOfWork = parseScopeOfWork(p.scope_of_work);
           return (
             <div
               key={p.id}
               className="border border-gray-200 rounded-lg p-4 shadow-sm bg-white"
             >
               <div className="flex justify-between items-start mb-3">
-                <div>
+                <div className="flex-1">
                   <h3 className="font-semibold text-lg text-gray-900">{p.title}</h3>
                   <p className="text-gray-600">{p.client_name}</p>
                 </div>
@@ -313,35 +329,33 @@ const ViewProposals = () => {
 
               <div className="space-y-2 text-sm text-gray-600 mb-4">
                 <div>
-                  <span className="font-semibold">Budget:</span> ₱{p.budget_estimate || "N/A"}
+                  <span className="font-semibold">Submitted:</span> {formatDate(p.created_at)}
                 </div>
                 <div>
                   <span className="font-semibold">Responded:</span> {formatDate(p.responded_at)}
                 </div>
-                {p.email && (
-                  <div>
-                    <span className="font-semibold">Email:</span> {p.email}
-                  </div>
-                )}
                 {p.approved_by_ip && p.approved_by_ip.toLowerCase() !== "n/a" && (
                   <div>
-                    <span className="font-semibold">IP:</span> {p.approved_by_ip}
+                    <span className="font-semibold">Approved By:</span> {p.approved_by_ip}
                   </div>
                 )}
               </div>
 
               {/* Expandable Details */}
               {expandedProposal === p.id && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3 text-sm">
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-4 text-sm">
                   <div>
                     <span className="font-semibold text-gray-700">Description:</span>
                     <p className="mt-1 text-gray-600">{p.description || "No description provided"}</p>
                   </div>
                   <div>
                     <span className="font-semibold text-gray-700">Scope of Work:</span>
-                    <ul className="mt-1 list-disc list-inside text-gray-600 pl-2">
-                      {p.scope_of_work && JSON.parse(p.scope_of_work).map((item, index) => (
-                        <li key={index}>{item}</li>
+                    <ul className="mt-1 space-y-1 text-gray-600">
+                      {scopeOfWork.map((item, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-green-600 mr-2 mt-1">•</span>
+                          {item}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -360,15 +374,15 @@ const ViewProposals = () => {
                   </div>
                   
                   {/* Rejection Message Display */}
-                  {p.status && p.status.toLowerCase() === "rejected" && p.rejection_message && (
+                  {p.status && p.status.toLowerCase() === "rejected" && p.rejection_notes && (
                     <div>
                       <span className="font-semibold text-red-700">Rejection Reason:</span>
                       <div className="mt-1 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-red-800">{p.rejection_message}</p>
+                        <p className="text-red-800">{p.rejection_notes}</p>
                       </div>
                     </div>
                   )}
-                  {p.status && p.status.toLowerCase() === "rejected" && !p.rejection_message && (
+                  {p.status && p.status.toLowerCase() === "rejected" && !p.rejection_notes && (
                     <div>
                       <span className="font-semibold text-red-700">Rejection Reason:</span>
                       <div className="mt-1 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -382,7 +396,7 @@ const ViewProposals = () => {
               <div className="flex justify-between items-center mt-4">
                 <button
                   onClick={() => toggleProposalDetails(p.id)}
-                  className="text-[#4c735c] hover:text-[#3a5a48] font-medium text-sm"
+                  className="text-[#4c735c] hover:text-[#3a5a48] font-medium text-sm transition-colors"
                 >
                   {expandedProposal === p.id ? "Show Less" : "View Details"}
                 </button>

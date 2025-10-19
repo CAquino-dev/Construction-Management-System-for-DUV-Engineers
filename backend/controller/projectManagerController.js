@@ -49,6 +49,16 @@ const uploadProposalPDF = multer({
   }
 }).single('proposal_file'); // Name should match frontend
 
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_EMAIL,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
 const createProposal = (req, res) => {
   uploadProposalPDF(req, res, (err) => {
     if (err) {
@@ -62,8 +72,8 @@ const createProposal = (req, res) => {
       description,
       scope_of_work,
       budget_estimate,
-      start_date,   // ✅ new
-      end_date,     // ✅ new
+      start_date,
+      end_date,
       payment_term_id,
     } = req.body;
 
@@ -90,23 +100,28 @@ const createProposal = (req, res) => {
     const fileUrl = req.file ? `/uploads/proposals/${req.file.filename}` : null;
     const approvalToken = uuidv4();
 
-    // 1. Fetch payment term text for snapshot
-    const termQuery = `SELECT name FROM payment_terms WHERE id = ? LIMIT 1`;
+    // 1. Fetch payment term text + client email
+    const termQuery = `
+      SELECT pt.name AS payment_term_name, l.email AS client_email, l.client_name
+      FROM payment_terms pt
+      JOIN leads l ON l.id = ?
+      WHERE pt.id = ? LIMIT 1
+    `;
 
-    db.query(termQuery, [payment_term_id], (termErr, termResult) => {
+    db.query(termQuery, [lead_id, payment_term_id], (termErr, termResult) => {
       if (termErr) {
-        console.error("DB error fetching payment term:", termErr);
-        return res.status(500).json({ error: "Failed to fetch payment term." });
+        console.error("DB error fetching payment term or lead:", termErr);
+        return res.status(500).json({ error: "Failed to fetch payment term or lead." });
       }
 
       if (!termResult.length) {
-        return res.status(400).json({ error: "Invalid payment term selected." });
+        return res.status(400).json({ error: "Invalid payment term or lead." });
       }
 
-      const payment_terms = termResult[0].name; // snapshot text
+      const { payment_term_name, client_email, client_name } = termResult[0];
 
       // 2. Insert proposal
-      const query = `
+      const insertQuery = `
         INSERT INTO proposals (
           lead_id,
           title,
@@ -134,12 +149,12 @@ const createProposal = (req, res) => {
         start_date,
         end_date,
         payment_term_id,
-        payment_terms,
+        payment_term_name,
         fileUrl,
         approvalToken,
       ];
 
-      db.query(query, values, (dbErr, result) => {
+      db.query(insertQuery, values, (dbErr, result) => {
         if (dbErr) {
           console.error("Database error:", dbErr);
           return res.status(500).json({ error: "Failed to create proposal." });
@@ -147,8 +162,36 @@ const createProposal = (req, res) => {
 
         const approvalLink = `${process.env.FRONTEND_URL}/proposal/respond/${approvalToken}`;
 
+        // 3. Send email with approval link
+        if (client_email) {
+          const mailOptions = {
+            from: `"DUV ENGINEERS" <${process.env.SMTP_EMAIL}>`,
+            to: client_email,
+            subject: `Proposal for Approval - ${title}`,
+            html: `
+              <p>Dear ${client_name || "Client"},</p>
+              <p>We’re pleased to share a new project proposal titled <strong>${title}</strong>.</p>
+              <p>Please review and respond to the proposal using the link below:</p>
+              <p><a href="${approvalLink}" target="_blank">${approvalLink}</a></p>
+              <p>Thank you for your time and consideration.</p>
+              <br>
+              <p>Best regards,<br><strong>DUV ENGINEERS</strong></p>
+            `,
+          };
+
+          transporter.sendMail(mailOptions, (emailErr, info) => {
+            if (emailErr) {
+              console.error("Error sending email:", emailErr);
+              // We won’t fail the main response if email fails
+            } else {
+              console.log("Email sent:", info.response);
+            }
+          });
+        }
+
+        // 4. Respond to frontend
         return res.status(201).json({
-          message: "Proposal created successfully.",
+          message: "Proposal created successfully and email sent to client.",
           proposalId: result.insertId,
           approvalLink,
         });
@@ -244,7 +287,12 @@ const getProposalResponse = (req, res) => {
       proposals.created_at,
       proposals.responded_at,
       proposals.approved_by_ip,
-      proposals.rejection_notes
+      proposals.rejection_notes,
+      proposals.start_date,
+      proposals.end_date,
+      proposals.description,
+      proposals.scope_of_work,
+      proposals.payment_terms
     FROM proposals
     JOIN leads ON proposals.lead_id = leads.id
     ORDER BY proposals.responded_at DESC, proposals.created_at DESC
@@ -522,15 +570,7 @@ const uploadClientSignature = (req, res) => {
 const getApprovedContracts = (req, res) => {
   const query = `
     SELECT 
-      contracts.id AS contract_id,
-      contracts.status AS contract_status,
-      contracts.contract_file_url,
-      contracts.contract_signed_at,
-      contracts.created_at AS contract_created_at,
-      contracts.access_link,
-      contracts.approval_status,
-      contracts.start_date AS contract_start_date,
-      contracts.end_date AS contract_end_date,
+      c.*,
 
       proposals.title AS proposal_title,
       proposals.budget_estimate,
@@ -543,10 +583,10 @@ const getApprovedContracts = (req, res) => {
       leads.email AS client_email,
       leads.phone_number AS client_phone,
       leads.project_interest
-    FROM contracts
-    JOIN proposals ON contracts.proposal_id = proposals.id
+    FROM contracts c
+    JOIN proposals ON c.proposal_id = proposals.id
     JOIN leads ON proposals.lead_id = leads.id
-    WHERE contracts.approval_status = 'approved'
+    WHERE c.approval_status = 'approved'
   `;
 
   db.query(query, (err, results) => {
@@ -883,6 +923,76 @@ const getForProcurement = (req, res) => {
   });
 };
 
+const signInPerson = (req, res) => {
+  const { contractId } = req.params;
+
+  if (!contractId) {
+    return res.status(400).json({ error: "Missing contractId" });
+  }
+
+  const query = `
+    UPDATE contracts
+    SET sign_method = 'in_person'
+    WHERE id = ?
+  `;
+
+  db.query(query, [contractId], (err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to update sign method" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Contract not found" });
+    }
+
+    res.json({
+      success: true,
+      message: "Contract marked for in-person signing",
+    });
+  });
+};
+
+const upload = multer({ storage });
+
+const uploadSignInPersonContract = (req, res) => {
+  upload.single("signature_photo")(req, res, (err) => {
+    if (err) {
+      console.error("Upload error:", err);
+      return res.status(500).json({ error: "Failed to upload file" });
+    }
+
+    const { contractId } = req.params;
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const fileUrl = `/signed_contracts/${req.file.filename}`;
+
+    const updateQuery = `
+      UPDATE contracts
+      SET status = 'signed',
+          sign_method = 'in_person',
+          contract_file_url = ?
+      WHERE id = ?
+    `;
+
+    db.query(updateQuery, [fileUrl, contractId], (dbErr) => {
+      if (dbErr) {
+        console.error("Database error:", dbErr);
+        return res.status(500).json({ error: "Failed to update contract record" });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "In-person signed contract uploaded successfully.",
+        fileUrl,
+      });
+    });
+  });
+};
+
+
 module.exports = {
   createProposal,
   getProposalByToken,
@@ -897,5 +1007,7 @@ module.exports = {
   getPaymentTerms,
   createSiteVisit,
   getScheduledSiteVisits, 
-  getForProcurement
+  getForProcurement,
+  signInPerson,
+  uploadSignInPersonContract
 };

@@ -6,16 +6,19 @@ const ApprovedContracts = () => {
   const navigate = useNavigate();
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState({});
-  const [viewMode, setViewMode] = useState("pending");
+  const [uploading, setUploading] = useState({});
+  const [viewMode, setViewMode] = useState("status");
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [signatureFile, setSignatureFile] = useState(null);
 
   const BASE_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
   useEffect(() => {
-    fetchApprovedContracts();
+    fetchContracts();
   }, []);
 
-  const fetchApprovedContracts = async () => {
+  const fetchContracts = async () => {
     try {
       const res = await fetch(
         `${BASE_URL}/api/projectManager/getApprovedContracts`
@@ -23,45 +26,93 @@ const ApprovedContracts = () => {
       const data = await res.json();
       setContracts(data);
     } catch (err) {
-      console.error("Failed to fetch approved contracts", err);
+      console.error("Failed to fetch contracts", err);
       toast.error("Failed to load contracts");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSendToClient = async (contractId) => {
-    setSending((prev) => ({ ...prev, [contractId]: true }));
+  const handleOpenUploadModal = (contract) => {
+    setSelectedContract(contract);
+    setSignatureFile(null);
+    setShowUploadModal(true);
+  };
+
+  const handleCloseUploadModal = () => {
+    setShowUploadModal(false);
+    setSelectedContract(null);
+    setSignatureFile(null);
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        setSignatureFile(file);
+      } else {
+        toast.error("Please select an image file");
+      }
+    }
+  };
+
+  const handleUploadSignedContract = async () => {
+    if (!selectedContract || !signatureFile) {
+      toast.error("Please select a signed contract image");
+      return;
+    }
+
+    setUploading((prev) => ({ ...prev, [selectedContract.id]: true }));
 
     try {
+      const formData = new FormData();
+      formData.append('signature_photo', signatureFile);
+
+      formData.forEach((form) => {
+        console.log(form);
+      });
+
+      console.log(selectedContract.id);
+
       const res = await fetch(
-        `${BASE_URL}/api/projectManager/contract/send-to-client/${contractId}`,
+        `${BASE_URL}/api/projectManager/uploadSignInPerson/${selectedContract.id}`,
         {
           method: "POST",
+          body: formData,
         }
       );
 
       const result = await res.json();
 
       if (!res.ok) {
-        toast.error(`Error: ${result.error || "Failed to send to client."}`);
+        toast.error(`Error: ${result.error || "Failed to upload signed contract."}`);
       } else {
-        toast.success("Contract sent to client successfully.");
-        fetchApprovedContracts();
+        toast.success("Signed contract uploaded successfully.");
+        handleCloseUploadModal();
+        fetchContracts();
       }
     } catch (err) {
-      console.error("Error sending contract to client:", err);
-      toast.error("An error occurred while sending the contract.");
+      console.error("Error uploading signed contract:", err);
+      toast.error("An error occurred while uploading the contract.");
     } finally {
-      setSending((prev) => ({ ...prev, [contractId]: false }));
+      setUploading((prev) => ({ ...prev, [selectedContract.id]: false }));
     }
   };
 
-  const filteredContracts = contracts.filter((contract) =>
-    viewMode === "pending"
-      ? contract.contract_status !== "signed"
-      : contract.contract_status === "signed"
-  );
+  // Filter contracts based on view mode
+  const filteredContracts = contracts.filter((contract) => {
+    if (viewMode === "status") {
+      // Show all contracts except signed ones in status view
+      return contract.status !== "signed";
+    } else if (viewMode === "in-person") {
+      // Show contracts marked for in-person signing that aren't signed yet
+      return contract.sign_method === "in_person" && contract.status !== "signed";
+    } else if (viewMode === "signed") {
+      // Show only signed contracts
+      return contract.status === "signed";
+    }
+    return false;
+  });
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -73,8 +124,25 @@ const ApprovedContracts = () => {
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "approved":
         return "bg-blue-100 text-blue-800 border-blue-200";
+      case "sent":
+        return "bg-purple-100 text-purple-800 border-purple-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case "signed":
+        return "✅";
+      case "rejected":
+        return "❌";
+      case "draft":
+        return "📝";
+      case "approved":
+        return "👍";
+      default:
+        return "📄";
     }
   };
 
@@ -83,7 +151,7 @@ const ApprovedContracts = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4c735c] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading approved contracts...</p>
+          <p className="text-gray-600">Loading contracts...</p>
         </div>
       </div>
     );
@@ -95,7 +163,7 @@ const ApprovedContracts = () => {
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center flex items-center justify-center">
             <span className="mr-3">📋</span>
-            Approved Contracts
+            Contract Management
           </h1>
         </div>
 
@@ -103,14 +171,24 @@ const ApprovedContracts = () => {
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
           <div className="flex flex-col sm:flex-row justify-center gap-2">
             <button
-              onClick={() => setViewMode("pending")}
+              onClick={() => setViewMode("status")}
               className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all ${
-                viewMode === "pending"
+                viewMode === "status"
                   ? "bg-[#4c735c] text-white shadow-lg"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Pending to Send
+              📊 Contract Status
+            </button>
+            <button
+              onClick={() => setViewMode("in-person")}
+              className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all ${
+                viewMode === "in-person"
+                  ? "bg-[#4c735c] text-white shadow-lg"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              📝 In-Person Signing
             </button>
             <button
               onClick={() => setViewMode("signed")}
@@ -120,13 +198,13 @@ const ApprovedContracts = () => {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Signed Contracts
+              ✅ Signed Contracts
             </button>
           </div>
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">
               {contracts.length}
@@ -134,14 +212,20 @@ const ApprovedContracts = () => {
             <div className="text-sm text-gray-600">Total</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {contracts.filter((c) => c.contract_status !== "signed").length}
+            <div className="text-2xl font-bold text-orange-600">
+              {contracts.filter(c => c.sign_method === "in_person" && c.status !== "signed").length}
             </div>
-            <div className="text-sm text-gray-600">Pending</div>
+            <div className="text-sm text-gray-600">In-Person</div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
+            <div className="text-2xl font-bold text-red-600">
+              {contracts.filter(c => c.status === "rejected").length}
+            </div>
+            <div className="text-sm text-gray-600">Rejected</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
-              {contracts.filter((c) => c.contract_status === "signed").length}
+              {contracts.filter(c => c.status === "signed").length}
             </div>
             <div className="text-sm text-gray-600">Signed</div>
           </div>
@@ -152,11 +236,12 @@ const ApprovedContracts = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <span className="mr-2">
-                {viewMode === "pending" ? "📤" : "✅"}
+                {viewMode === "status" ? "📊" : 
+                 viewMode === "in-person" ? "📝" : "✅"}
               </span>
-              {viewMode === "pending"
-                ? "Pending Contracts"
-                : "Signed Contracts"}
+              {viewMode === "status" && "Contract Status Overview"}
+              {viewMode === "in-person" && "Contracts for In-Person Signing"}
+              {viewMode === "signed" && "Signed Contracts"}
               <span className="ml-2 text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
                 {filteredContracts.length} contracts
               </span>
@@ -166,24 +251,25 @@ const ApprovedContracts = () => {
           {filteredContracts.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4 text-gray-300">
-                {viewMode === "pending" ? "📤" : "✅"}
+                {viewMode === "status" ? "📊" : 
+                 viewMode === "in-person" ? "📝" : "✅"}
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {viewMode === "pending"
-                  ? "No Pending Contracts"
-                  : "No Signed Contracts"}
+                {viewMode === "status" && "No Contracts in Progress"}
+                {viewMode === "in-person" && "No Contracts for In-Person Signing"}
+                {viewMode === "signed" && "No Signed Contracts"}
               </h3>
               <p className="text-gray-600">
-                {viewMode === "pending"
-                  ? "All contracts have been sent to clients or are awaiting approval."
-                  : "No contracts have been signed by clients yet."}
+                {viewMode === "status" && "All contracts are either signed or there are no contracts to display."}
+                {viewMode === "in-person" && "All in-person contracts have been processed or there are no contracts marked for in-person signing."}
+                {viewMode === "signed" && "No contracts have been signed yet."}
               </p>
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-4">
               {filteredContracts.map((contract) => (
                 <div
-                  key={contract.contract_id}
+                  key={contract.id}
                   className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
                 >
                   <div className="flex flex-col">
@@ -196,30 +282,37 @@ const ApprovedContracts = () => {
                           </h3>
                           <div
                             className={`mt-1 sm:mt-0 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
-                              contract.contract_status
-                            )} whitespace-nowrap`}
+                              contract.status
+                            )} whitespace-nowrap flex items-center space-x-1`}
                           >
-                            {contract.contract_status}
+                            <span>{getStatusIcon(contract.status)}</span>
+                            <span>{contract.status || "Unknown"}</span>
                           </div>
+                          {contract.sign_method && (
+                            <div className={`mt-1 sm:mt-0 px-3 py-1 rounded-full text-sm font-medium border ${
+                              contract.sign_method === "in_person" 
+                                ? "bg-orange-100 text-orange-800 border-orange-200"
+                                : "bg-purple-100 text-purple-800 border-purple-200"
+                            } whitespace-nowrap`}>
+                              {contract.sign_method === "in_person" ? "In-Person" : "Digital"}
+                            </div>
+                          )}
                         </div>
                         <p className="text-gray-600 text-sm">
-                          Contract ID: {contract.contract_id}
+                          Contract ID: {contract.id}
                         </p>
                       </div>
                     </div>
 
                     {/* Contract Details Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-700 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-700 mb-4">
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-400">💰</span>
                           <span className="font-medium">Budget:</span>
                         </div>
                         <p className="text-lg font-bold text-green-600">
-                          ₱
-                          {parseFloat(
-                            contract.budget_estimate
-                          ).toLocaleString()}
+                          ₱{parseFloat(contract.budget_estimate).toLocaleString()}
                         </p>
                       </div>
 
@@ -228,20 +321,37 @@ const ApprovedContracts = () => {
                           <span className="text-gray-400">⏱️</span>
                           <span className="font-medium">Timeline:</span>
                         </div>
-                        <p>{contract.timeline_estimate}</p>
+                        <p>
+                          {contract.start_date && contract.end_date 
+                            ? `${new Date(contract.start_date).toLocaleDateString()} - ${new Date(contract.end_date).toLocaleDateString()}`
+                            : "Not specified"
+                          }
+                        </p>
                       </div>
 
                       <div className="space-y-2">
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-400">📅</span>
-                          <span className="font-medium">Signed:</span>
+                          <span className="font-medium">Created:</span>
                         </div>
                         <p>
-                          {contract.contract_signed_at
-                            ? new Date(
-                                contract.contract_signed_at
-                              ).toLocaleDateString()
-                            : "Not signed"}
+                          {contract.created_at
+                            ? new Date(contract.created_at).toLocaleDateString()
+                            : "N/A"}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400">🔄</span>
+                          <span className="font-medium">
+                            {viewMode === "signed" ? "Signed:" : "Status:"}
+                          </span>
+                        </div>
+                        <p>
+                          {viewMode === "signed" && contract.contract_signed_at
+                            ? new Date(contract.contract_signed_at).toLocaleDateString()
+                            : contract.status}
                         </p>
                       </div>
                     </div>
@@ -268,6 +378,19 @@ const ApprovedContracts = () => {
                       </div>
                     </div>
 
+                    {/* Rejection Notes (show for rejected contracts in status view) */}
+                    {viewMode === "status" && contract.status === "rejected" && contract.client_rejection_notes && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                        <h4 className="font-semibold text-red-900 mb-2 flex items-center">
+                          <span className="mr-2">📝</span>
+                          Client Rejection Notes
+                        </h4>
+                        <p className="text-red-800 text-sm">
+                          {contract.client_rejection_notes}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                       {/* Contract Links */}
@@ -283,61 +406,32 @@ const ApprovedContracts = () => {
                             <span>View Contract PDF</span>
                           </a>
                         )}
-                        {contract.access_link && (
-                          <a
-                            href={contract.access_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center space-x-2 text-green-600 hover:text-green-700 font-medium"
-                          >
-                            <span>🔗</span>
-                            <span>Client Access Link</span>
-                          </a>
-                        )}
                       </div>
 
                       {/* Action Buttons */}
                       <div className="flex space-x-2">
-                        {viewMode === "pending" ? (
+                        {viewMode === "in-person" && (
+                          <button
+                            onClick={() => handleOpenUploadModal(contract)}
+                            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                          >
+                            <span>📤</span>
+                            <span>Upload Signed Contract</span>
+                          </button>
+                        )}
+                        
+                        {viewMode === "signed" && (
                           <button
                             onClick={() =>
-                              handleSendToClient(contract.contract_id)
+                              navigate(
+                                `/admin-dashboard/project/create/${contract.id}`
+                              )
                             }
-                            disabled={sending[contract.contract_id]}
-                            className={`px-4 py-2 rounded-lg font-semibold text-white transition-colors flex items-center space-x-2 ${
-                              sending[contract.contract_id]
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-[#4c735c] hover:bg-[#3a5a4a]"
-                            }`}
+                            className="px-4 py-2 bg-[#4c735c] hover:bg-[#3a5a4a] text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
                           >
-                            {sending[contract.contract_id] ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                <span>Sending...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>Send to Client</span>
-                              </>
-                            )}
+                            <span>🚀</span>
+                            <span>Create Project</span>
                           </button>
-                        ) : (
-                          <>
-                            <div className="flex items-center space-x-2 text-green-600 font-medium px-3 py-2">
-                              <span>✅</span>
-                              <span>Signed</span>
-                            </div>
-                            <button
-                              onClick={() =>
-                                navigate(
-                                  `/admin-dashboard/project/create/${contract.contract_id}`
-                                )
-                              }
-                              className="px-4 py-2 bg-[#4c735c] hover:bg-[#3a5a4a] text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-                            >
-                              <span>Create Project</span>
-                            </button>
-                          </>
                         )}
                       </div>
                     </div>
@@ -348,6 +442,87 @@ const ApprovedContracts = () => {
           )}
         </div>
       </div>
+
+      {/* Upload Signed Contract Modal */}
+      {showUploadModal && selectedContract && (
+        <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Upload Signed Contract
+              </h3>
+              <button
+                onClick={handleCloseUploadModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                Upload an image of the signed contract for:
+              </p>
+              <p className="font-semibold text-gray-900">{selectedContract.proposal_title}</p>
+              <p className="text-sm text-gray-600">Client: {selectedContract.client_name}</p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Signed Contract Image
+              </label>
+              <input
+                name='signature_photo'
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Accepted formats: JPG, PNG, GIF
+              </p>
+            </div>
+
+            {signatureFile && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-700">
+                  Selected file: {signatureFile.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Size: {(signatureFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCloseUploadModal}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUploadSignedContract}
+                disabled={!signatureFile || uploading[selectedContract.id]}
+                className={`px-4 py-2 rounded-lg font-semibold text-white transition-colors ${
+                  !signatureFile || uploading[selectedContract.id]
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#4c735c] hover:bg-[#3a5a4a]"
+                }`}
+              >
+                {uploading[selectedContract.id] ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Uploading...
+                  </>
+                ) : (
+                  "Upload Signed Contract"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

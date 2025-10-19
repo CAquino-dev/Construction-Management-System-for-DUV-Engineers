@@ -18,8 +18,7 @@ const {
   getAllExpensesApprovedByEngineer,
   updateFinanceApprovalStatus,
   getContracts,
-  approveContract,
-  rejectContract,
+  updateContractApprovalStatus,
   getProcurementApprovedMilestones,
   uploadSalarySignature,
   getReleasedPayslips,
@@ -58,9 +57,8 @@ router.put("/payroll/update-status", updatePayrollStatus);
 router.put("/updatePayslipStatus", financeUpdatePayslipStatus);
 router.put("/updatePaymentStatus", financeProcessPayslipPayment);
 router.post("/payments", clientPayment);
-router.post("/contracts/:id/approve", approveContract);
+router.put("/updateContractApprovalStatus/:id", updateContractApprovalStatus);
 router.post("/salary/paySalary", uploadSalarySignature);
-router.post("/contracts/:id/reject", rejectContract);
 router.get("/projects/with-pending-payments", getProjectsWithPendingPayments);
 router.get("/projects/:projectId/milestones/for-payment", getMilestonesForPaymentByProject);
 router.get("/project/expenses/approved-by-engineer", getAllExpensesApprovedByEngineer);

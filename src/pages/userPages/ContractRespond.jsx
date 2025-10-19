@@ -7,7 +7,7 @@ import ConfirmationModal from "../../components/adminComponents/ConfirmationModa
 import { toast } from "sonner";
 
 const ContractRespond = () => {
-  const { proposalId } = useParams();
+  const { contractId } = useParams();
   const [contract, setContract] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ error: "", success: "" });
@@ -32,7 +32,7 @@ const ContractRespond = () => {
         const response = await fetch(
           `${
             import.meta.env.VITE_REACT_APP_API_URL
-          }/api/projectManager/contract/${proposalId}`
+          }/api/projectManager/contract/${contractId}`
         );
         if (response.ok) {
           const data = await response.json();
@@ -51,7 +51,7 @@ const ContractRespond = () => {
       }
     };
     getContract();
-  }, [proposalId]);
+  }, [contractId]);
 
   const clearSignature = () => sigPad.current.clear();
 
@@ -71,7 +71,7 @@ const ContractRespond = () => {
         `${
           import.meta.env.VITE_REACT_APP_API_URL
         }/api/projectManager/signature`,
-        { base64Signature: dataURL, proposalId }
+        { base64Signature: dataURL, contractId }
       );
 
       toast.success("Signature submitted successfully!");
@@ -84,7 +84,7 @@ const ContractRespond = () => {
         const scheduleRes = await axios.post(
           `${
             import.meta.env.VITE_REACT_APP_API_URL
-          }/api/payments/payment-schedule/${proposalId}`
+          }/api/payments/payment-schedule/${contractId}`
         );
 
         await axios.post(
@@ -116,7 +116,7 @@ const ContractRespond = () => {
       const response = await fetch(
         `${
           import.meta.env.VITE_REACT_APP_API_URL
-        }/api/projectManager/contracts/${proposalId}/reject`,
+        }/api/projectManager/contracts/${contractId}/reject`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -140,6 +140,27 @@ const ContractRespond = () => {
   };
 
   if (loading) return <p className="p-4">Loading contract...</p>;
+
+  const handleSignInPerson = async () => {
+    try {
+    const response = await axios.put(
+      `${import.meta.env.VITE_REACT_APP_API_URL}/api/projectManager/signInPerson/${contractId}`
+    );
+
+    if (response.data.success) {
+      toast.success("Contract marked for in-person signing.");
+      setMessage({ success: "Contract marked for in-person signing.", error: "" });
+      setIsSigned(true); // Disable further actions
+    }
+  } catch (error) {
+    console.error("Error marking in-person sign:", error);
+    toast.error("Failed to mark contract for in-person signing.");
+    setMessage({
+      error: error.response?.data?.error || "Failed to mark contract for in-person signing.",
+      success: "",
+    });
+  }
+  };
 
   return (
     <div className="mt-20 px-4 sm:px-8 max-w-5xl mx-auto">
@@ -180,6 +201,7 @@ const ContractRespond = () => {
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-600 text-white hover:bg-green-700"
             }`}
+            onClick={() => handleSignInPerson()}
           >
             🧾 Sign In Person
           </button>

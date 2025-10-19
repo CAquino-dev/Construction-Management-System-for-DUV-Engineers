@@ -2,6 +2,18 @@ const db = require("../config/db");
 const fs = require('fs');
 const path = require('path');
 const multer = require("multer");
+const nodemailer = require("nodemailer");
+const qrcode = require("qrcode");
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_EMAIL,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 const getFinance = (req, res) => {
     const query = `SELECT 
@@ -592,34 +604,162 @@ const getContracts = (req, res) => {
   });
 };
 
-const approveContract = (req, res) => {
+
+const updateContractApprovalStatus = (req, res) => {
   const contractId = req.params.id;
+  const { status, finance_id, finance_rejection_notes } = req.body;
 
-  const query = `UPDATE contracts SET approval_status = 'approved' WHERE id = ?`;
-
-  db.query(query, [contractId], (err) => {
-    if (err) return res.status(500).json({ error: "Approval failed" });
-    res.json({ success: true });
-  });
-}
-
-const rejectContract = (req, res) => {
-  const contractId = req.params.id;
-  const { finance_rejection_notes } = req.body;
-
-  if (!finance_rejection_notes) {
-    return res.status(400).json({ error: "Rejection notes are required" });
+  if (!status || !["approved", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid or missing approval status" });
   }
 
-  const query = `UPDATE contracts 
-    SET approval_status = 'rejected', finance_rejection_notes = ? 
-    WHERE id = ?`;
+  if (!finance_id) {
+    return res.status(400).json({ error: "Missing finance_id" });
+  }
 
-  db.query(query, [finance_rejection_notes, contractId], (err) => {
-    if (err) return res.status(500).json({ error: "Rejection failed" });
-    res.json({ success: true });
+  let query = "";
+  let params = [];
+
+  if (status === "approved") {
+    query = `
+      UPDATE contracts 
+      SET approval_status = ?, 
+          finance_id = ?, 
+          finance_rejection_notes = NULL 
+      WHERE id = ?
+    `;
+    params = [status, finance_id, contractId];
+  } else {
+    if (!finance_rejection_notes) {
+      return res.status(400).json({
+        error: "Rejection notes are required when rejecting a contract",
+      });
+    }
+
+    query = `
+      UPDATE contracts 
+      SET approval_status = ?, 
+          finance_id = ?, 
+          finance_rejection_notes = ? 
+      WHERE id = ?
+    `;
+    params = [status, finance_id, finance_rejection_notes, contractId];
+  }
+
+  // Step 1: Update the contract status
+  db.query(query, params, (err, result) => {
+    if (err) {
+      console.error("Contract approval update failed:", err);
+      return res.status(500).json({ error: "Database error during approval update" });
+    }
+
+    // ✅ Step 2: If approved, send the email
+    if (status === "approved") {
+      const fetchQuery = `
+        SELECT c.*, l.email, l.client_name
+        FROM contracts c
+        JOIN leads l ON c.lead_id = l.id
+        WHERE c.id = ?;
+      `;
+
+      db.query(fetchQuery, [contractId], (fetchErr, results) => {
+        if (fetchErr) {
+          console.error("Error fetching contract info:", fetchErr);
+          return res.status(500).json({ error: "Failed to fetch contract data" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Contract not found" });
+        }
+
+        const contract = results[0];
+        const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contract.id}`;
+
+        if (!contract.email) {
+          console.warn("Missing client email for contract:", contract.id);
+          return res.status(400).json({ error: "Client email is missing" });
+        }
+
+        // Generate QR code
+        qrcode.toDataURL(approvalLink, (qrErr, qrCodeDataURL) => {
+          if (qrErr) {
+            console.error("QR code generation error:", qrErr);
+            return res.status(500).json({ error: "Failed to generate QR code" });
+          }
+
+          const base64Data = qrCodeDataURL.replace(/^data:image\/png;base64,/, "");
+
+          // Setup email transport
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: process.env.SMTP_EMAIL,
+              pass: process.env.SMTP_PASS,
+            },
+          });
+
+          const mailOptions = {
+            from: '"DUV Engineers" <caquino.dev@gmail.com>',
+            to: contract.email,
+            subject: "Your Contract is Ready for Review",
+            html: `
+              <p>Hi ${contract.client_name},</p>
+
+              <p>Great news! Your contract has been <strong>approved by our Finance Department</strong> and is now ready for your final review and approval.</p>
+
+              <p>You can access it directly using the link or the QR code below:</p>
+
+              <p style="text-align: center; margin: 25px 0;">
+                  <a href="${approvalLink}" style="background-color: #4A90E2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                      👉 Review & Approve Contract
+                  </a>
+              </p>
+
+              <p style="text-align: center; margin: 25px 0;">
+                  <img src="cid:qrcode" alt="QR Code for Contract Approval" style="border: 1px solid #eee; border-radius: 8px;" />
+                  <br />
+                  <small><em>Scan to view the contract</em></small>
+              </p>
+
+              <p>If you have any questions, please do not hesitate to reach out.</p>
+
+              <p>Best regards,<br/>
+              <strong>The DUV Engineers Team</strong></p>
+            `,
+            attachments: [
+              {
+                filename: "qrcode.png",
+                content: base64Data,
+                encoding: "base64",
+                cid: "qrcode",
+              },
+            ],
+          };
+
+          transporter.sendMail(mailOptions, (emailErr, info) => {
+            if (emailErr) {
+              console.error("Error sending email:", emailErr);
+              return res.status(500).json({ error: "Failed to send approval email" });
+            }
+
+            console.log("Approval email sent:", info.response);
+            res.json({
+              success: true,
+              message: "Contract approved and email sent to client successfully",
+            });
+          });
+        });
+      });
+    } else {
+      // ✅ Rejection response
+      res.json({
+        success: true,
+        message: "Contract rejected successfully",
+      });
+    }
   });
 };
+
 
 // const getPmApprovedMilestones = (req, res) => {
 //   const query = 
@@ -1251,6 +1391,6 @@ module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
-  approveContract, rejectContract, getProcurementApprovedMilestones, uploadSalarySignature,
+  updateContractApprovalStatus, getProcurementApprovedMilestones, uploadSalarySignature,
   getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment
  };
