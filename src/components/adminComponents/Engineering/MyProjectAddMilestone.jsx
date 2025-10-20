@@ -10,7 +10,6 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
   const [dueDate, setDueDate] = useState("");
   const [boqs, setBoqs] = useState([]);
   const [selectedBoqs, setSelectedBoqs] = useState([]);
-  const [mto, setMto] = useState({}); // { boqId: [{ material, quantity, unit_cost }] }
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
 
   useEffect(() => {
@@ -31,13 +30,6 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
       toast.error("Please select at least one BOQ item.");
       return false;
     }
-    // Check that each selected BOQ has MTO items
-    for (let boqId of selectedBoqs) {
-      if (!mto[boqId] || !mto[boqId].length) {
-        toast.error("Please add MTO items for each selected BOQ.");
-        return false;
-      }
-    }
     return true;
   };
 
@@ -51,7 +43,6 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
       start_date: startDate || "",
       due_date: dueDate || "",
       boq_item_ids: selectedBoqs,
-      mto_items: mto,
     };
 
     console.log("payload:", payload);
@@ -81,32 +72,6 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
     }
 
     setIsConfirmationModalOpen(false);
-  };
-
-  const addMtoItem = (boqId) => {
-    setMto((prev) => ({
-      ...prev,
-      [boqId]: [
-        ...(prev[boqId] || []),
-        { description: "", unit: "", quantity: "" },
-      ],
-    }));
-  };
-
-  const updateMtoItem = (boqId, index, field, value) => {
-    setMto((prev) => ({
-      ...prev,
-      [boqId]: prev[boqId].map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      ),
-    }));
-  };
-
-  const removeMtoItem = (boqId, index) => {
-    setMto((prev) => ({
-      ...prev,
-      [boqId]: prev[boqId].filter((_, i) => i !== index),
-    }));
   };
 
   return (
@@ -185,71 +150,6 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
                   {boq.description} ({boq.unit}, {boq.quantity})
                 </span>
               </label>
-
-              {/* MTO Section */}
-              {selectedBoqs.includes(boq.id) && (
-                <div className="pl-6 border-l-2 border-gray-300">
-                  <h4 className="font-semibold mb-2">MTO Items</h4>
-                  {(mto[boq.id] || []).map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center mb-2 space-x-2"
-                    >
-                      <input
-                        type="text"
-                        placeholder="description"
-                        value={item.description}
-                        onChange={(e) =>
-                          updateMtoItem(
-                            boq.id,
-                            index,
-                            "description",
-                            e.target.value
-                          )
-                        }
-                        className="border p-1 text-sm w-32"
-                      />
-                      <input
-                        type="text"
-                        placeholder="unit"
-                        value={item.unit}
-                        onChange={(e) =>
-                          updateMtoItem(boq.id, index, "unit", e.target.value)
-                        }
-                        className="border p-1 text-sm w-32"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Quantity"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateMtoItem(
-                            boq.id,
-                            index,
-                            "quantity",
-                            e.target.value
-                          )
-                        }
-                        className="border p-1 text-sm w-20"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeMtoItem(boq.id, index)}
-                        className="text-red-500 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => addMtoItem(boq.id)}
-                    className="text-blue-500 text-sm mt-1"
-                  >
-                    + Add MTO Item
-                  </button>
-                </div>
-              )}
             </div>
           ))
         ) : (

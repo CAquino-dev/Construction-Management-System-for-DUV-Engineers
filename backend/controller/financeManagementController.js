@@ -1213,12 +1213,12 @@ const processFinancePayment = (req, res) => {
   const attachmentFiles = req.files?.attachments || [];
 
   const signaturePath = signatureFile
-    ? `/public/finance_signatures/${signatureFile.filename}`
+    ? `/finance_signatures/${signatureFile.filename}`
     : null;
 
   const attachments = attachmentFiles.map((file) => ({
     name: file.originalname,
-    path: `/public/finance_attachments/${file.filename}`,
+    path: `/finance_attachments/${file.filename}`,
   }));
 
   const insertQuery = `
@@ -1370,8 +1370,8 @@ const recordClientCashPayment = (req, res) => {
     const proofPhoto = req.files?.proof_photo?.[0];
     const signature = req.files?.client_signature?.[0];
 
-    const proofPhotoPath = proofPhoto ? `/public/finance_attachments/${proofPhoto.filename}` : null;
-    const signaturePath = signature ? `/public/finance_signatures/${signature.filename}` : null;
+    const proofPhotoPath = proofPhoto ? `/finance_attachments/${proofPhoto.filename}` : null;
+    const signaturePath = signature ? `/finance_signatures/${signature.filename}` : null;
 
     const insertQuery = `
       INSERT INTO finance_payments (
@@ -1440,11 +1440,48 @@ const recordClientCashPayment = (req, res) => {
   });
 };
 
+// ✅ Get Paid Purchase Orders
+const getPaidPurchaseOrders = (req, res) => {
+  const query = `
+    SELECT 
+	    fp.*, 
+      po.po_number,
+      po.total_amount AS po_total,
+      po.paid_at,
+      s.supplier_name,
+      p.project_name,
+      payer.full_name AS paid_by_name
+    FROM finance_payments fp
+    LEFT JOIN purchase_orders po ON fp.reference_id = po.id
+    LEFT JOIN suppliers s ON po.supplier_id = s.id
+    LEFT JOIN engineer_projects p ON po.project_id = p.id
+    LEFT JOIN users payer ON fp.processed_by = payer.id
+    WHERE fp.payment_type = 'purchase_order'
+    ORDER BY fp.transaction_date DESC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching paid purchase orders:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch paid purchase orders.",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Paid purchase orders fetched successfully.",
+      data: results,
+    });
+  });
+};
+
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
   updateContractApprovalStatus, getProcurementApprovedMilestones, uploadSalarySignature,
   getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
-  getPaidPayslips
+  getPaidPayslips, getPaidPurchaseOrders
  };
