@@ -234,9 +234,6 @@ const FinancePayment = () => {
                               Pay Now
                             </button>
                           )}
-                          <button className="text-gray-600 hover:text-gray-900">
-                            View
-                          </button>
                         </div>
                       </td>
                     </tr>

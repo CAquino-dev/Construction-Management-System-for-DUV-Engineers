@@ -1076,6 +1076,59 @@ const getReleasedPayslips = (req, res) => {
   });
 };
 
+const getPaidPayslips = (req, res) => {
+  const query = `
+    SELECT 
+        ps.id AS payslip_id,
+        ps.title,
+        ps.period_start,
+        ps.period_end,
+        ps.created_at AS payslip_created_at,
+        creator.full_name AS created_by_name,
+        pi.id AS payslip_item_id,
+        pr.id AS payroll_id,
+        e.full_name AS employee_name,
+        pr.total_hours_worked,
+        pr.calculated_salary,
+        pr.overtime_pay,
+        pr.philhealth_deduction,
+        pr.sss_deduction,
+        pr.pagibig_deduction,
+        pr.total_deductions,
+        pr.final_salary,
+        pi.hr_status,
+        pi.finance_status,
+        pi.payment_status,
+        pi.paid_by,
+        payer.full_name AS paid_by_name,
+        pi.signature_url
+    FROM payslip ps
+    LEFT JOIN users creator ON ps.created_by = creator.id
+    LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+    LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+    LEFT JOIN users e ON pr.employee_id = e.id
+    LEFT JOIN users payer ON pi.paid_by = payer.id
+    WHERE pi.payment_status = 'Paid'
+    ORDER BY ps.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching paid payslips:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching paid payslips.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Paid payslips fetched successfully.",
+      data: results,
+    });
+  });
+};
+
 const getDeliveredPurchaseOrders = (req, res) => {
   const query = `
     SELECT 
@@ -1392,5 +1445,6 @@ module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
   updateContractApprovalStatus, getProcurementApprovedMilestones, uploadSalarySignature,
-  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment
+  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
+  getPaidPayslips
  };

@@ -24,7 +24,8 @@ const {
   getReleasedPayslips,
   getDeliveredPurchaseOrders,
   processFinancePayment,
-  recordClientCashPayment
+  recordClientCashPayment,
+  getPaidPayslips
 } = require("../controller/financeManagementController");
 
 // Ensure finance_signatures folder exists
@@ -53,6 +54,7 @@ router.get("/getCeoApprovedPayslips", getCeoApprovedPayslips);
 router.get("/getContracts", getContracts);
 router.get("/procurementApproved", getProcurementApprovedMilestones);
 router.get("/getReleasedPayslips", getReleasedPayslips);
+router.get("/getPaidPayslips", getPaidPayslips);
 router.put("/payroll/update-status", updatePayrollStatus);
 router.put("/updatePayslipStatus", financeUpdatePayslipStatus);
 router.put("/updatePaymentStatus", financeProcessPayslipPayment);
