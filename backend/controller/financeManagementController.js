@@ -1076,6 +1076,59 @@ const getReleasedPayslips = (req, res) => {
   });
 };
 
+const getPaidPayslips = (req, res) => {
+  const query = `
+    SELECT 
+        ps.id AS payslip_id,
+        ps.title,
+        ps.period_start,
+        ps.period_end,
+        ps.created_at AS payslip_created_at,
+        creator.full_name AS created_by_name,
+        pi.id AS payslip_item_id,
+        pr.id AS payroll_id,
+        e.full_name AS employee_name,
+        pr.total_hours_worked,
+        pr.calculated_salary,
+        pr.overtime_pay,
+        pr.philhealth_deduction,
+        pr.sss_deduction,
+        pr.pagibig_deduction,
+        pr.total_deductions,
+        pr.final_salary,
+        pi.hr_status,
+        pi.finance_status,
+        pi.payment_status,
+        pi.paid_by,
+        payer.full_name AS paid_by_name,
+        pi.signature_url
+    FROM payslip ps
+    LEFT JOIN users creator ON ps.created_by = creator.id
+    LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+    LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+    LEFT JOIN users e ON pr.employee_id = e.id
+    LEFT JOIN users payer ON pi.paid_by = payer.id
+    WHERE pi.payment_status = 'Paid'
+    ORDER BY ps.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching paid payslips:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching paid payslips.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Paid payslips fetched successfully.",
+      data: results,
+    });
+  });
+};
+
 const getDeliveredPurchaseOrders = (req, res) => {
   const query = `
     SELECT 
@@ -1160,12 +1213,12 @@ const processFinancePayment = (req, res) => {
   const attachmentFiles = req.files?.attachments || [];
 
   const signaturePath = signatureFile
-    ? `/public/finance_signatures/${signatureFile.filename}`
+    ? `/finance_signatures/${signatureFile.filename}`
     : null;
 
   const attachments = attachmentFiles.map((file) => ({
     name: file.originalname,
-    path: `/public/finance_attachments/${file.filename}`,
+    path: `/finance_attachments/${file.filename}`,
   }));
 
   const insertQuery = `
@@ -1317,8 +1370,8 @@ const recordClientCashPayment = (req, res) => {
     const proofPhoto = req.files?.proof_photo?.[0];
     const signature = req.files?.client_signature?.[0];
 
-    const proofPhotoPath = proofPhoto ? `/public/finance_attachments/${proofPhoto.filename}` : null;
-    const signaturePath = signature ? `/public/finance_signatures/${signature.filename}` : null;
+    const proofPhotoPath = proofPhoto ? `/finance_attachments/${proofPhoto.filename}` : null;
+    const signaturePath = signature ? `/finance_signatures/${signature.filename}` : null;
 
     const insertQuery = `
       INSERT INTO finance_payments (
@@ -1387,10 +1440,48 @@ const recordClientCashPayment = (req, res) => {
   });
 };
 
+// ✅ Get Paid Purchase Orders
+const getPaidPurchaseOrders = (req, res) => {
+  const query = `
+    SELECT 
+	    fp.*, 
+      po.po_number,
+      po.total_amount AS po_total,
+      po.paid_at,
+      s.supplier_name,
+      p.project_name,
+      payer.full_name AS paid_by_name
+    FROM finance_payments fp
+    LEFT JOIN purchase_orders po ON fp.reference_id = po.id
+    LEFT JOIN suppliers s ON po.supplier_id = s.id
+    LEFT JOIN engineer_projects p ON po.project_id = p.id
+    LEFT JOIN users payer ON fp.processed_by = payer.id
+    WHERE fp.payment_type = 'purchase_order'
+    ORDER BY fp.transaction_date DESC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching paid purchase orders:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch paid purchase orders.",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Paid purchase orders fetched successfully.",
+      data: results,
+    });
+  });
+};
+
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
   updateContractApprovalStatus, getProcurementApprovedMilestones, uploadSalarySignature,
-  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment
+  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
+  getPaidPayslips, getPaidPurchaseOrders
  };
