@@ -300,12 +300,11 @@ const getProjectInventory = (req, res) => {
     const query = 
      `SELECT
       pi.id,
-      mc.name AS material_name,
+      pi.material_name,
       pi.project_id,
       pi.quantity,
       pi.unit
       FROM project_inventory pi
-      JOIN material_catalog mc ON mc.id = pi.material_id
       WHERE project_id = ?`;
 
     db.query(query, [projectId], (err, result) => {
@@ -468,7 +467,7 @@ const markAsDelivered = (req, res) => {
 
   // Step 1: Get all items in this PO
   const getItemsQuery = `
-    SELECT id AS material_id, quantity, unit
+    SELECT material_name, quantity, unit
     FROM purchase_order_items
     WHERE po_id = ?
   `;
@@ -541,7 +540,7 @@ const markAsDelivered = (req, res) => {
 
           // Step 5: Insert delivered items into project inventory
           const inventoryQuery = `
-            INSERT INTO project_inventory (project_id, material_id, quantity, unit)
+            INSERT INTO project_inventory (project_id, material_name, quantity, unit)
             VALUES (?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
               quantity = CASE
@@ -557,14 +556,16 @@ const markAsDelivered = (req, res) => {
               inventoryQuery,
               [
                 project_id,
-                item.material_id,
+                item.material_name,
                 item.quantity,
                 item.unit,
                 'IN', // movement direction
                 'IN',
               ],
               (err5) => {
-                if (err5) console.error("❌ Error updating project inventory:", err5);
+                if (err5) {
+                  console.error("❌ Error updating project inventory:", err5);
+                }
 
                 processed++;
 
@@ -615,9 +616,6 @@ const markAsDelivered = (req, res) => {
     });
   });
 };
-
-
-
 
 module.exports = { 
 getInventoryItems, updateInventoryItem, addInventoryItem, 
