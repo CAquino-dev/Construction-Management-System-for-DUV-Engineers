@@ -37,47 +37,6 @@ export const FinanceTable = () => {
     }
   };
 
-  const releaseSalary = async (payslipId) => {
-    const userId = localStorage.getItem("userId");
-    try {
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_REACT_APP_API_URL
-        }/api/finance/release-salary/${payslipId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ releasedBy: userId }),
-        }
-      );
-
-      const data = await response.json();
-      if (response.ok) {
-        // Update UI: mark payslip as released
-        const updated = financeRecords.map((record) =>
-          record.payslip_id === payslipId
-            ? {
-                ...record,
-                is_released: 1,
-                released_at: new Date().toISOString(),
-              }
-            : record
-        );
-        setFinanceRecords(updated);
-        setMessage("✅ Salary released successfully!");
-        setTimeout(() => setMessage(""), 3000);
-      } else {
-        setMessage("❌ Failed to release salary: " + data.error);
-        console.error("Error releasing salary:", data.error);
-      }
-    } catch (error) {
-      setMessage("❌ Error releasing salary");
-      console.error("Error releasing salary:", error);
-    }
-  };
-
   const totalPages = Math.ceil(financeRecords.length / recordsPerPage);
   const currentRecords = financeRecords.slice(
     (currentPage - 1) * recordsPerPage,
@@ -96,7 +55,7 @@ export const FinanceTable = () => {
                 Salary Review
               </h1>
               <p className="text-gray-600 mt-2">
-                Manage and release employee salaries
+                View approved employee salaries
               </p>
             </div>
             <div className="mt-4 sm:mt-0 bg-green-50 px-4 py-2 rounded-lg">
@@ -214,7 +173,13 @@ export const FinanceTable = () => {
                             : "bg-yellow-100 text-yellow-800 border border-yellow-200"
                         }`}
                       >
-                        {record.is_released ? <>✅ Released</> : "⏳ Pending"}
+                        {record.is_released ? (
+                          <>
+                            ✅ Released
+                          </>
+                        ) : (
+                          "⏳ Waiting for release"
+                        )}
                       </span>
                     </TableCell>
 
@@ -228,16 +193,6 @@ export const FinanceTable = () => {
                           <Eye size={18} />
                           <span className="text-sm">View</span>
                         </button>
-
-                        {!record.is_released && (
-                          <button
-                            onClick={() => releaseSalary(record.payslip_id)}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm font-medium flex items-center space-x-1"
-                          >
-                            <span>💰</span>
-                            <span>Release</span>
-                          </button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -266,7 +221,7 @@ export const FinanceTable = () => {
                           : "bg-yellow-100 text-yellow-800"
                       }`}
                     >
-                      {record.is_released ? "✅ Released" : "⏳ Pending"}
+                      {record.is_released ? "✅ Released" : "⏳ Approved - Releasing Soon"}
                     </span>
                   </div>
 
@@ -303,16 +258,6 @@ export const FinanceTable = () => {
                         <Eye size={16} />
                         <span>View Details</span>
                       </button>
-
-                      {!record.is_released && (
-                        <button
-                          onClick={() => releaseSalary(record.payslip_id)}
-                          className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer flex items-center justify-center space-x-1 text-sm"
-                        >
-                          <span>💰</span>
-                          <span>Release Salary</span>
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

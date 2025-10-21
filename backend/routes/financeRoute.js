@@ -24,27 +24,38 @@ const {
   getReleasedPayslips,
   getDeliveredPurchaseOrders,
   processFinancePayment,
-  recordClientCashPayment
+  recordClientCashPayment,
+  getPaidPayslips,
+  getPaidPurchaseOrders
 } = require("../controller/financeManagementController");
 
-// Ensure finance_signatures folder exists
-const financeSignatureDir = path.join(__dirname, "../public/finance_signatures");
-if (!fs.existsSync(financeSignatureDir)) {
-  fs.mkdirSync(financeSignatureDir, { recursive: true });
-}
+const financeBaseDir = path.join(__dirname, "../public");
 
-// ✅ Configure storage for uploaded finance attachments/signatures
+// ✅ Configure storage for uploaded finance attachments & signatures
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, financeSignatureDir);
+    let folder = "finance_attachments"; // default
+
+    if (file.fieldname === "signature") {
+      folder = "finance_signatures";
+    }
+
+    const uploadPath = path.join(financeBaseDir, folder);
+
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
+    cb(null, uploadPath);
   },
+
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `${file.fieldname}_${Date.now()}${ext}`);
   },
 });
 
-const upload = multer({ storage }); // define before using it ✅
+const upload = multer({ storage });
 
 // ✅ ROUTES
 router.get("/getFinance", getFinance);
@@ -53,6 +64,7 @@ router.get("/getCeoApprovedPayslips", getCeoApprovedPayslips);
 router.get("/getContracts", getContracts);
 router.get("/procurementApproved", getProcurementApprovedMilestones);
 router.get("/getReleasedPayslips", getReleasedPayslips);
+router.get("/getPaidPayslips", getPaidPayslips);
 router.put("/payroll/update-status", updatePayrollStatus);
 router.put("/updatePayslipStatus", financeUpdatePayslipStatus);
 router.put("/updatePaymentStatus", financeProcessPayslipPayment);
@@ -64,6 +76,7 @@ router.get("/projects/:projectId/milestones/for-payment", getMilestonesForPaymen
 router.get("/project/expenses/approved-by-engineer", getAllExpensesApprovedByEngineer);
 router.put("/:id/finance-approval", updateFinanceApprovalStatus);
 router.get("/purchase-orders/delivered-unpaid", getDeliveredPurchaseOrders);
+router.get('/getPaidPurchaseOrders', getPaidPurchaseOrders);
 
 // ✅ Finance payment upload route (attachments + signature)
 router.post(

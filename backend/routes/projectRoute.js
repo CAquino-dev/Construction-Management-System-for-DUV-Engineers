@@ -6,7 +6,7 @@ const { getEstimate, getMilestones, createExpense,
     updateMilestoneStatus, createProjectWithClient, getContractById,
     createMilestone, getBoqByProject, getTasks, addTask, updateTask,
     deleteTask, getReports, submitReport, getMilestoneTaskReports,
-    getPaymentScheduleByProject} = require('../controller/projectController');  // Importing the controller
+    getPaymentScheduleByProject, getLegals} = require('../controller/projectController');  // Importing the controller
 
 // POST route for calculating the project estimate
 router.post('/estimate', getEstimate);
@@ -28,6 +28,7 @@ router.get("/:projectId/boq", getBoqByProject);
 router.get("/getMilestoneTaskReports/:milestoneId", getMilestoneTaskReports);
 router.delete('/deleteTask/:taskId', deleteTask);
 router.post('/submitReport/:projectId', submitReport);
+router.get('/getLegals/:projectId', getLegals);
 
 
 

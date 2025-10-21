@@ -10,38 +10,106 @@ import {
   X,
   Eye,
   Receipt,
-  Signature
+  Signature,
+  ClockCounterClockwise,
+  FileText
 } from "@phosphor-icons/react";
 
 const SalaryReleaseInPerson = () => {
-  const [payslips, setPayslips] = useState([]);
+  const [releasedPayslips, setReleasedPayslips] = useState([]);
+  const [paidPayslips, setPaidPayslips] = useState([]);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("Released");
   const sigPad = useRef(null);
   const [message, setMessage] = useState("");
 
   const userId = localStorage.getItem('userId');
 
-  const fetchPayslips = async () => {
-    setLoading(true);
+  const fetchReleasedPayslips = async () => {
     try {
       const res = await axios.get(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getReleasedPayslips`
       );
       if (res.data.success) {
-        const items = res.data.data.flatMap((ps) =>
-          ps.items.map((item) => ({
+        // Transform the data for released payslips
+        const transformedData = res.data.data.flatMap((payslip) =>
+          payslip.items.map((item) => ({
             id: item.payslip_item_id,
             employee_name: item.employee_name,
-            period_start: ps.period_start,
-            period_end: ps.period_end,
+            period_start: payslip.period_start,
+            period_end: payslip.period_end,
             amount: item.final_salary,
             payment_status: item.payment_status,
             signature: null,
+            payslip_id: payslip.payslip_id,
+            title: payslip.title,
+            payslip_created_at: payslip.payslip_created_at,
+            created_by_name: payslip.created_by_name,
+            paid_by_name: payslip.paid_by_name,
+            payroll_id: item.payroll_id,
+            total_hours_worked: item.total_hours_worked,
+            calculated_salary: item.calculated_salary,
+            overtime_pay: item.overtime_pay,
+            philhealth_deduction: item.philhealth_deduction,
+            sss_deduction: item.sss_deduction,
+            pagibig_deduction: item.pagibig_deduction,
+            total_deductions: item.total_deductions,
+            hr_status: item.hr_status,
+            finance_status: item.finance_status,
           }))
         );
-        setPayslips(items);
+        setReleasedPayslips(transformedData);
       }
+    } catch (err) {
+      console.error("Error fetching released payslips:", err);
+    }
+  };
+
+  const fetchPaidPayslips = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getPaidPayslips`
+      );
+      if (res.data.success) {
+        // Transform the data for paid payslips (already in flat structure)
+        const transformedData = res.data.data.map((item) => ({
+          id: item.payslip_item_id,
+          employee_name: item.employee_name,
+          period_start: item.period_start,
+          period_end: item.period_end,
+          amount: item.final_salary,
+          payment_status: item.payment_status,
+          signature: item.signature_url,
+          payslip_id: item.payslip_id,
+          title: item.title,
+          payslip_created_at: item.payslip_created_at,
+          created_by_name: item.created_by_name,
+          paid_by_name: item.paid_by_name,
+          payroll_id: item.payroll_id,
+          total_hours_worked: item.total_hours_worked,
+          calculated_salary: item.calculated_salary,
+          overtime_pay: item.overtime_pay,
+          philhealth_deduction: item.philhealth_deduction,
+          sss_deduction: item.sss_deduction,
+          pagibig_deduction: item.pagibig_deduction,
+          total_deductions: item.total_deductions,
+          hr_status: item.hr_status,
+          finance_status: item.finance_status,
+          signature_url: item.signature_url,
+          paid_by: item.paid_by,
+        }));
+        setPaidPayslips(transformedData);
+      }
+    } catch (err) {
+      console.error("Error fetching paid payslips:", err);
+    }
+  };
+
+  const fetchAllPayslips = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([fetchReleasedPayslips(), fetchPaidPayslips()]);
     } catch (err) {
       console.error("Error fetching payslips:", err);
     } finally {
@@ -50,7 +118,7 @@ const SalaryReleaseInPerson = () => {
   };
 
   useEffect(() => {
-    fetchPayslips();
+    fetchAllPayslips();
   }, []);
 
   const handleOpenModal = (payslip) => {
@@ -63,7 +131,7 @@ const SalaryReleaseInPerson = () => {
     setMessage("");
   };
 
-  const clearSignature = () => sigPad.current.clear();
+  const clearSignature = () => sigPad.current && sigPad.current.clear();
 
   const handleSubmitSignature = async () => {
     if (sigPad.current.isEmpty()) {
@@ -85,7 +153,7 @@ const SalaryReleaseInPerson = () => {
       );
 
       if (res.status === 200) {
-        await fetchPayslips();
+        await fetchAllPayslips();
         setMessage("✅ Salary paid and signature recorded successfully!");
         setTimeout(() => {
           handleCloseModal();
@@ -111,17 +179,59 @@ const SalaryReleaseInPerson = () => {
       "bg-amber-100 text-amber-800 border-amber-200";
   };
 
+  // Get payslips based on active tab
+  const filteredPayslips = activeTab === "Released" ? releasedPayslips : paidPayslips;
+
+  // Count statistics
+  const releasedCount = releasedPayslips.length;
+  const paidCount = paidPayslips.length;
+  const pendingCount = releasedPayslips.length;
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Receipt size={32} className="text-[#4c735c]" weight="duotone" />
-          <h1 className="text-3xl font-bold text-gray-900">In-Person Salary Release</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Salary Management</h1>
         </div>
         <p className="text-gray-600 text-lg">
-          Distribute salaries and collect employee signatures for confirmation
+          Manage salary distribution and track payment history
         </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveTab("Released")}
+              className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "Released"
+                  ? "border-[#4c735c] text-[#4c735c]"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <FileText size={20} />
+                <span>Ready for Release ({releasedCount})</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab("Paid")}
+              className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
+                activeTab === "Paid"
+                  ? "border-[#4c735c] text-[#4c735c]"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <ClockCounterClockwise size={20} />
+                <span>Payment History ({paidCount})</span>
+              </div>
+            </button>
+          </nav>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -129,11 +239,11 @@ const SalaryReleaseInPerson = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Payslips</p>
-              <p className="text-2xl font-bold text-gray-900">{payslips.length}</p>
+              <p className="text-sm font-medium text-gray-600">Ready for Release</p>
+              <p className="text-2xl font-bold text-gray-900">{releasedCount}</p>
             </div>
             <div className="p-3 bg-blue-50 rounded-lg">
-              <Receipt size={24} className="text-blue-600" />
+              <FileText size={24} className="text-blue-600" />
             </div>
           </div>
         </div>
@@ -142,9 +252,7 @@ const SalaryReleaseInPerson = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Payment</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {payslips.filter(p => p.payment_status !== "Paid").length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
             </div>
             <div className="p-3 bg-amber-50 rounded-lg">
               <Clock size={24} className="text-amber-600" />
@@ -155,10 +263,8 @@ const SalaryReleaseInPerson = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {payslips.filter(p => p.payment_status === "Paid").length}
-              </p>
+              <p className="text-sm font-medium text-gray-600">Paid</p>
+              <p className="text-2xl font-bold text-gray-900">{paidCount}</p>
             </div>
             <div className="p-3 bg-green-50 rounded-lg">
               <CheckCircle size={24} className="text-green-600" />
@@ -170,7 +276,9 @@ const SalaryReleaseInPerson = () => {
       {/* Payslips Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Released Payslips</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {activeTab === "Released" ? "Payslips Ready for Release" : "Payment History"}
+          </h2>
         </div>
 
         {loading ? (
@@ -178,11 +286,21 @@ const SalaryReleaseInPerson = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4c735c] mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading payslips...</p>
           </div>
-        ) : payslips.length === 0 ? (
+        ) : filteredPayslips.length === 0 ? (
           <div className="p-12 text-center">
-            <Receipt size={64} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500 text-lg">No released payslips available</p>
-            <p className="text-gray-400">Released payslips will appear here for in-person distribution</p>
+            {activeTab === "Released" ? (
+              <>
+                <FileText size={64} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 text-lg">No payslips ready for release</p>
+                <p className="text-gray-400">Payslips awaiting release will appear here</p>
+              </>
+            ) : (
+              <>
+                <ClockCounterClockwise size={64} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 text-lg">No payment history found</p>
+                <p className="text-gray-400">Completed payments will appear here</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -198,6 +316,16 @@ const SalaryReleaseInPerson = () => {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
+                  {activeTab === "Paid" && (
+                    <>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Paid By
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created By
+                      </th>
+                    </>
+                  )}
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -207,7 +335,7 @@ const SalaryReleaseInPerson = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {payslips.map((payslip) => (
+                {filteredPayslips.map((payslip) => (
                   <tr key={payslip.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -218,6 +346,11 @@ const SalaryReleaseInPerson = () => {
                           <div className="text-sm font-medium text-gray-900">
                             {payslip.employee_name}
                           </div>
+                          {activeTab === "Paid" && (
+                            <div className="text-xs text-gray-500">
+                              Payroll ID: {payslip.payroll_id}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -231,9 +364,19 @@ const SalaryReleaseInPerson = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm font-semibold text-gray-900">
                         <CoinVertical size={16} className="mr-1 text-gray-400" />
-                        ₱{payslip.amount.toLocaleString()}
+                        ₱{parseFloat(payslip.amount).toLocaleString()}
                       </div>
                     </td>
+                    {activeTab === "Paid" && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {payslip.paid_by_name || "N/A"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {payslip.created_by_name}
+                        </td>
+                      </>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(payslip.payment_status)}`}>
                         {getStatusIcon(payslip.payment_status)}
@@ -273,9 +416,12 @@ const SalaryReleaseInPerson = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    Salary Payment - {selectedPayslip.employee_name}
+                    {selectedPayslip.payment_status === "Paid" ? "Payment Details - " : "Salary Payment - "}
+                    {selectedPayslip.employee_name}
                   </h2>
-                  <p className="text-sm text-gray-600">Process salary distribution</p>
+                  <p className="text-sm text-gray-600">
+                    {selectedPayslip.payment_status === "Paid" ? "View payment history" : "Process salary distribution"}
+                  </p>
                 </div>
               </div>
               <button
@@ -306,10 +452,36 @@ const SalaryReleaseInPerson = () => {
                     <span>Amount</span>
                   </div>
                   <p className="text-lg font-bold text-[#4c735c]">
-                    ₱{selectedPayslip.amount.toLocaleString()}
+                    ₱{parseFloat(selectedPayslip.amount).toLocaleString()}
                   </p>
                 </div>
               </div>
+
+              {/* Additional details for Paid tab */}
+              {selectedPayslip.payment_status === "Paid" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl">
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-600">Created By</div>
+                    <p className="font-medium">{selectedPayslip.created_by_name}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-600">Paid By</div>
+                    <p className="font-medium">{selectedPayslip.paid_by_name || "N/A"}</p>
+                  </div>
+                  {selectedPayslip.signature_url && (
+                    <div className="md:col-span-2 space-y-2">
+                      <div className="text-sm text-gray-600">Signature</div>
+                      <div className="p-2 bg-white rounded border">
+                        <img 
+                          src={`${import.meta.env.VITE_REACT_APP_API_URL}${selectedPayslip.signature_url}`} 
+                          alt="Employee Signature" 
+                          className="max-w-full h-20 object-contain"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Status */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -320,7 +492,7 @@ const SalaryReleaseInPerson = () => {
                 </span>
               </div>
 
-              {/* Signature Section */}
+              {/* Signature Section - Only show for Released payslips */}
               {selectedPayslip.payment_status !== "Paid" ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">

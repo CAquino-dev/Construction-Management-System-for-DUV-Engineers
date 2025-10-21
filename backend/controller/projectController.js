@@ -1168,11 +1168,48 @@ const getPaymentScheduleByProject = (req, res) => {
   });
 };
 
+const getLegals = (req, res) => { 
+  const { projectId } = req.params;
+
+  const query = `
+    SELECT 
+      c.id AS contract_id,
+      c.contract_file_url,
+      c.contract_signed_at
+    FROM engineer_projects ep
+    JOIN contracts c ON c.id = ep.contract_id
+    WHERE ep.id = ?
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching legal documents:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching legals",
+        error: err,
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No legal documents found for this project",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Legal documents fetched successfully",
+      data: results[0],
+    });
+  });
+};
 
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
   deleteTask, getReports, submitReport, getMilestoneTaskReports, 
-  getPaymentScheduleByProject
+  getPaymentScheduleByProject, getLegals
 };
