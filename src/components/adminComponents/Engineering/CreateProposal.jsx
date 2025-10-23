@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import ConfirmationModal from "../ConfirmationModal";
+import SiteVisitReport from "./SiteVisitReport";
 
 const CreateProposal = () => {
   const [leads, setLeads] = useState([]);
@@ -23,6 +24,8 @@ const CreateProposal = () => {
   const [showFormMobile, setShowFormMobile] = useState(false);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isSiteVisitOpen, setIsSiteVisitOpen] = useState(false);
+  const [selectedLeadForSiteVisit, setSelectedLeadForSiteVisit] = useState(null);
 
   const handleOpenConfirm = () => {
     if (!selectedLead) {
@@ -285,6 +288,19 @@ const CreateProposal = () => {
                     <p className="line-clamp-2">{lead.site_visit_notes}</p>
                   </div>
                 )}
+
+                {/* Site Visit Report Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedLeadForSiteVisit(lead.id);
+                    setIsSiteVisitOpen(true);
+                  }}
+                  className="mt-2 w-full text-xs text-center bg-[#4c735c] text-white py-1 rounded hover:bg-[#3e5e4b]"
+                >
+                  📋 View Site Visit Report
+                </button>
               </li>
             ))}
           </ul>
@@ -492,6 +508,13 @@ const CreateProposal = () => {
           actionType={`Submit Proposal for ${
             selectedLead?.client_name || "Lead"
           }`}
+        />
+
+        {/* Site Visit Report Modal */}
+        <SiteVisitReport
+          isOpen={isSiteVisitOpen}
+          onClose={() => setIsSiteVisitOpen(false)}
+          leadId={selectedLeadForSiteVisit}
         />
       </div>
     </div>

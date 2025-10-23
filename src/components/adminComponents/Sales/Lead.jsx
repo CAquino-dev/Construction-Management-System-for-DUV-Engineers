@@ -118,7 +118,7 @@ const Lead = () => {
     const fetchLeads = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/getLeads`
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/sales/getLeadList`
         );
         const data = await response.json();
         setLeads(data);
@@ -292,7 +292,7 @@ const Lead = () => {
               </div>
               <textarea
                 name="site_visit_notes"
-                placeholder="Notes or meeting details (optional)"
+                placeholder="Address Details"
                 value={formData.site_visit_notes}
                 onChange={handleChange}
                 className="border rounded-lg p-3 w-full mt-3 bg-gray-100"

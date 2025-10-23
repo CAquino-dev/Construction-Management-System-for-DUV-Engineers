@@ -54,6 +54,8 @@ const SiteVisit = () => {
     report_file: null,
   });
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  
+  const userId = localStorage.getItem('userId');
 
   const handleOpenConfirm = () => {
     if (!selectedLead) {
@@ -135,6 +137,7 @@ const SiteVisit = () => {
       formDataToSend.append("powerSource", formData.powerSource);
       formDataToSend.append("areaMeasurement", formData.areaMeasurement);
       formDataToSend.append("notes", formData.notes);
+      formDataToSend.append("userId", userId);
 
       if (formData.report_file) {
         formDataToSend.append("report_file", formData.report_file);
@@ -253,7 +256,7 @@ const SiteVisit = () => {
                 </p>
               )}
               <p>
-                <span className="font-medium">Visit Notes:</span>{" "}
+                <span className="font-medium">Address Details:</span>{" "}
                 {leadDetails.site_visit_notes || "None yet"}
               </p>
             </div>
