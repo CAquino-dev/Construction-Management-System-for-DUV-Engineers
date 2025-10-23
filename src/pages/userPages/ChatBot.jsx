@@ -184,7 +184,7 @@ export const ChatBot = () => {
     // Create compact, well-formatted messages
     const message1 = `
 🏗️ CONSTRUCTION ESTIMATE SUMMARY
-Based on ACDC 2024 Construction Cost Chart
+Based on ACDC 2025 Construction Cost Chart
 
 ${costTier ? `📊 ${costTier}` : ''} ${baseRate ? `• ${baseRate}` : ''}
 ${totalArea ? `📐 Total Area: ${totalArea}` : ''}
@@ -205,7 +205,7 @@ ${adjustments.length > 3 ? adjustments.slice(3).join('\n') : ''}
 
 ${budgetStatus.join('\n')}
 
-💡 Note: Based on ACDC 2024 Construction Cost standards. Rates are preliminary estimates.
+💡 Note: Based on ACDC 2025 Construction Cost standards. Rates are preliminary estimates.
     `.trim();
 
     return [message1, message2].filter(msg => msg.trim() !== '');

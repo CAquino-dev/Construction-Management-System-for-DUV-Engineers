@@ -71,7 +71,7 @@ const ContractRespond = () => {
         `${
           import.meta.env.VITE_REACT_APP_API_URL
         }/api/projectManager/signature`,
-        { base64Signature: dataURL, contractId }
+        { base64Signature: dataURL, proposalId: contractId }
       );
 
       toast.success("Signature submitted successfully!");

@@ -755,21 +755,26 @@ const createSiteVisit = (req, res) => {
       powerSource,
       areaMeasurement,
       notes,
+      userId,
     } = req.body;
 
     if (!lead_id || !location || !dateVisited) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const report_file = req.file ? req.file.filename : null;
+    // ✅ Get file path if uploaded
+    const report_file_url = req.file
+      ? `/uploads/site_reports/${req.file.filename}`
+      : null;
 
     const insertQuery = `
       INSERT INTO site_visits 
-      (lead_id, location, date_visited, terrain_type, accessibility, water_source, power_source, area_measurement, notes, report_file_url, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      (created_by, lead_id, location, date_visited, terrain_type, accessibility, water_source, power_source, area_measurement, notes, report_file_url, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     const values = [
+      userId,
       lead_id,
       location,
       dateVisited,
@@ -779,7 +784,7 @@ const createSiteVisit = (req, res) => {
       powerSource || null,
       areaMeasurement || null,
       notes || null,
-      report_file,
+      report_file_url,
     ];
 
     db.query(insertQuery, values, (error, results) => {
@@ -788,30 +793,34 @@ const createSiteVisit = (req, res) => {
         return res.status(500).json({ error: "Failed to save site visit" });
       }
 
-      // ✅ Update the lead status to 'site_visited'
+      // ✅ Update lead status after insert
       const updateLeadStatusQuery = `
         UPDATE leads 
-        SET status = 'site_visited' 
+        SET status = 'site_visited'
         WHERE id = ?
       `;
 
       db.query(updateLeadStatusQuery, [lead_id], (statusErr) => {
         if (statusErr) {
           console.error("Error updating lead status:", statusErr);
-          return res.status(500).json({ error: "Site visit saved, but failed to update lead status" });
+          return res.status(500).json({
+            error:
+              "Site visit saved, but failed to update lead status",
+          });
         }
 
         res.status(201).json({
-          message: "✅ Site visit saved and lead status updated to 'site_visited'",
+          success: true,
+          message:
+            "✅ Site visit saved and lead status updated to 'site_visited'",
           siteVisitId: results.insertId,
-          report_file: report_file
-            ? `/uploads/site_reports/${report_file}`
-            : null,
+          report_file_url,
         });
       });
     });
   });
 };
+
 
 
 const getScheduledSiteVisits = (req, res) => {
