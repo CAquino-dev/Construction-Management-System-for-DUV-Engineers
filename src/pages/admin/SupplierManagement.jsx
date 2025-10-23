@@ -20,6 +20,7 @@ import { Input } from "../../components/ui/input";
 import { Card, CardContent } from "../../components/ui/card";
 import { toast } from "sonner";
 import { Edit2, Trash2, Plus } from "lucide-react";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const SupplierManagement = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -34,6 +35,9 @@ const SupplierManagement = () => {
   });
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState(null);
+  const [remark, setRemark] = useState(""); // For future use if needed
 
   // Fetch suppliers
   useEffect(() => {
@@ -106,20 +110,36 @@ const SupplierManagement = () => {
     setIsOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this supplier?"))
-      return;
+  // Open delete confirmation modal
+  const openDeleteModal = (id) => {
+    setSupplierToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  // Close delete confirmation modal
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setSupplierToDelete(null);
+    setRemark(""); // Reset remark
+  };
+
+  // Handle delete confirmation
+  const handleDelete = async () => {
+    if (!supplierToDelete) return;
+
     try {
       await axios.delete(
         `${
           import.meta.env.VITE_REACT_APP_API_URL
-        }/api/procurement/deleteSupplier/${id}`
+        }/api/procurement/deleteSupplier/${supplierToDelete}`
       );
       toast.success("Supplier deleted!");
       fetchSuppliers();
+      closeDeleteModal();
     } catch (err) {
       console.error(err);
       toast.error("Delete failed!");
+      closeDeleteModal();
     }
   };
 
@@ -163,7 +183,6 @@ const SupplierManagement = () => {
                     {editingId ? "Edit Supplier" : "Add New Supplier"}
                   </DialogTitle>
                 </DialogHeader>
-
                 <form className="space-y-4" onSubmit={handleSubmit}>
                   <div className="grid grid-cols-1 gap-4">
                     <Input
@@ -326,7 +345,7 @@ const SupplierManagement = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDelete(s.id)}
+                            onClick={() => openDeleteModal(s.id)}
                             className="flex items-center space-x-1"
                           >
                             <Trash2 size={14} />
@@ -358,7 +377,6 @@ const SupplierManagement = () => {
                           {s.status}
                         </span>
                       </div>
-
                       <div className="grid grid-cols-1 gap-2 text-sm">
                         {s.contact_person && (
                           <div>
@@ -387,7 +405,6 @@ const SupplierManagement = () => {
                           </div>
                         )}
                       </div>
-
                       <div className="flex space-x-2 pt-2 border-t border-gray-200">
                         <Button
                           variant="outline"
@@ -401,7 +418,7 @@ const SupplierManagement = () => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDelete(s.id)}
+                          onClick={() => openDeleteModal(s.id)}
                           className="flex-1 flex items-center justify-center space-x-1"
                         >
                           <Trash2 size={14} />
@@ -435,6 +452,15 @@ const SupplierManagement = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Confirmation Modal for Delete */}
+        <ConfirmationModal
+          isOpen={deleteModalOpen}
+          onClose={closeDeleteModal}
+          onConfirm={handleDelete}
+          actionType="delete this supplier"
+          setRemark={setRemark} // Even though not used for delete, keeping for consistency
+        />
       </div>
     </div>
   );
