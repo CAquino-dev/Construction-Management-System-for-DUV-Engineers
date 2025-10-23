@@ -56,8 +56,6 @@ const createLead = (req, res) => {
 };
 
 
-
-
 const getLeads = (req, res) => {
     const query = `SELECT l.*
 FROM leads l
@@ -75,4 +73,50 @@ ORDER BY l.created_at DESC;`;
     });
 };
 
-module.exports = { createLead, getLeads };
+const getLeadsList = (req, res) => {
+    const query = `SELECT * FROM leads WHERE status = "site_scheduled"`;
+
+    db.query(query, (error, results) => {
+        if (error) {
+            console.error('Error fetching leads:', error);
+            return res.status(500).json({ error: 'Failed to fetch leads' });
+        }
+
+        res.status(200).json(results);
+    });
+};
+
+const getSiteVisitReport = (req, res) => {
+  const { leadId } = req.params;
+
+  const query = `
+SELECT 
+l.client_name,
+l.latitude,
+l.longitude,
+s.date_visited,
+s.location,
+s.terrain_type,
+s.accessibility,
+s.water_source,
+s.power_source,
+s.area_measurement,
+s.notes,
+s.report_file_url,
+s.created_at,
+u.full_name AS created_by
+FROM leads l 
+JOIN site_visits s ON s.lead_id = l.id
+JOIN users u ON u.id = s.created_by
+WHERE l.id = ?`
+
+db.query(query, [leadId], (err, result) => {
+  if(err){
+    console.log("faled to get site visit details", err);
+    return res.status(400).json({ error: 'Failed to fetch site visit report' })
+  }
+  res.json(result);
+});
+
+}
+module.exports = { createLead, getLeads, getLeadsList, getSiteVisitReport };
