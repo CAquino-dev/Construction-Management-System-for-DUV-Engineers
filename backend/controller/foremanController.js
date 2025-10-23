@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const getForemanTasks = (req, res) => {
-  const { foremanId } = req.params;
+  const { projectId } = req.params;
 
   const query = `
     SELECT
@@ -17,16 +17,14 @@ const getForemanTasks = (req, res) => {
       mt.status,
       mt.priority,
       m.id AS milestone_id,
-      m.title AS milestone_title,
-      ta.team_id
+      m.title AS milestone_title
     FROM milestone_tasks mt
     JOIN milestones m ON mt.milestone_id = m.id
-    LEFT JOIN team_assignments ta ON ta.task_id = mt.id
-    WHERE mt.assigned_to = ?
+    WHERE m.project_id = ?
     ORDER BY m.id, mt.id;
   `;
 
-  db.query(query, [foremanId], (err, results) => {
+  db.query(query, [projectId], (err, results) => {
     if (err) {
       console.error("Failed to fetch foreman tasks", err);
       return res.status(500).json({ error: "Failed to fetch foreman tasks" });
@@ -528,7 +526,90 @@ const getForemanReports = (req, res) => {
   });
 };
 
+const getTasksForReport = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = 
+  `SELECT
+    mt.id AS task_id,
+    mt.title AS task_title,
+    mt.details,
+    mt.start_date,
+    mt.due_date,
+    mt.status,
+    mt.priority,
+    m.id AS milestone_id,
+    m.title AS milestone_title,
+    ta.team_id
+  FROM milestone_tasks mt
+  JOIN milestones m ON mt.milestone_id = m.id
+  JOIN team_assignments ta ON ta.task_id = mt.id
+  WHERE m.project_id = ?
+  ORDER BY m.id, mt.id`;
+
+  db.query(query, [projectId], (err, result) => {
+      if (err) {
+      console.error("Error fetching tasks", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching tasks",
+      });
+    }
+
+    res.json(result);
+  });
+}
+
+const getWorkerAttendance = (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT
+      wa.time_in,
+      wa.time_out,
+      wa.hours_worked,
+      w.team_id,
+      w.name,
+      w.skill_type,
+      w.photo,
+      wt.team_name,
+      mt.title AS task_title,
+      mt.details AS task_details,
+      mt.start_date AS task_start_date,
+      mt.due_date AS task_due_date
+    FROM worker_attendance wa
+    JOIN workers w ON w.id = wa.worker_id
+    JOIN worker_teams wt ON wt.id = w.team_id
+    JOIN team_assignments ta ON ta.team_id = wt.id
+    JOIN milestone_tasks mt ON mt.id = ta.task_id
+    JOIN users u ON mt.assigned_to = u.id
+    WHERE u.id = ?
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching worker attendance:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching worker attendance",
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No attendance records found for this user",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: results,
+    });
+  });
+};
 
 module.exports = { getForemanTasks, getForemanMaterials, addTeam, 
-  getForemanTeam, addWorker, assignTeam, 
-  foremanReport, getWorkerById, scanWorker, getForemanWorkers, getForemanReports }
+  getForemanTeam, addWorker, assignTeam, foremanReport, 
+  getWorkerById, scanWorker, getForemanWorkers, getForemanReports,
+  getTasksForReport, getWorkerAttendance }
