@@ -199,7 +199,6 @@ const sendInvoiceForNextSchedule = (req, res) => {
                           
                           <div class="invoice-details">
                               <h3>Invoice Details:</h3>
-                              <p><strong>Contract Reference:</strong> #${contractId}</p>
                               <p><strong>Amount Due:</strong> <span class="amount">₱${parseFloat(schedule.amount).toLocaleString()}</span></p>
                               <p><strong>Due Date:</strong> <span class="due-date">${new Date(schedule.due_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span></p>
                           </div>
