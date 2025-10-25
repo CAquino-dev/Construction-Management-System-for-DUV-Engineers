@@ -175,32 +175,23 @@ export const PayslipModal = ({ closeModal, payslip }) => {
     }
   };
 
-  const formatEmployeeData = (employeeData) => {
-    return {
-      fullName: employeeData?.employee_name || "N/A",
-      department: employeeData?.department_name || "Unknown",
-      totalHoursWorked: parseFloat(
-        employeeData?.total_hours_worked || 0
-      ).toFixed(2),
-      calculated_salary: parseFloat(
-        employeeData?.calculated_salary || 0
-      ).toLocaleString(),
-      overtimePay: parseFloat(employeeData?.overtime_pay || 0).toLocaleString(),
-      philhealthDeduction: parseFloat(
-        employeeData?.philhealth_deduction || 0
-      ).toLocaleString(),
-      sssDeduction: parseFloat(
-        employeeData?.sss_deduction || 0
-      ).toLocaleString(),
-      pagibigDeduction: parseFloat(
-        employeeData?.pagibig_deduction || 0
-      ).toLocaleString(),
-      totalDeductions: parseFloat(
-        employeeData?.total_deductions || 0
-      ).toLocaleString(),
-      finalSalary: parseFloat(employeeData?.final_salary || 0).toLocaleString(),
-    };
+const formatEmployeeData = (employeeData) => {
+  return {
+    fullName: employeeData?.employee_name || "N/A",
+    userId: employeeData?.user_id || "N/A",
+    payrollId: employeeData?.payroll_id || "N/A",
+    department: employeeData?.department_name || "Unknown",
+    hourlyRate: parseFloat(employeeData?.hourly_rate) || 0,
+    totalHoursWorked: parseFloat(employeeData?.total_hours_worked || 0),
+    calculated_salary: parseFloat(employeeData?.calculated_salary || 0),
+    overtimePay: parseFloat(employeeData?.overtime_pay || 0),
+    philhealthDeduction: parseFloat(employeeData?.philhealth_deduction || 0),
+    sssDeduction: parseFloat(employeeData?.sss_deduction || 0),
+    pagibigDeduction: parseFloat(employeeData?.pagibig_deduction || 0),
+    totalDeductions: parseFloat(employeeData?.total_deductions || 0),
+    finalSalary: parseFloat(employeeData?.final_salary || 0),
   };
+};
 
   // Open the Employee Payroll Modal and pass the selected employee data
   const openEmployeePayrollModal = (employee) => {
@@ -296,7 +287,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                       {parseFloat(emp.total_hours_worked).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-center text-green-800">
-                      ₱{parseFloat(emp.calculated_salary).toLocaleString()}
+                      ₱{parseFloat(emp.final_salary).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-center p-2">
                       <p
