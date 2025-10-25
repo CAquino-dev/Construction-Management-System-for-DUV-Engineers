@@ -21,6 +21,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   const [teams, setTeams] = useState([]);
   const [reportTab, setReportTab] = useState("create"); // "create" | "sent"
   const [myReports, setMyReports] = useState([]);
+  const [taskReport, setTaskReport] = useState([])
 
   console.log('project id' ,selectedProject.id)
 
@@ -65,7 +66,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         const res = await fetch(
           `${
             import.meta.env.VITE_REACT_APP_API_URL
-          }/api/foreman/getTasks/${userId}`
+          }/api/foreman/getTasks/${selectedProject.id}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -106,10 +107,27 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
       }
     };
 
+    const fetchTaskForReports = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTasksForReport/${selectedProject.id}`)
+        if (res.ok) {
+          const data = await res.json();
+          setTaskReport(data || []);
+        }
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+      }
+    };
+
     fetchReports();
     fetchTeams();
     fetchTasks();
+    fetchTaskForReports();
   }, []);
+
+  useEffect(() => {
+    console.log('task report', taskReport);
+  }, [taskReport])
 
   const handleSaveTask = (updatedTask) => {
     // TODO: Call API to update task
@@ -558,12 +576,10 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
               onChange={(e) => setReport({ ...report, task_id: e.target.value })}
             >
               <option value="">-- Select Task --</option>
-              {milestones.flatMap((ms) =>
-                ms.tasks.map((task) => (
+              {taskReport.map((task) =>
                   <option key={task.task_id} value={task.task_id}>
-                    {ms.milestone_title} - {task.title}
+                    {task.milestone_title} - {task.title}
                   </option>
-                ))
               )}
             </select>
           </div>

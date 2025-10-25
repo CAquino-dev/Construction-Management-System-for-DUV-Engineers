@@ -626,7 +626,226 @@ const updatePayslipStatus = (req, res) => {
   });
 };
 
+const getUserById = (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT 
+      u.id AS user_id,
+      u.full_name,
+      u.email,
+      u.role_id,
+      u.emergency_name,
+      u.emergency_relationship,
+      u.emergency_contact,
+      u.employee_id,
+      u.job_title,
+      d.name AS department_name,
+      d.description AS department_description,
+      p.role_name,
+      a.id AS attendance_id,
+      a.check_in,
+      a.check_out,
+      a.status AS attendance_status,
+      a.work_date,
+      a.created_at AS attendance_created_at,
+      es.hourly_rate
+    FROM users u
+    JOIN departments d ON d.id = u.department_id
+    JOIN permissions p ON p.id = u.role_id
+    LEFT JOIN attendance a ON a.employee_id = u.id
+	  JOIN employee_salary es ON es.employee_id = u.id
+    WHERE u.id = ?;
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching user:", err);
+      return res.status(500).json({ success: false, message: "Database error", error: err });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User details fetched successfully",
+      data: results,
+    });
+  });
+};
+
+const updateEmployee = (req, res) => {
+  const { employeeId } = req.params;
+  const edited_by = req.body.edited_by; // HR/Admin performing the edit (for logs only)
+
+  const {
+    full_name,
+    email,
+    job_title,
+    hourly_rate,
+    emergency_name,
+    emergency_relationship,
+    emergency_contact,
+  } = req.body;
+
+  if (!full_name || !email || !job_title || !hourly_rate) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields",
+    });
+  }
+
+  // Step 1: Get current employee data
+  const getOldQuery = `
+    SELECT 
+      u.full_name, 
+      u.email, 
+      u.job_title,
+      u.emergency_name, 
+      u.emergency_relationship, 
+      u.emergency_contact,
+      es.hourly_rate
+    FROM users u
+    LEFT JOIN employee_salary es ON es.employee_id = u.id
+    WHERE u.id = ?
+  `;
+
+  db.query(getOldQuery, [employeeId], (err, oldResults) => {
+    if (err) {
+      console.error("Error fetching old data:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching employee data",
+        error: err,
+      });
+    }
+
+    if (oldResults.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const oldData = oldResults[0];
+    const changes = {};
+
+    // Step 2: Detect changes
+    if (oldData.full_name !== full_name)
+      changes.full_name = { old: oldData.full_name, new: full_name };
+    if (oldData.email !== email)
+      changes.email = { old: oldData.email, new: email };
+    if (oldData.job_title !== job_title)
+      changes.job_title = { old: oldData.job_title, new: job_title };
+    if (parseFloat(oldData.hourly_rate) !== parseFloat(hourly_rate))
+      changes.hourly_rate = { old: oldData.hourly_rate, new: hourly_rate };
+    if (oldData.emergency_name !== emergency_name)
+      changes.emergency_name = { old: oldData.emergency_name, new: emergency_name };
+    if (oldData.emergency_relationship !== emergency_relationship)
+      changes.emergency_relationship = { old: oldData.emergency_relationship, new: emergency_relationship };
+    if (oldData.emergency_contact !== emergency_contact)
+      changes.emergency_contact = { old: oldData.emergency_contact, new: emergency_contact };
+
+    // Step 3: Begin transaction
+    db.beginTransaction((txErr) => {
+      if (txErr) {
+        console.error("Transaction start error:", txErr);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to start database transaction",
+        });
+      }
+
+      // ✅ No updated_at or edited_by here
+      const updateUserQuery = `
+        UPDATE users
+        SET full_name = ?, email = ?, job_title = ?,
+            emergency_name = ?, emergency_relationship = ?, emergency_contact = ?
+        WHERE id = ?
+      `;
+
+      db.query(
+        updateUserQuery,
+        [
+          full_name,
+          email,
+          job_title,
+          emergency_name,
+          emergency_relationship,
+          emergency_contact,
+          employeeId,
+        ],
+        (userErr) => {
+          if (userErr) {
+            return db.rollback(() => {
+              console.error("Error updating users table:", userErr);
+              res.status(500).json({
+                success: false,
+                message: "Failed to update user data",
+                error: userErr,
+              });
+            });
+          }
+
+          // Update or insert salary
+          const updateSalaryQuery = `
+            INSERT INTO employee_salary (employee_id, hourly_rate)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE hourly_rate = VALUES(hourly_rate)
+          `;
+
+          db.query(updateSalaryQuery, [employeeId, hourly_rate], (salErr) => {
+            if (salErr) {
+              return db.rollback(() => {
+                console.error("Error updating employee_salary:", salErr);
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to update salary data",
+                  error: salErr,
+                });
+              });
+            }
+
+            // Step 4: Commit transaction
+            db.commit((commitErr) => {
+              if (commitErr) {
+                return db.rollback(() => {
+                  console.error("Transaction commit failed:", commitErr);
+                  res.status(500).json({
+                    success: false,
+                    message: "Failed to finalize employee update",
+                  });
+                });
+              }
+
+              // Step 5: Save log if any changes were made
+              if (Object.keys(changes).length > 0) {
+                const insertLog = `
+                  INSERT INTO user_edit_logs (user_id, edited_by, changes)
+                  VALUES (?, ?, ?)
+                `;
+                db.query(insertLog, [employeeId, edited_by, JSON.stringify(changes)], (logErr) => {
+                  if (logErr) console.error("Error logging edit:", logErr);
+                });
+              }
+
+              res.status(200).json({
+                success: true,
+                message: "Employee updated successfully",
+                changes,
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+};
+
+
 module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, 
                 getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, 
                 createPayslip, getPayslips, getPayslipById, updatePayslipItemStatus, 
-                updatePayslipStatus};
+                updatePayslipStatus, getUserById, updateEmployee};
