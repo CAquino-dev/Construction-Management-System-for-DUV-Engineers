@@ -500,6 +500,7 @@ const getPayslipById = (req, res) => {
             pi.id AS payslip_item_id,
             pr.id AS payroll_id,
             u.full_name AS employee_name,
+            u.id AS user_id,
             pr.total_hours_worked,
             pr.calculated_salary,
             pr.overtime_pay,
@@ -508,11 +509,16 @@ const getPayslipById = (req, res) => {
             pr.pagibig_deduction,
             pr.total_deductions,
             pr.final_salary,
-            pi.hr_status
+            pi.hr_status,
+            es.hourly_rate,
+            d.name AS department_name,
+            pr.id AS payroll_id
         FROM payslip ps
         LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
         LEFT JOIN payroll pr ON pi.payroll_id = pr.id
         LEFT JOIN users u ON pr.employee_id = u.id
+        LEFT JOIN employee_salary es ON es.employee_id = u.id
+		    LEFT JOIN departments d ON d.id = u.department_id
         WHERE ps.id = ?
     `;
 
@@ -534,6 +540,10 @@ const getPayslipById = (req, res) => {
             period_end: results[0].period_end,
             created_at: results[0].payslip_created_at,
             items: results.map(row => ({
+                user_id: row.user_id,
+                payroll_id: row.payroll_id,
+                hourly_rate: row.hourly_rate,
+                department_name: row.department_name,
                 payslip_item_id: row.payslip_item_id,
                 payroll_id: row.payroll_id,
                 employee_name: row.employee_name,
@@ -844,8 +854,85 @@ const updateEmployee = (req, res) => {
   });
 };
 
+const updateEmployeePayroll = (req, res) => {
+  const {
+    payrollId,
+    totalHoursWorked,
+    overtimePay,
+    philhealthDeduction,
+    sssDeduction,
+    pagibigDeduction,
+    finalSalary,
+  } = req.body;
+
+  if (!payrollId) {
+    return res.status(400).json({
+      success: false,
+      message: "payroll ID is required",
+    });
+  }
+
+  const totalDeductions =
+    (parseFloat(philhealthDeduction) || 0) +
+    (parseFloat(sssDeduction) || 0) +
+    (parseFloat(pagibigDeduction) || 0);
+
+  const query = `
+    UPDATE payroll
+    SET 
+      total_hours_worked = ?,
+      overtime_pay = ?,
+      philhealth_deduction = ?,
+      sss_deduction = ?,
+      pagibig_deduction = ?,
+      total_deductions = ?,
+      final_salary = ?,
+      status = 'Pending'
+    WHERE id = ?
+    ORDER BY id DESC
+    LIMIT 1
+  `;
+
+  // ✅ Corrected db.query call
+  db.query(
+    query,
+    [
+      totalHoursWorked,
+      overtimePay,
+      philhealthDeduction,
+      sssDeduction,
+      pagibigDeduction,
+      totalDeductions,
+      finalSalary,
+      payrollId,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating payroll:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error while updating payroll",
+          error: err,
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No payroll record found for this employee",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Employee payroll updated successfully",
+      });
+    }
+  );
+};
 
 module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, 
                 getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, 
                 createPayslip, getPayslips, getPayslipById, updatePayslipItemStatus, 
-                updatePayslipStatus, getUserById, updateEmployee};
+                updatePayslipStatus, getUserById, updateEmployee,
+                updateEmployeePayroll };
