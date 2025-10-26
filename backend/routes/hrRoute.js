@@ -5,7 +5,7 @@ const { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary,
         getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, 
         createPayslip, getPayslips, getPayslipById, 
         updatePayslipItemStatus, updatePayslipStatus, getUserById,
-        updateEmployee} = require('../controller/hrManagementController');
+        updateEmployee, updateEmployeePayroll} = require('../controller/hrManagementController');
 
 router.get('/getSalary', getEmployeeSalary);
 router.get('/payroll', getPayrollRecords);
@@ -20,6 +20,7 @@ router.put('/payroll/update-status', updatePayrollStatus);
 router.put('/updatePayslipItemStatus', updatePayslipItemStatus);
 router.put('/updatePayslipStatus', updatePayslipStatus);
 router.put('/updateEmployee/:employeeId', updateEmployee);
+router.put("/updateEmployeePayroll", updateEmployeePayroll);
 
 
 module.exports = router;

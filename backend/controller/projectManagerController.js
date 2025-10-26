@@ -586,7 +586,6 @@ const getApprovedContracts = (req, res) => {
     FROM contracts c
     JOIN proposals ON c.proposal_id = proposals.id
     JOIN leads ON proposals.lead_id = leads.id
-    WHERE c.approval_status = 'approved'
   `;
 
   db.query(query, (err, results) => {
