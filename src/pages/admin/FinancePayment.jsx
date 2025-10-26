@@ -18,7 +18,9 @@ const FinancePayment = () => {
   const fetchPendingPayments = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/purchase-orders/delivered-unpaid`
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/finance/purchase-orders/delivered-unpaid`
       );
       if (res.data.success) {
         const formatted = res.data.data.map((item) => ({
@@ -34,7 +36,7 @@ const FinancePayment = () => {
           projectId: item.project_id,
           description: `Purchase Order Payment - ${item.project_name}`,
           referenceId: item.po_id,
-          type: "pending"
+          type: "pending",
         }));
         return formatted;
       }
@@ -49,7 +51,9 @@ const FinancePayment = () => {
   const fetchPaidPayments = async () => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getPaidPurchaseOrders`
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/finance/getPaidPurchaseOrders`
       );
       if (res.data.success) {
         const formatted = res.data.data.map((item) => ({
@@ -74,7 +78,7 @@ const FinancePayment = () => {
           notes: item.notes,
           attachments: item.attachments,
           recipientSignature: item.recipient_signature,
-          type: "paid"
+          type: "paid",
         }));
         return formatted;
       }
@@ -92,9 +96,9 @@ const FinancePayment = () => {
       try {
         const [pendingData, paidData] = await Promise.all([
           fetchPendingPayments(),
-          fetchPaidPayments()
+          fetchPaidPayments(),
         ]);
-        
+
         setPayments(pendingData);
         setPaidPayments(paidData);
       } catch (err) {
@@ -138,9 +142,9 @@ const FinancePayment = () => {
       // Refetch data to get updated lists
       const [pendingData, paidData] = await Promise.all([
         fetchPendingPayments(),
-        fetchPaidPayments()
+        fetchPaidPayments(),
       ]);
-      
+
       setPayments(pendingData);
       setPaidPayments(paidData);
 
@@ -176,19 +180,19 @@ const FinancePayment = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Get full URL for attachments
   const getFullUrl = (path) => {
     if (!path) return null;
-    if (path.startsWith('http')) return path;
+    if (path.startsWith("http")) return path;
     return `${import.meta.env.VITE_REACT_APP_API_URL}${path}`;
   };
 
@@ -198,7 +202,7 @@ const FinancePayment = () => {
     try {
       return JSON.parse(attachments);
     } catch (err) {
-      console.error('Error parsing attachments:', err);
+      console.error("Error parsing attachments:", err);
       return [];
     }
   };
@@ -224,7 +228,9 @@ const FinancePayment = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Purchase Orders & Payments</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Purchase Orders & Payments
+          </h1>
           <p className="text-gray-600 mt-2">
             Manage purchase order payments and vendor transactions
           </p>
@@ -239,7 +245,9 @@ const FinancePayment = () => {
             <p className="text-2xl font-bold text-yellow-600">
               {formatCurrency(pendingTotal)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">{payments.length} purchase orders</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {payments.length} purchase orders
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h3 className="text-lg font-semibold text-gray-700">
@@ -248,7 +256,9 @@ const FinancePayment = () => {
             <p className="text-2xl font-bold text-green-600">
               {formatCurrency(paidTotal)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">{paidPayments.length} purchase orders</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {paidPayments.length} purchase orders
+            </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h3 className="text-lg font-semibold text-gray-700">
@@ -257,7 +267,9 @@ const FinancePayment = () => {
             <p className="text-2xl font-bold text-gray-900">
               {formatCurrency(overallTotal)}
             </p>
-            <p className="text-sm text-gray-500 mt-1">{payments.length + paidPayments.length} total</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {payments.length + paidPayments.length} total
+            </p>
           </div>
         </div>
 
@@ -282,10 +294,9 @@ const FinancePayment = () => {
               ))}
             </div>
             <div className="text-sm text-gray-500">
-              {filter === "Purchase Orders" 
+              {filter === "Purchase Orders"
                 ? `${payments.length} pending purchase orders`
-                : `${paidPayments.length} paid purchase orders`
-              }
+                : `${paidPayments.length} paid purchase orders`}
             </div>
           </div>
         </div>
@@ -323,10 +334,9 @@ const FinancePayment = () => {
                       colSpan="6"
                       className="text-center text-gray-500 py-6 text-sm"
                     >
-                      {filter === "Purchase Orders" 
+                      {filter === "Purchase Orders"
                         ? "No pending purchase orders found."
-                        : "No paid purchase orders found."
-                      }
+                        : "No paid purchase orders found."}
                     </td>
                   </tr>
                 ) : (
@@ -358,7 +368,9 @@ const FinancePayment = () => {
                         {formatCurrency(p.amount)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {filter === "Paid" ? formatDate(p.paidDate) : formatDate(p.dueDate)}
+                        {filter === "Paid"
+                          ? formatDate(p.paidDate)
+                          : formatDate(p.dueDate)}
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -368,7 +380,9 @@ const FinancePayment = () => {
                         >
                           {p.status}
                           {p.type === "paid" && p.processedBy && (
-                            <span className="ml-1 text-xs">by {p.processedBy}</span>
+                            <span className="ml-1 text-xs">
+                              by {p.processedBy}
+                            </span>
                           )}
                         </span>
                       </td>
@@ -410,17 +424,29 @@ const FinancePayment = () => {
 
         {/* View Paid Payment Modal */}
         {showViewModal && selectedPaidPayment && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Payment Details</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Payment Details
+                  </h2>
                   <button
                     onClick={() => setShowViewModal(false)}
                     className="text-gray-400 hover:text-gray-600"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -429,71 +455,123 @@ const FinancePayment = () => {
                   {/* Left Column - Payment Details */}
                   <div className="space-y-6">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Payment Information
+                      </h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Project</label>
-                          <p className="text-sm text-gray-900">{selectedPaidPayment.projectName}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Project
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPaidPayment.projectName}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Vendor</label>
-                          <p className="text-sm text-gray-900">{selectedPaidPayment.vendor}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Vendor
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPaidPayment.vendor}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Purchase Order</label>
-                          <p className="text-sm text-gray-900">{selectedPaidPayment.invoiceNumber}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Purchase Order
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPaidPayment.invoiceNumber}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Amount</label>
-                          <p className="text-lg font-semibold text-green-600">{formatCurrency(selectedPaidPayment.amount)}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Amount
+                          </label>
+                          <p className="text-lg font-semibold text-green-600">
+                            {formatCurrency(selectedPaidPayment.amount)}
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Details</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Transaction Details
+                      </h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Payment Method</label>
-                          <p className="text-sm text-gray-900">{selectedPaidPayment.paymentMethod}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Payment Method
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPaidPayment.paymentMethod}
+                          </p>
                         </div>
                         {selectedPaidPayment.referenceNumber && (
                           <div>
-                            <label className="text-sm font-medium text-gray-600">Reference Number</label>
-                            <p className="text-sm text-gray-900">{selectedPaidPayment.referenceNumber}</p>
+                            <label className="text-sm font-medium text-gray-600">
+                              Reference Number
+                            </label>
+                            <p className="text-sm text-gray-900">
+                              {selectedPaidPayment.referenceNumber}
+                            </p>
                           </div>
                         )}
                         {selectedPaidPayment.bankName && (
                           <div>
-                            <label className="text-sm font-medium text-gray-600">Bank Name</label>
-                            <p className="text-sm text-gray-900">{selectedPaidPayment.bankName}</p>
+                            <label className="text-sm font-medium text-gray-600">
+                              Bank Name
+                            </label>
+                            <p className="text-sm text-gray-900">
+                              {selectedPaidPayment.bankName}
+                            </p>
                           </div>
                         )}
                         {selectedPaidPayment.accountNumber && (
                           <div>
-                            <label className="text-sm font-medium text-gray-600">Account Number</label>
-                            <p className="text-sm text-gray-900">{selectedPaidPayment.accountNumber}</p>
+                            <label className="text-sm font-medium text-gray-600">
+                              Account Number
+                            </label>
+                            <p className="text-sm text-gray-900">
+                              {selectedPaidPayment.accountNumber}
+                            </p>
                           </div>
                         )}
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Transaction Date</label>
-                          <p className="text-sm text-gray-900">{formatDate(selectedPaidPayment.transactionDate)}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Transaction Date
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {formatDate(selectedPaidPayment.transactionDate)}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Paid Date</label>
-                          <p className="text-sm text-gray-900">{formatDate(selectedPaidPayment.paidDate)}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Paid Date
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {formatDate(selectedPaidPayment.paidDate)}
+                          </p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-gray-600">Processed By</label>
-                          <p className="text-sm text-gray-900">{selectedPaidPayment.processedBy}</p>
+                          <label className="text-sm font-medium text-gray-600">
+                            Processed By
+                          </label>
+                          <p className="text-sm text-gray-900">
+                            {selectedPaidPayment.processedBy}
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     {selectedPaidPayment.notes && (
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Notes</h3>
-                        <p className="text-sm text-gray-900">{selectedPaidPayment.notes}</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Notes
+                        </h3>
+                        <p className="text-sm text-gray-900">
+                          {selectedPaidPayment.notes}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -503,18 +581,23 @@ const FinancePayment = () => {
                     {/* Recipient Signature */}
                     {selectedPaidPayment.recipientSignature && (
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recipient Signature</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                          Recipient Signature
+                        </h3>
                         <div className="border rounded-lg p-4 bg-white">
-                          <img 
-                            src={`${API}${selectedPaidPayment.recipientSignature}`} 
+                          <img
+                            src={`${API}${selectedPaidPayment.recipientSignature}`}
                             alt="Recipient Signature"
                             className="max-w-full h-auto max-h-48 mx-auto"
                             onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'block';
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "block";
                             }}
                           />
-                          <div style={{display: 'none'}} className="text-center text-gray-500 text-sm">
+                          <div
+                            style={{ display: "none" }}
+                            className="text-center text-gray-500 text-sm"
+                          >
                             Signature image not available
                           </div>
                         </div>
@@ -522,40 +605,51 @@ const FinancePayment = () => {
                     )}
 
                     {/* Attachments */}
-                    {selectedPaidPayment.attachments && parseAttachments(selectedPaidPayment.attachments).length > 0 && (
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
-                        <div className="space-y-3">
-                          {parseAttachments(selectedPaidPayment.attachments).map((attachment, index) => (
-                            <div key={index} className="border rounded-lg p-3 bg-white">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-900 truncate">{attachment.name}</span>
-                                <a 
-                                  href={getFullUrl(attachment.path)} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                >
-                                  View
-                                </a>
-                              </div>
-                              {attachment.path && (
-                                <div className="mt-2 border rounded">
-                                  <img 
-                                    src={getFullUrl(attachment.path)} 
-                                    alt={attachment.name}
-                                    className="w-full h-auto max-h-48 object-contain"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                    }}
-                                  />
+                    {selectedPaidPayment.attachments &&
+                      parseAttachments(selectedPaidPayment.attachments).length >
+                        0 && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                            Attachments
+                          </h3>
+                          <div className="space-y-3">
+                            {parseAttachments(
+                              selectedPaidPayment.attachments
+                            ).map((attachment, index) => (
+                              <div
+                                key={index}
+                                className="border rounded-lg p-3 bg-white"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-900 truncate">
+                                    {attachment.name}
+                                  </span>
+                                  <a
+                                    href={getFullUrl(attachment.path)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                  >
+                                    View
+                                  </a>
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                {attachment.path && (
+                                  <div className="mt-2 border rounded">
+                                    <img
+                                      src={getFullUrl(attachment.path)}
+                                      alt={attachment.name}
+                                      className="w-full h-auto max-h-48 object-contain"
+                                      onError={(e) => {
+                                        e.target.style.display = "none";
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 </div>
 

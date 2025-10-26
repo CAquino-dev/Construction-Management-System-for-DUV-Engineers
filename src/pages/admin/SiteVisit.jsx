@@ -17,12 +17,7 @@ import "sonner";
 import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 // Map components
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-} from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -182,15 +177,22 @@ const SiteVisit = () => {
 
   // Check if lead has valid coordinates
   const hasValidCoordinates = (lead) => {
-    return lead && lead.latitude && lead.longitude && 
-           !isNaN(parseFloat(lead.latitude)) && 
-           !isNaN(parseFloat(lead.longitude));
+    return (
+      lead &&
+      lead.latitude &&
+      lead.longitude &&
+      !isNaN(parseFloat(lead.latitude)) &&
+      !isNaN(parseFloat(lead.longitude))
+    );
   };
 
   // Get map center coordinates
   const getMapCenter = () => {
     if (hasValidCoordinates(leadDetails)) {
-      return [parseFloat(leadDetails.latitude), parseFloat(leadDetails.longitude)];
+      return [
+        parseFloat(leadDetails.latitude),
+        parseFloat(leadDetails.longitude),
+      ];
     }
     return [14.5995, 120.9842]; // Default center (Manila area)
   };
@@ -252,7 +254,8 @@ const SiteVisit = () => {
               {hasValidCoordinates(leadDetails) && (
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Coordinates:</span>{" "}
-                  {parseFloat(leadDetails.latitude).toFixed(6)}, {parseFloat(leadDetails.longitude).toFixed(6)}
+                  {parseFloat(leadDetails.latitude).toFixed(6)},{" "}
+                  {parseFloat(leadDetails.longitude).toFixed(6)}
                 </p>
               )}
               <p>
@@ -320,10 +323,13 @@ const SiteVisit = () => {
                       <Marker position={getMapCenter()}>
                         <Popup>
                           <div className="text-center">
-                            <strong>{leadDetails.client_name}</strong><br />
-                            {leadDetails.site_location}<br />
+                            <strong>{leadDetails.client_name}</strong>
+                            <br />
+                            {leadDetails.site_location}
+                            <br />
                             <small>
-                              {parseFloat(leadDetails.latitude).toFixed(6)}, {parseFloat(leadDetails.longitude).toFixed(6)}
+                              {parseFloat(leadDetails.latitude).toFixed(6)},{" "}
+                              {parseFloat(leadDetails.longitude).toFixed(6)}
                             </small>
                           </div>
                         </Popup>
@@ -331,7 +337,8 @@ const SiteVisit = () => {
                     </MapContainer>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Site Location: {parseFloat(leadDetails.latitude).toFixed(6)}, {parseFloat(leadDetails.longitude).toFixed(6)}
+                    Site Location: {parseFloat(leadDetails.latitude).toFixed(6)}
+                    , {parseFloat(leadDetails.longitude).toFixed(6)}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Map shows the lead's preferred site location
@@ -342,8 +349,9 @@ const SiteVisit = () => {
               {!hasValidCoordinates(leadDetails) && leadDetails && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-yellow-800 text-sm">
-                    <span className="font-semibold">Note:</span> No location coordinates available for this lead. 
-                    The site location map cannot be displayed.
+                    <span className="font-semibold">Note:</span> No location
+                    coordinates available for this lead. The site location map
+                    cannot be displayed.
                   </p>
                 </div>
               )}
