@@ -1,6 +1,12 @@
 import React from "react";
 import Footer from "../../components/userComponents/Footer";
 import img1 from "../../assets/img1.png";
+import duv_bg from "../../assets/duv_bg.jpg";
+import duv_pic from "../../assets/duv_pic.png";
+import davao_proj from "../../assets/davao_proj.jpg";
+import quezon_proj from "../../assets/quezon_proj.png";
+import gma_proj from "../../assets/gma_proj.png";
+import house from "../../assets/house.png";
 
 const Homepage = () => {
   const services = [
@@ -18,16 +24,19 @@ const Homepage = () => {
 
   const projects = [
     {
-      img: img1,
-      desc: "Modern Family Residence - 3,500 sqft contemporary home with sustainable materials",
+      img: davao_proj,
+      title: "Davao International Airport",
+      desc: "A modern proposed expansion of the Davao International Airport terminal featuring a contemporary Filipino-inspired architectural design aimed at enhancing passenger capacity and experience.",
     },
     {
-      img: img1,
-      desc: "Office Complex Renovation - Complete overhaul of 10,000 sqft commercial space",
+      img: quezon_proj,
+      title: "4-Storey RC Commercial Building in Quezon City",
+      desc: "A modern mixed-use commercial and residential building design featuring ground-floor retail spaces and upper-level residential units with a clean, contemporary architectural aesthetic.",
     },
     {
-      img: img1,
-      desc: "Community Center Project - New construction of multi-purpose community facility",
+      img: gma_proj,
+      title: "Religous Regional House in GMA, Cavite",
+      desc: "A contemporary religious house design featuring clean linear forms, wide windows for natural light, and a welcoming community-oriented architectural layout.",
     },
   ];
 
@@ -67,7 +76,10 @@ const Homepage = () => {
   return (
     <>
       {/* Hero Section */}
-      <div className="relative min-h-screen flex items-center justify-center bg-gray-900 pt-16 overflow-hidden">
+      <div
+        className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${duv_bg})` }}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20 relative z-10">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12">
             <div className="text-white text-center lg:text-left lg:w-1/2">
@@ -83,9 +95,9 @@ const Homepage = () => {
             </div>
 
             <div className="relative w-full max-w-md lg:max-w-lg lg:w-1/2 mt-8 lg:mt-0">
-              <div className="absolute -top-4 -left-4 w-full h-full bg-[#4c735c] rounded-2xl -z-10"></div>
+              <div className="absolute -top-4 -left-4 w-full h-full bg-gray-900 rounded-2xl -z-10"></div>
               <img
-                src={img1}
+                src={house}
                 alt="Construction Project"
                 className="relative z-20 rounded-2xl w-full shadow-2xl"
               />
@@ -174,7 +186,7 @@ const Homepage = () => {
               <div className="relative">
                 <div className="absolute -bottom-4 -right-4 w-full h-full bg-[#4c735c] rounded-2xl -z-10"></div>
                 <img
-                  src={img1}
+                  src={duv_pic}
                   alt="Construction site"
                   className="relative z-20 rounded-2xl w-full shadow-xl"
                 />
@@ -241,6 +253,11 @@ const Homepage = () => {
                   className="w-full h-48 lg:h-56 object-cover"
                 />
                 <div className="p-6 lg:p-8">
+                  {project.title && (
+                    <h3 className="text-xl lg:text-2xl font-bold text-gray-900 mb-3">
+                      {project.title}
+                    </h3>
+                  )}
                   <p className="text-gray-700 text-center leading-relaxed">
                     {project.desc}
                   </p>
