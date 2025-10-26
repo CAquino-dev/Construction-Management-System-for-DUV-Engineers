@@ -32,6 +32,8 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const permissions = JSON.parse(localStorage.getItem("permissions"));
   const navigate = useNavigate();
 
+  console.log("name", permissions.role_name);
+
   useEffect(() => {
     const getMilestones = async () => {
       try {
@@ -125,7 +127,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
         <h4 className="text-lg sm:text-xl font-bold text-gray-800">
           Milestones
         </h4>
-        {permissions.role_name === "Site Manager" || permissions.role_name === "Admin" && (
+        {(permissions.role_name === "Site Manager" || permissions.role_name === "Admin") && (
           <button
             onClick={openModal}
             className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition w-full sm:w-auto"
