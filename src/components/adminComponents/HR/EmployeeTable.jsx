@@ -28,9 +28,12 @@ export const EmployeeTable = ({
     let filtered = employees.filter((emp) =>
       emp.full_name?.toLowerCase().includes(query.toLowerCase())
     );
-    if (department) {
+
+    // ✅ Only filter by department if not "all"
+    if (department && department !== "all") {
       filtered = filtered.filter((emp) => emp.department_name === department);
     }
+
     setFilteredEmployees(filtered);
     setCurrentPage(1);
   };
@@ -107,7 +110,7 @@ export const EmployeeTable = ({
                       title="View More"
                     >
                       <Eye size={16} />
-                      <span className="hidden sm:inline">View More</span>
+                      <span className="hidden sm:inline">View</span>
                     </button>
                     {handleEdit && (
                       <button
@@ -138,9 +141,7 @@ export const EmployeeTable = ({
       </div>
 
       {currentEmployees.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No employees found
-        </div>
+        <div className="text-center py-8 text-gray-500">No employees found</div>
       )}
 
       <PaginationComponent

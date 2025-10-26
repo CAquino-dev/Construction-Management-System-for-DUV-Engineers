@@ -1,8 +1,7 @@
-import React from 'react'
-import { createPortal } from 'react-dom';
+import React from "react";
+import { createPortal } from "react-dom";
 
 export const FinalModal = ({ isOpen, onClose, children }) => {
-
   if (!isOpen) return null;
   return createPortal(
     <div
@@ -25,6 +24,6 @@ export const FinalModal = ({ isOpen, onClose, children }) => {
         {children}
       </div>
     </div>,
-    document.getElementById('modal-root') // where to put the modal in the HTML
-  )
-}
+    document.getElementById("modal-root") // where to put the modal in the HTML
+  );
+};
