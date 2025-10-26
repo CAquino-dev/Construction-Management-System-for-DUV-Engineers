@@ -571,7 +571,6 @@ const getApprovedContracts = (req, res) => {
   const query = `
     SELECT 
       c.*,
-
       proposals.title AS proposal_title,
       proposals.budget_estimate,
       proposals.start_date AS proposal_start_date,
@@ -1032,6 +1031,179 @@ const uploadSignInPersonContract = (req, res) => {
   });
 };
 
+const regenerateContract = (req, res) => {
+  const { contractId } = req.params;
+  const { start_date, end_date, scope_of_work } = req.body;
+
+  // --- Basic validation ---
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: "Start and end date are required." });
+  }
+
+  if (new Date(start_date) >= new Date(end_date)) {
+    return res.status(400).json({ error: "End date must be after start date." });
+  }
+
+  const query = `
+    SELECT 
+      c.id AS contract_id,
+      c.proposal_id,
+      c.lead_id,
+      l.client_name,
+      l.email AS client_email,
+      l.phone_number AS client_phone,
+      l.project_interest,
+      p.title,
+      p.description,
+      p.scope_of_work,
+      p.budget_estimate,
+      p.start_date AS proposal_start,
+      p.end_date AS proposal_end,
+      pt.name AS payment_term_label
+    FROM contracts c
+    JOIN proposals p ON c.proposal_id = p.id
+    JOIN leads l ON c.lead_id = l.id
+    LEFT JOIN payment_terms pt ON p.payment_term_id = pt.id
+    WHERE c.id = ?
+  `;
+
+  db.query(query, [contractId], async (err, result) => {
+    if (err) {
+      console.error("DB error:", err);
+      return res.status(500).json({ error: "Database error." });
+    }
+
+    if (!result.length) {
+      return res.status(404).json({ error: "Contract not found." });
+    }
+
+    const data = result[0];
+
+    // --- Prepare merged data ---
+    const newScopeOfWork = Array.isArray(scope_of_work)
+      ? scope_of_work
+      : JSON.parse(data.scope_of_work || "[]");
+
+    const formData = {
+      title: data.title,
+      description: data.description,
+      scope_of_work: newScopeOfWork,
+      budget_estimate: data.budget_estimate,
+      start_date,
+      end_date,
+      payment_terms:
+        data.payment_term_label ||
+        "50% down payment, 30% upon completion, 20% upon final acceptance",
+    };
+
+    const selectedLead = {
+      client_name: data.client_name,
+      email: data.client_email,
+      phone_number: data.client_phone,
+      project_interest: data.project_interest,
+      lead_id: data.lead_id,
+    };
+
+    try {
+      // --- Render updated contract PDF ---
+      const html = await ejs.renderFile(
+        path.join(__dirname, "../templates/contract_template.ejs"),
+        { selectedLead, formData }
+      );
+
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+      });
+
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0" });
+      const pdfBuffer = await page.pdf({ format: "A4" });
+      await browser.close();
+
+      // --- Save new file ---
+      const fileName = `contract_${contractId}_${Date.now()}.pdf`;
+      const filePath = path.join(__dirname, "../public/contracts", fileName);
+      fs.writeFileSync(filePath, pdfBuffer);
+      const fileUrl = `/contracts/${fileName}`;
+
+      // --- Update proposal and contract together ---
+      const updateProposalQuery = `
+        UPDATE proposals
+        SET scope_of_work = ?
+        WHERE id = ?
+      `;
+
+      const updateContractQuery = `
+      UPDATE contracts
+      SET 
+        contract_file_url = ?, 
+        start_date = ?, 
+        end_date = ?, 
+        approval_status = 'pending',       -- reset Finance status
+        status = 'draft',                  -- reset Client signing status
+        finance_rejection_notes = NULL,    -- clear Finance rejection notes
+        client_rejection_notes = NULL,     -- clear Client rejection notes
+        updated_at = NOW()
+      WHERE id = ?;
+      `;
+
+      db.beginTransaction((txErr) => {
+        if (txErr) {
+          console.error("Transaction start error:", txErr);
+          return res.status(500).json({ error: "Failed to start transaction." });
+        }
+
+        // Update proposal first
+        db.query(updateProposalQuery, [JSON.stringify(newScopeOfWork), data.proposal_id], (propErr) => {
+          if (propErr) {
+            console.error("Proposal update error:", propErr);
+            return db.rollback(() =>
+              res.status(500).json({ error: "Failed to update proposal scope of work." })
+            );
+          }
+
+          // Then update contract
+          db.query(
+            updateContractQuery,
+            [fileUrl, start_date, end_date, contractId],
+            (contractErr) => {
+              if (contractErr) {
+                console.error("Contract update error:", contractErr);
+                return db.rollback(() =>
+                  res.status(500).json({ error: "Failed to update contract record." })
+                );
+              }
+
+              db.commit((commitErr) => {
+                if (commitErr) {
+                  console.error("Transaction commit error:", commitErr);
+                  return db.rollback(() =>
+                    res.status(500).json({ error: "Failed to commit transaction." })
+                  );
+                }
+
+                const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contractId}`;
+                return res.status(200).json({
+                  message:
+                    "Contract regenerated successfully. Status reset to pending review.",
+                  contractId,
+                  fileUrl,
+                  approvalLink,
+                });
+              });
+            }
+          );
+        });
+      });
+    } catch (pdfErr) {
+      console.error("PDF generation error:", pdfErr);
+      res.status(500).json({ error: "Failed to regenerate contract PDF." });
+    }
+  });
+};
+
 
 module.exports = {
   createProposal,
@@ -1049,5 +1221,6 @@ module.exports = {
   getScheduledSiteVisits, 
   getForProcurement,
   signInPerson,
-  uploadSignInPersonContract
+  uploadSignInPersonContract,
+  regenerateContract
 };
