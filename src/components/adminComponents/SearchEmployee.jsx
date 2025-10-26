@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { Input } from "../ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "../ui/select";
 
 const SearchEmployee = ({ onSearch }) => {
-  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
 
@@ -14,7 +19,6 @@ const SearchEmployee = ({ onSearch }) => {
 
   return (
     <div className="flex flex-wrap gap-3 mb-4 items-center">
-      
       {/* Search Bar with Icon */}
       <div className="relative w-full sm:w-64">
         <Input
@@ -27,7 +31,10 @@ const SearchEmployee = ({ onSearch }) => {
           }}
           className="pl-10 w-full"
         />
-        <MagnifyingGlass size={18} className="absolute left-3 top-3 text-[#4C7259]" />
+        <MagnifyingGlass
+          size={18}
+          className="absolute left-3 top-3 text-[#4C7259]"
+        />
       </div>
 
       {/* Department Dropdown */}
@@ -49,9 +56,7 @@ const SearchEmployee = ({ onSearch }) => {
           <SelectItem value="Finance">Finance</SelectItem>
           <SelectItem value="Marketing">Marketing</SelectItem>
         </SelectContent>
-
       </Select>
-
     </div>
   );
 };
