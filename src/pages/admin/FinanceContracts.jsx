@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { FinalModal } from "../../components/FinalModal";
 import { toast } from "sonner";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const FinanceContracts = () => {
   const [contracts, setContracts] = useState([]);
@@ -8,6 +9,8 @@ const FinanceContracts = () => {
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState(null);
   const [rejectionNotes, setRejectionNotes] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [actionType, setActionType] = useState(""); // "approve" or "reject"
 
   const userId = localStorage.getItem("userId");
 
@@ -30,14 +33,19 @@ const FinanceContracts = () => {
     fetchContracts();
   }, []);
 
-  const handleAction = async (id, action) => {
-    if (action === "reject") {
-      setSelectedContractId(id);
-      setRejectModalOpen(true);
-      return;
-    }
+  const handleAction = (id, action) => {
+    setSelectedContractId(id);
+    setActionType(action === "approve" ? "Approve" : "Rejected by Finance");
+    setConfirmOpen(true);
+  };
 
-    await processApproval(id, action);
+  const handleConfirm = () => {
+    if (actionType === "Approve") {
+      processApproval(selectedContractId, "approve");
+    } else {
+      processApproval(selectedContractId, "reject", rejectionNotes);
+    }
+    setConfirmOpen(false);
   };
 
   const processRejection = async () => {
@@ -362,6 +370,14 @@ const FinanceContracts = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+        actionType={actionType}
+        setRemark={setRejectionNotes}
+      />
 
       {/* Rejection Notes Modal */}
       <FinalModal isOpen={rejectModalOpen} onClose={cancelRejection}>
