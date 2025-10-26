@@ -11,6 +11,7 @@ const ViewProposals = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedProposal, setExpandedProposal] = useState(null);
+  const [loadingStates, setLoadingStates] = useState({});
   const itemsPerPage = 5;
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedProposalId, setSelectedProposalId] = useState(null);
@@ -42,6 +43,12 @@ const ViewProposals = () => {
 
   const handleGenerateContract = async (proposalId) => {
     setMessage({ success: "", error: "", approvalLink: "" });
+
+    // Set loading state for this specific proposal
+    setLoadingStates((prev) => ({
+      ...prev,
+      [proposalId]: true,
+    }));
 
     try {
       const res = await fetch(
@@ -81,6 +88,12 @@ const ViewProposals = () => {
         approvalLink: "",
       });
       console.error(err);
+    } finally {
+      // Clear loading state regardless of success or failure
+      setLoadingStates((prev) => ({
+        ...prev,
+        [proposalId]: false,
+      }));
     }
   };
 
@@ -109,10 +122,10 @@ const ViewProposals = () => {
   };
 
   // ✅ Helper to check if button should be disabled
-  const isButtonDisabled = (status) => {
-    if (!status) return false;
+  const isButtonDisabled = (status, proposalId) => {
+    if (!status) return loadingStates[proposalId] || false;
     const s = status.toLowerCase();
-    return s === "pending" || s === "rejected";
+    return loadingStates[proposalId] || s === "pending" || s === "rejected";
   };
 
   // Format date for display
@@ -220,6 +233,8 @@ const ViewProposals = () => {
             {paginatedProposals.map((p) => {
               const statusInfo = getStatusInfo(p.status);
               const scopeOfWork = parseScopeOfWork(p.scope_of_work);
+              const isLoading = loadingStates[p.id];
+
               return (
                 <React.Fragment key={p.id}>
                   <tr className="hover:bg-gray-50 transition-colors border-b">
@@ -267,15 +282,41 @@ const ViewProposals = () => {
                     </td>
                     <td className="p-4">
                       <button
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                          isButtonDisabled(p.status)
+                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center min-w-[140px] ${
+                          isButtonDisabled(p.status, p.id)
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-[#4c735c] text-white hover:bg-[#3a5a48] cursor-pointer shadow-sm"
                         }`}
                         onClick={() => handleOpenConfirm(p.id)}
-                        disabled={isButtonDisabled(p.status)}
+                        disabled={isButtonDisabled(p.status, p.id)}
                       >
-                        Generate Contract
+                        {isLoading ? (
+                          <>
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Generating...
+                          </>
+                        ) : (
+                          "Generate Contract"
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -388,6 +429,8 @@ const ViewProposals = () => {
         {paginatedProposals.map((p) => {
           const statusInfo = getStatusInfo(p.status);
           const scopeOfWork = parseScopeOfWork(p.scope_of_work);
+          const isLoading = loadingStates[p.id];
+
           return (
             <div
               key={p.id}
@@ -512,15 +555,41 @@ const ViewProposals = () => {
                   {expandedProposal === p.id ? "Show Less" : "View Details"}
                 </button>
                 <button
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                    isButtonDisabled(p.status)
+                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center min-w-[140px] ${
+                    isButtonDisabled(p.status, p.id)
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-[#4c735c] text-white hover:bg-[#3a5a48] cursor-pointer shadow-sm"
                   }`}
                   onClick={() => handleOpenConfirm(p.id)}
-                  disabled={isButtonDisabled(p.status)}
+                  disabled={isButtonDisabled(p.status, p.id)}
                 >
-                  Generate Contract
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Contract"
+                  )}
                 </button>
               </div>
             </div>
