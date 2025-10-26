@@ -25,7 +25,8 @@ const CreateProposal = () => {
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSiteVisitOpen, setIsSiteVisitOpen] = useState(false);
-  const [selectedLeadForSiteVisit, setSelectedLeadForSiteVisit] = useState(null);
+  const [selectedLeadForSiteVisit, setSelectedLeadForSiteVisit] =
+    useState(null);
 
   const handleOpenConfirm = () => {
     if (!selectedLead) {
@@ -194,20 +195,20 @@ const CreateProposal = () => {
   const formatDate = (dateString) => {
     if (!dateString) return "Not scheduled";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   // Format time for display
   const formatTime = (timeString) => {
     if (!timeString) return "";
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
@@ -226,34 +227,38 @@ const CreateProposal = () => {
             {leads.map((lead) => (
               <li
                 key={lead.id}
-                className={`p-4 rounded shadow cursor-pointer bg-gray-100 border ${
+                className={`p-4 rounded shadow cursor-pointer border ${
                   selectedLead?.id === lead.id
-                    ? "border-[#4c735c] bg-[#4c735c] text-white"
+                    ? "border-gray-400 bg-[#4c735c] text-white"
                     : "hover:bg-[#4c735c]/10"
                 }`}
                 onClick={() => handleLeadSelect(lead)}
               >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-lg">{lead.client_name}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    selectedLead?.id === lead.id 
-                      ? "bg-white text-[#4c735c]" 
-                      : "bg-[#4c735c] text-white"
-                  }`}>
-                    {lead.status?.replace('_', ' ') || 'New'}
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      selectedLead?.id === lead.id
+                        ? "bg-white text-[#4c735c]"
+                        : "bg-[#4c735c] text-white"
+                    }`}
+                  >
+                    {lead.status?.replace("_", " ") || "New"}
                   </span>
                 </div>
-                
-                <p className="text-sm mb-3 font-medium">{lead.project_interest}</p>
-                
+
+                <p className="text-sm mb-3 font-medium">
+                  {lead.project_interest}
+                </p>
+
                 <div className="grid grid-cols-2 gap-2 text-xs mb-3">
                   <div>
                     <span className="font-semibold">Budget:</span>
-                    <p>{lead.budget ? `₱${lead.budget}` : 'Not specified'}</p>
+                    <p>{lead.budget ? `₱${lead.budget}` : "Not specified"}</p>
                   </div>
                   <div>
                     <span className="font-semibold">Timeline:</span>
-                    <p>{lead.timeline || 'Not specified'}</p>
+                    <p>{lead.timeline || "Not specified"}</p>
                   </div>
                 </div>
 
@@ -264,20 +269,23 @@ const CreateProposal = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="font-semibold">📞</span>
-                    <span>{lead.phone_number || 'Not provided'}</span>
+                    <span>{lead.phone_number || "Not provided"}</span>
                   </div>
                   {lead.site_visit_date && (
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">📅</span>
                       <span>
-                        {formatDate(lead.site_visit_date)} at {formatTime(lead.site_visit_time)}
+                        {formatDate(lead.site_visit_date)} at{" "}
+                        {formatTime(lead.site_visit_time)}
                       </span>
                     </div>
                   )}
                   {lead.site_location && (
                     <div className="flex items-start gap-1">
                       <span className="font-semibold mt-0.5">📍</span>
-                      <span className="text-xs line-clamp-2">{lead.site_location}</span>
+                      <span className="text-xs line-clamp-2">
+                        {lead.site_location}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -338,9 +346,9 @@ const CreateProposal = () => {
               {message.error && (
                 <p className="font-semibold">{message.error}</p>
               )}
-                <div className="mt-2">
-                  <p className="text-sm">Approval Link has been sent to client</p>
-                </div>
+              <div className="mt-2">
+                <p className="text-sm">Approval Link has been sent to client</p>
+              </div>
             </div>
           )}
           {selectedLead ? (
@@ -355,10 +363,12 @@ const CreateProposal = () => {
                   {selectedLead.client_name}
                 </span>
               </h2>
-              
+
               {/* Lead Information Summary */}
               <div className="bg-gray-50 p-4 rounded-lg border mb-4">
-                <h3 className="font-semibold text-[#4c735c] mb-2">Lead Information</h3>
+                <h3 className="font-semibold text-[#4c735c] mb-2">
+                  Lead Information
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="font-medium">Project:</span>
@@ -370,17 +380,20 @@ const CreateProposal = () => {
                   </div>
                   <div>
                     <span className="font-medium">Phone:</span>
-                    <p>{selectedLead.phone_number || 'Not provided'}</p>
+                    <p>{selectedLead.phone_number || "Not provided"}</p>
                   </div>
                   <div>
                     <span className="font-medium">Location:</span>
-                    <p className="truncate">{selectedLead.site_location || 'Not specified'}</p>
+                    <p className="truncate">
+                      {selectedLead.site_location || "Not specified"}
+                    </p>
                   </div>
                   {selectedLead.site_visit_date && (
                     <div className="md:col-span-2">
                       <span className="font-medium">Site Visit:</span>
                       <p>
-                        {formatDate(selectedLead.site_visit_date)} at {formatTime(selectedLead.site_visit_time)}
+                        {formatDate(selectedLead.site_visit_date)} at{" "}
+                        {formatTime(selectedLead.site_visit_time)}
                       </p>
                     </div>
                   )}
