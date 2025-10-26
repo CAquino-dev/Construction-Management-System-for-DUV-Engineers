@@ -92,7 +92,7 @@ export const FinanceModal = ({ closeModal, record }) => {
           </div>
           <div className="flex items-center space-x-2">
             <h2 className="text-lg text-gray-500">Period:</h2>
-            <p className="font-bold">{record.period_start} <span className="text-gray-500">to</span> {record.period_end}</p>
+            <p className="font-bold">{new Date(record.period_start).toLocaleDateString()} <span className="text-gray-500">to</span> {new Date(record.period_end).toLocaleDateString()}</p>
           </div>
         </div>
 
