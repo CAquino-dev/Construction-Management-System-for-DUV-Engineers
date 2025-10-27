@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../../ui/table";
 import ConfirmationModal from "../ConfirmationModal";
+import { toast } from "sonner";
 
 export const FinanceModal = ({ closeModal, record }) => {
-  console.log('record', record)
+  console.log("record", record);
 
   const [financeRecords, setFinanceRecords] = useState([]);
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
@@ -37,46 +45,52 @@ export const FinanceModal = ({ closeModal, record }) => {
   const updatePayslipStatus = async (status, remark) => {
     console.log("payslipID", record.payslip_id);
     console.log("Status", status);
-    const userId = localStorage.getItem('userId'); 
+    const userId = localStorage.getItem("userId");
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/updatePayslipStatus`, {
-        method: 'PUT',
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          payslipId: record.payslip_id,
-          status: status,
-          remarks: remark,
-          approvedBy: userId
-        })
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/finance/updatePayslipStatus`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            payslipId: record.payslip_id,
+            status: status,
+            remarks: remark,
+            approvedBy: userId,
+          }),
+        }
+      );
       const data = await response.json();
       if (!response.ok) {
         console.error("Error response from API:", data);
-      } 
+      }
       if (response.ok) {
         console.log(data.message);
         // Optional: you can set a status in the state if you want to reflect it on UI
-        alert(`Payslip ${status}`);
+        toast.success(`Payslip ${status}`);
       } else {
         console.error("Failed to update payslip status:", data.error);
       }
     } catch (error) {
       console.error("Error updating payslip status:", error);
     }
-
   };
 
   return (
     <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-[600px]">
-        
         {/* Modal Header */}
         <div className="flex justify-between items-center w-full mb-4">
           <h2 className="text-xl font-bold text-gray-800">Finance Record</h2>
-          <button onClick={closeModal} className="text-gray-600 hover:text-red-500 cursor-pointer">
+          <button
+            onClick={closeModal}
+            className="text-gray-600 hover:text-red-500 cursor-pointer"
+          >
             <X size={24} />
           </button>
         </div>
@@ -84,7 +98,9 @@ export const FinanceModal = ({ closeModal, record }) => {
         <div>
           <div className="flex flex-row gap-2 mb-2">
             <h2 className="text-lg text-gray-500">Payslip:</h2>
-            <p className="text-lg text-gray-800 font-semibold">{record.title}</p>
+            <p className="text-lg text-gray-800 font-semibold">
+              {record.title}
+            </p>
           </div>
           <div>
             <h2 className="text-lg text-gray-500">Remarks:</h2>
@@ -92,7 +108,10 @@ export const FinanceModal = ({ closeModal, record }) => {
           </div>
           <div className="flex items-center space-x-2">
             <h2 className="text-lg text-gray-500">Period:</h2>
-            <p className="font-bold">{record.period_start} <span className="text-gray-500">to</span> {record.period_end}</p>
+            <p className="font-bold">
+              {record.period_start} <span className="text-gray-500">to</span>{" "}
+              {record.period_end}
+            </p>
           </div>
         </div>
 
@@ -101,33 +120,60 @@ export const FinanceModal = ({ closeModal, record }) => {
           <Table>
             <TableHeader>
               <TableRow className="bg-[#4c735c] text-white hover:bg-[#4c735c]">
-                <TableHead className="text-center text-white">Employee Name</TableHead>
-                <TableHead className="text-center text-white">Total Hours</TableHead>
+                <TableHead className="text-center text-white">
+                  Employee Name
+                </TableHead>
+                <TableHead className="text-center text-white">
+                  Total Hours
+                </TableHead>
                 <TableHead className="text-center text-white">Salary</TableHead>
-                <TableHead className="text-center text-white">Overtime Pay</TableHead>
-                <TableHead className="text-center text-white">Deductions</TableHead>
-                <TableHead className="text-center text-white">Final Salary</TableHead>
+                <TableHead className="text-center text-white">
+                  Overtime Pay
+                </TableHead>
+                <TableHead className="text-center text-white">
+                  Deductions
+                </TableHead>
+                <TableHead className="text-center text-white">
+                  Final Salary
+                </TableHead>
                 <TableHead className="text-center text-white">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="overflow-y-auto max-h-[400px]">
               {financeRecords.items && financeRecords.items.length > 0 ? (
                 financeRecords.items.map((record, index) => (
-                  <TableRow key={index} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
-                    <TableCell className="text-center">{record.employee_name}</TableCell>
-                    <TableCell className="text-center">{parseFloat(record.total_hours_worked).toFixed(2)}</TableCell>
-                    <TableCell className="text-center">₱{parseFloat(record.calculated_salary).toLocaleString()}</TableCell>
-                    <TableCell className="text-center">₱{parseFloat(record.overtime_pay).toLocaleString()}</TableCell>
-                    <TableCell className="text-center">₱{parseFloat(record.total_deductions).toLocaleString()}</TableCell>
-                    <TableCell className="text-center">₱{parseFloat(record.final_salary).toLocaleString()}</TableCell>
+                  <TableRow
+                    key={index}
+                    className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}
+                  >
+                    <TableCell className="text-center">
+                      {record.employee_name}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {parseFloat(record.total_hours_worked).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      ₱{parseFloat(record.calculated_salary).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      ₱{parseFloat(record.overtime_pay).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      ₱{parseFloat(record.total_deductions).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      ₱{parseFloat(record.final_salary).toLocaleString()}
+                    </TableCell>
                     <TableCell className="text-center p-2">
-                      <p className={`text-center text-xs p-2 font-semibold rounded-md ${
-                        record.status === "Approved by HR"
-                          ? "bg-green-100 text-green-800"
-                          : record.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}>
+                      <p
+                        className={`text-center text-xs p-2 font-semibold rounded-md ${
+                          record.status === "Approved by HR"
+                            ? "bg-green-100 text-green-800"
+                            : record.status === "Pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {record.status}
                       </p>
                     </TableCell>
@@ -135,7 +181,12 @@ export const FinanceModal = ({ closeModal, record }) => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center p-4 text-gray-500">No matching employees</TableCell>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center p-4 text-gray-500"
+                  >
+                    No matching employees
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -159,7 +210,10 @@ export const FinanceModal = ({ closeModal, record }) => {
 
         {/* Close Button */}
         <div className="flex justify-end mt-6">
-          <button className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600" onClick={closeModal}>
+          <button
+            className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+            onClick={closeModal}
+          >
             Close
           </button>
         </div>
