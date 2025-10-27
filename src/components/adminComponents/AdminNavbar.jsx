@@ -132,9 +132,69 @@ const AdminNavbar = ({ children }) => {
       )
     )
       return "HR Payroll (Approved Records of CEO)";
+    if (location.pathname.startsWith("/admin-dashboard/finance/view-contracts"))
+      return "View Contracts";
+    if (
+      location.pathname.startsWith(
+        "/admin-dashboard/finance/budget-supply-request"
+      )
+    )
+      return "Budget Supply Request";
+    if (location.pathname.startsWith("/admin-dashboard/finance/financePayment"))
+      return "Payment";
+    if (location.pathname.startsWith("/admin-dashboard/finance/clientPayment"))
+      return "Client Payment";
 
     //Site Manager Pages
     if (location.pathname.startsWith("/admin-dashboard/site-manager/projects"))
+      return "Projects";
+    if (location.pathname.startsWith("/admin-dashboard/project/sitevisit"))
+      return "Site Visit";
+    if (location.pathname.startsWith("/admin-dashboard/site-manager/proposal"))
+      return "Proposal";
+    if (
+      location.pathname.startsWith(
+        "/admin-dashboard/project-manager/approved-contracts"
+      )
+    )
+      return "Contracts";
+
+    //Procurement Pages
+    if (
+      location.pathname.startsWith(
+        "/admin-dashboard/procurement/procurement-dashboard"
+      )
+    )
+      return "Procurement Dashboard";
+    if (
+      location.pathname.startsWith(
+        "/admin-dashboard/procurement/procurement-page"
+      )
+    )
+      return "Procurement";
+    if (
+      location.pathname.startsWith(
+        "/admin-dashboard/procurement/purchase-orders"
+      )
+    )
+      return "Purchase Orders";
+    if (
+      location.pathname.startsWith(
+        "/admin-dashboard/procurement/supplier-management"
+      )
+    )
+      return "Suppliers";
+
+    //Sales Pages
+    if (location.pathname.startsWith("/admin-dashboard/appointment"))
+      return "Appointment Request";
+    if (location.pathname.startsWith("/admin-dashboard/sales/lead"))
+      return "Lead";
+
+    //foreman Pages
+    if (location.pathname.startsWith("/admin-dashboard/foreman/attendance"))
+      return "Attendance";
+    if (location.pathname.startsWith("/admin-dashboard/projects"))
       return "Projects";
 
     // Other Admin Pages (Matches Against `menuItems`)
@@ -599,7 +659,7 @@ const AdminNavbar = ({ children }) => {
                       Finance Payment
                     </Link>
                   </li>
-                 <li>
+                  <li>
                     <Link
                       to="/admin-dashboard/finance/clientPayment"
                       className={`block p-2 rounded-lg cursor-pointer ${
@@ -793,6 +853,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Projects
                     </Link>
@@ -802,28 +863,92 @@ const AdminNavbar = ({ children }) => {
             </li>
             {/* Finance Section in Mobile Sidebar */}
             <li>
-              <button
-                onClick={toggleFinanceDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg"
-              >
-                <span className="flex items-center gap-3">
-                  <Bank size={20} /> Finance
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isFinanceOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {permissions.can_access_finance === "Y" && (
+                <button
+                  onClick={toggleFinanceDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg"
+                >
+                  <span className="flex items-center gap-3">
+                    <Bank size={20} /> Finance
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isFinanceOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
               {isFinanceOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
                     <Link
                       to="/admin-dashboard/finance/approved-payroll-from-hr"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/approved-payroll-from-hr"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
                     >
-                      HR Payroll (Approved Records of HR)
+                      Employee Salary
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/finance/view-contracts"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/view-contracts"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Contracts
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/finance/budget-supply-request"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/budget-supply-request"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Budget review
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/finance/financePayment"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/financePayment"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Finance Payment
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/finance/clientPayment"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/finance/clientPayment"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Client Payment
                     </Link>
                   </li>
                 </ul>
@@ -831,26 +956,34 @@ const AdminNavbar = ({ children }) => {
             </li>
             {/* HR Section in Mobile Sidebar */}
             <li>
-              <button
-                onClick={toggleHrDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg"
-              >
-                <span className="flex items-center gap-3">
-                  <UsersThree size={20} /> Human Resources
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isHrOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {permissions.can_access_hr ===
+                "Y" /* Check if can_access_hr is "Y" */ && (
+                <button
+                  onClick={toggleHrDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg"
+                >
+                  <span className="flex items-center gap-3">
+                    <UsersThree size={20} /> Human Resources
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isHrOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
               {isHrOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
                     <Link
                       to="/admin-dashboard/hr/attendance"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/hr/attendance"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Attendance
                     </Link>
@@ -858,15 +991,38 @@ const AdminNavbar = ({ children }) => {
                   <li>
                     <Link
                       to="/admin-dashboard/hr/payroll"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/hr/payroll"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Payroll
                     </Link>
                   </li>
                   <li>
                     <Link
+                      to="/admin-dashboard/hr/payslip"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/hr/payslip"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Payslip
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
                       to="/admin-dashboard/hr/employees"
-                      className="block p-2 hover:bg-[#5A8366] rounded-lg"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname === "/admin-dashboard/hr/employees"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Employee
                     </Link>
@@ -902,6 +1058,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Appointment Request
                     </Link>
@@ -914,6 +1071,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Lead
                     </Link>
@@ -950,6 +1108,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Projects
                     </Link>
@@ -963,6 +1122,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Attendance
                     </Link>
@@ -999,6 +1159,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Projects
                     </Link>
@@ -1012,6 +1173,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Add Client
                     </Link>
@@ -1025,6 +1187,7 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Proposal
                     </Link>
@@ -1038,8 +1201,86 @@ const AdminNavbar = ({ children }) => {
                           ? "bg-[#5A8366] text-white"
                           : "hover:bg-[#5A8366]"
                       }`}
+                      onClick={toggleMobileSidebar}
                     >
                       Approved Contracts
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+            {/* Procurement Section in Mobile Sidebar */}
+            <li>
+              <button
+                onClick={toggleProcurementDropdown}
+                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+              >
+                <span className="flex items-center gap-3 font-semibold">
+                  <Briefcase size={20} /> Procurement
+                </span>
+                <CaretDown
+                  size={20}
+                  className={`transform transition-all ${
+                    isProcurementOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isProcurementOpen && (
+                <ul className="pl-6 mt-2 space-y-2">
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/procurement-dashboard"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/procurement-dashboard"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Procurement Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/procurement-page"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/procurement-page"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Procurement
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/purchase-orders"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/purchase-orders"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Purchase Orders
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/admin-dashboard/procurement/supplier-management"
+                      className={`block p-2 rounded-lg cursor-pointer ${
+                        location.pathname ===
+                        "/admin-dashboard/procurement/supplier-management"
+                          ? "bg-[#5A8366] text-white"
+                          : "hover:bg-[#5A8366]"
+                      }`}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Supplier Management
                     </Link>
                   </li>
                 </ul>
