@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import ConfirmationModal from "../ConfirmationModal";
 import SiteVisitReport from "./SiteVisitReport";
+import { toast } from "sonner";
 
 const CreateProposal = () => {
   const [leads, setLeads] = useState([]);
@@ -30,7 +31,7 @@ const CreateProposal = () => {
 
   const handleOpenConfirm = () => {
     if (!selectedLead) {
-      setMessage({ error: "Please select a lead first.", success: "" });
+      toast.error("Please select a lead.");
       return;
     }
 
@@ -50,11 +51,7 @@ const CreateProposal = () => {
     );
 
     if (hasEmpty) {
-      setMessage({
-        error:
-          "⚠️ Please fill out all required fields and upload a PDF before submitting.",
-        success: "",
-      });
+      toast.error("Please fill in all required fields.");
       return;
     }
 
@@ -66,11 +63,7 @@ const CreateProposal = () => {
       .then((res) => res.json())
       .then((data) => setLeads(data))
       .catch(() =>
-        setMessage({
-          error: "Failed to fetch leads",
-          success: "",
-          approvalLink: "",
-        })
+        toast.error("Failed to fetch leads. Please try again later.")
       );
 
     const fetchPaymentTerms = async () => {
@@ -127,14 +120,38 @@ const CreateProposal = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage({ success: "", error: "", approvalLink: "" });
+
+    if (!selectedLead) {
+      toast.error("Please select a lead.");
+      return;
+    }
+
+    if (
+      !formData.title ||
+      !formData.description ||
+      !formData.scope_of_work[0]
+    ) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    if (!pdfFile) {
+      toast.error("Please select a PDF file.");
+      return;
+    }
+
+    if (
+      !formData.start_date ||
+      !formData.end_date ||
+      !formData.payment_terms ||
+      !formData.budget_estimate
+    ) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
 
     if (!pdfFile || pdfFile.type !== "application/pdf") {
-      return setMessage({
-        error: "Please upload a valid PDF file",
-        success: "",
-        approvalLink: "",
-      });
+      return toast.error("Please select a valid PDF file.");
     }
 
     const data = new FormData();
@@ -171,10 +188,11 @@ const CreateProposal = () => {
       if (!res.ok) throw new Error(result.error || "Something went wrong");
 
       setMessage({
-        success: result.message || "Proposal created successfully!",
+        success: "Proposal created successfully!",
         error: "",
         approvalLink: result.approvalLink || "",
       });
+      toast.success("Proposal created successfully!");
 
       setFormData({
         title: "",
