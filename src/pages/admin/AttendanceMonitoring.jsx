@@ -184,7 +184,6 @@ export const Attendance = () => {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
       hour12: true,
     };
     return date.toLocaleString("en-US", options);
@@ -215,32 +214,36 @@ export const Attendance = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-4 px-3 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Attendance</h1>
-          <div className="bg-white rounded-2xl shadow-sm p-4 mb-4">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+            Attendance
+          </h1>
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-3 sm:p-4 mb-4">
             <div className="flex items-center justify-center space-x-2 text-gray-600 mb-2">
-              <span>📅</span>
-              <span className="text-sm font-medium">Current Time</span>
+              <span className="text-sm">📅</span>
+              <span className="text-xs sm:text-sm font-medium">
+                Current Time
+              </span>
             </div>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-sm sm:text-lg font-semibold text-gray-900 leading-tight">
               {formatDateTime(currentDateTime)}
             </p>
           </div>
         </div>
 
         {/* Status Card */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="text-center">
-              <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                <div className="text-green-600 text-sm font-medium mb-1">
+              <div className="bg-green-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-green-200">
+                <div className="text-green-600 text-xs sm:text-sm font-medium mb-1">
                   Check-in
                 </div>
                 <div
-                  className={`text-lg font-bold ${
+                  className={`text-base sm:text-lg font-bold ${
                     checkInTime ? "text-green-700" : "text-gray-400"
                   }`}
                 >
@@ -249,12 +252,12 @@ export const Attendance = () => {
               </div>
             </div>
             <div className="text-center">
-              <div className="bg-red-50 rounded-xl p-4 border border-red-200">
-                <div className="text-red-600 text-sm font-medium mb-1">
+              <div className="bg-red-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-red-200">
+                <div className="text-red-600 text-xs sm:text-sm font-medium mb-1">
                   Check-out
                 </div>
                 <div
-                  className={`text-lg font-bold ${
+                  className={`text-base sm:text-lg font-bold ${
                     checkOutTime ? "text-red-700" : "text-gray-400"
                   }`}
                 >
@@ -265,24 +268,26 @@ export const Attendance = () => {
           </div>
 
           {/* Timer */}
-          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 text-center mb-4">
-            <div className="text-blue-600 text-sm font-medium mb-2">
+          <div className="bg-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200 text-center mb-4">
+            <div className="text-blue-600 text-xs sm:text-sm font-medium mb-2">
               Working Time
             </div>
-            <div className="text-2xl font-bold text-blue-900 font-mono">
+            <div className="text-xl sm:text-2xl font-bold text-blue-900 font-mono">
               {formatTime(timer)}
             </div>
           </div>
 
           {/* Status Badge */}
           <div className="text-center">
-            <div className="text-sm text-gray-600 mb-2">Current Status</div>
+            <div className="text-xs sm:text-sm text-gray-600 mb-2">
+              Current Status
+            </div>
             <div
-              className={`inline-flex items-center px-4 py-2 rounded-full border-2 ${getStatusColor(
+              className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-full border-2 ${getStatusColor(
                 status
               )}`}
             >
-              <span className="text-lg font-semibold">
+              <span className="text-base sm:text-lg font-semibold">
                 {status || "Waiting..."}
               </span>
             </div>
@@ -290,42 +295,45 @@ export const Attendance = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <button
             onClick={handleCheckIn}
             disabled={checkedIn || checkedOut || loading}
-            className={`w-full py-4 px-6 rounded-2xl font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-3 ${
+            className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-semibold text-white transition-all duration-200 flex items-center justify-center ${
               checkedIn || checkedOut || loading
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-green-500 hover:bg-green-600 active:bg-green-700 shadow-lg hover:shadow-xl"
             }`}
           >
             {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-white"></div>
             ) : (
-              <>
-                <span className="text-lg">Time In</span>
-              </>
+              <span className="text-base sm:text-lg">Time In</span>
             )}
           </button>
 
           <button
             onClick={handleCheckOut}
             disabled={!checkedIn || checkedOut || loading}
-            className={`w-full py-4 px-6 rounded-2xl font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-3 ${
+            className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl font-semibold text-white transition-all duration-200 flex items-center justify-center ${
               !checkedIn || checkedOut || loading
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-red-500 hover:bg-red-600 active:bg-red-700 shadow-lg hover:shadow-xl"
             }`}
           >
             {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-white"></div>
             ) : (
-              <>
-                <span className="text-lg">Time Out</span>
-              </>
+              <span className="text-base sm:text-lg">Time Out</span>
             )}
           </button>
+        </div>
+
+        {/* Mobile-specific helper text */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500 px-4">
+            Make sure you have a stable internet connection when checking in/out
+          </p>
         </div>
       </div>
     </div>

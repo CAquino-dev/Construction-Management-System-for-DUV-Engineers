@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../ui/table";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../../ui/table";
 import { Eye } from "@phosphor-icons/react";
 import { PayslipModal } from "./PayslipModal";
 import PaginationComponent from "../Pagination";
-
 
 export const PayslipTable = () => {
   const [selectedPayslip, setSelectedPayslip] = useState(null);
@@ -27,23 +33,31 @@ export const PayslipTable = () => {
   useEffect(() => {
     const getPayslips = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/getPayslips`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/hr/getPayslips`
+        );
         const data = await response.json();
         if (response.ok) {
           const filtered = data.map((record) => ({
             id: record.id,
             title: record.title,
             remarks: record.remarks,
-            start: record.period_start ? new Date(record.period_start).toLocaleDateString('en-CA') : '-',
-            end: record.period_end ? new Date(record.period_end).toLocaleDateString('en-CA') : '-',
-            created_at: record.created_at ? new Date(record.created_at).toLocaleDateString('en-CA') : '-',
+            start: record.period_start
+              ? new Date(record.period_start).toLocaleDateString("en-CA")
+              : "-",
+            end: record.period_end
+              ? new Date(record.period_end).toLocaleDateString("en-CA")
+              : "-",
+            created_at: record.created_at
+              ? new Date(record.created_at).toLocaleDateString("en-CA")
+              : "-",
             created_by: record.created_by_name,
           }));
           setPayslips(filtered);
           setFilteredPayslips(filtered); // Set filtered payslips initially
         }
       } catch (error) {
-        console.error('Error fetching payslips:', error);
+        console.error("Error fetching payslips:", error);
       }
     };
 
@@ -52,13 +66,19 @@ export const PayslipTable = () => {
 
   // Pagination Logic
   const itemsPerPage = 10;
-  const totalPages = Math.max(1, Math.ceil(filteredPayslips.length / itemsPerPage));
-  const currentData = filteredPayslips.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPayslips.length / itemsPerPage)
+  );
+  const currentData = filteredPayslips.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Handle search
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    const filtered = payslips.filter(payslip =>
+    const filtered = payslips.filter((payslip) =>
       payslip.title.toLowerCase().includes(e.target.value.toLowerCase())
     );
     setFilteredPayslips(filtered);
@@ -86,22 +106,42 @@ export const PayslipTable = () => {
               <TableHead className="text-center text-white">Title</TableHead>
               <TableHead className="text-center text-white">Start</TableHead>
               <TableHead className="text-center text-white">End</TableHead>
-              <TableHead className="text-center text-white">Created at</TableHead>
-              <TableHead className="text-center text-white">Created by</TableHead>
+              <TableHead className="text-center text-white">
+                Created at
+              </TableHead>
+              <TableHead className="text-center text-white">
+                Created by
+              </TableHead>
               <TableHead className="text-center text-white">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentData.length > 0 ? (
               currentData.map((record, index) => (
-                <TableRow key={record.id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
-                  <TableCell className="text-center p-2">{record.title}</TableCell>
-                  <TableCell className="text-center p-2">{record.start}</TableCell>
-                  <TableCell className="text-center p-2">{record.end}</TableCell>
-                  <TableCell className="text-center p-2">{record.created_at}</TableCell>
-                  <TableCell className="text-center p-2">{record.created_by}</TableCell>
+                <TableRow
+                  key={record.id}
+                  className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}
+                >
                   <TableCell className="text-center p-2">
-                    <button onClick={() => openModal(record)} className="text-black hover:text-gray-600 cursor-pointer bg-[#4c735c] text-white p-1 rounded-md">
+                    {record.title}
+                  </TableCell>
+                  <TableCell className="text-center p-2">
+                    {record.start}
+                  </TableCell>
+                  <TableCell className="text-center p-2">
+                    {record.end}
+                  </TableCell>
+                  <TableCell className="text-center p-2">
+                    {record.created_at}
+                  </TableCell>
+                  <TableCell className="text-center p-2">
+                    {record.created_by}
+                  </TableCell>
+                  <TableCell className="text-center p-2">
+                    <button
+                      onClick={() => openModal(record)}
+                      className="text-black hover:text-gray-600 cursor-pointer bg-[#4c735c] text-white p-1 rounded-md"
+                    >
                       <Eye size={18} />
                     </button>
                   </TableCell>
@@ -109,7 +149,12 @@ export const PayslipTable = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center p-4 text-gray-500">No matching payslips found</TableCell>
+                <TableCell
+                  colSpan={6}
+                  className="text-center p-4 text-gray-500"
+                >
+                  No matching payslips found
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -117,14 +162,16 @@ export const PayslipTable = () => {
       </div>
 
       {/* Pagination */}
-      <PaginationComponent 
-        currentPage={currentPage} 
-        totalPages={totalPages} 
-        setCurrentPage={setCurrentPage} 
+      <PaginationComponent
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
       />
 
       {/* Payslip Modal */}
-      {isModalOpen && <PayslipModal payslip={selectedPayslip} closeModal={closeModal} />}
+      {isModalOpen && (
+        <PayslipModal payslip={selectedPayslip} closeModal={closeModal} />
+      )}
     </div>
   );
 };
