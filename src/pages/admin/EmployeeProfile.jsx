@@ -230,7 +230,11 @@ const EmployeeProfile = () => {
                     <TableCell>₱{sal.final_salary.toLocaleString()}</TableCell>
                     <TableCell>{sal.status}</TableCell>
                     <TableCell>
-                      <Button size="sm" onClick={() => setSelectedSalary(sal)}>
+                      <Button
+                        size="sm"
+                        onClick={() => setSelectedSalary(sal)}
+                        className="bg-[#4c735c] hover:bg-[#4c735c]/90 cursor-pointer"
+                      >
                         View Details
                       </Button>
                     </TableCell>
