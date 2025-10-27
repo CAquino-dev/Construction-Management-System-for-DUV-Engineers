@@ -398,10 +398,12 @@ const getQuotesByMilestone = (req, res) => {
       pqi.material_name,
       pqi.unit,
       pqi.quantity,
-      pqi.unit_price
+      pqi.unit_price,
+      m.finance_remarks
     FROM procurement_quotes pq
     JOIN suppliers s ON pq.supplier_id = s.id
     JOIN procurement_quote_items pqi ON pq.id = pqi.quote_id
+    JOIN milestones m ON m.id = pq.milestone_id
     WHERE pq.milestone_id = ?
     ORDER BY s.supplier_name, pqi.material_name
   `;
@@ -412,12 +414,23 @@ const getQuotesByMilestone = (req, res) => {
       return res.status(500).json({ message: "Failed to fetch quotes." });
     }
 
-    // ✅ Group by supplier
+    if (results.length === 0) {
+      return res.json({
+        milestoneId,
+        finance_remarks: null,
+        quotes: {},
+      });
+    }
+
+    // ✅ Get finance remarks from the milestone (same for all rows)
+    const financeRemarks = results[0].finance_remarks;
+
+    // ✅ Group quotes by supplier
     const grouped = {};
     results.forEach((row) => {
       if (!grouped[row.supplier_name]) grouped[row.supplier_name] = [];
       grouped[row.supplier_name].push({
-        quote_id: row.quote_id, // <--- this was missing
+        quote_id: row.quote_id,
         status: row.status,
         material_name: row.material_name,
         unit: row.unit,
@@ -426,7 +439,12 @@ const getQuotesByMilestone = (req, res) => {
       });
     });
 
-    res.json({ milestoneId, quotes: grouped });
+    // ✅ Return structured response
+    res.json({
+      milestoneId,
+      finance_remarks: financeRemarks,
+      quotes: grouped,
+    });
   });
 };
 

@@ -32,6 +32,8 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const permissions = JSON.parse(localStorage.getItem("permissions"));
   const navigate = useNavigate();
 
+  console.log("name", permissions.role_name);
+
   useEffect(() => {
     const getMilestones = async () => {
       try {

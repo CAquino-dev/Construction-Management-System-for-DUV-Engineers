@@ -837,37 +837,38 @@ const getScheduledSiteVisits = (req, res) => {
 
 const getForProcurement = (req, res) => {
   const query = 
-    `    SELECT
-      m.id AS milestone_id,
-      m.project_id,
-      m.timestamp,
-      m.title,
-      m.details,
-      m.status,
-      m.start_date,
-      m.due_date,
+    ` SELECT
+        m.id AS milestone_id,
+        m.project_id,
+        m.timestamp,
+        m.title,
+        m.details,
+        m.status,
+        m.start_date,
+        m.due_date,
 
-      mb.id AS milestone_boq_id,
-      b.id AS boq_id,
-      b.item_no,
-      b.description AS boq_description,
-      b.unit AS boq_unit,
-      b.quantity AS boq_quantity,
-      b.unit_cost AS boq_unit_cost,
-      b.total_cost AS boq_total_cost,
+        mb.id AS milestone_boq_id,
+        b.id AS boq_id,
+        b.item_no,
+        b.description AS boq_description,
+        b.unit AS boq_unit,
+        b.quantity AS boq_quantity,
+        b.unit_cost AS boq_unit_cost,
+        b.total_cost AS boq_total_cost,
 
-      mm.id AS mto_id,
-      mm.description AS mto_description,
-      mm.unit AS mto_unit,
-      mm.quantity AS mto_quantity,
-      mm.unit_cost AS mto_unit_cost,
-      mm.total_cost AS mto_total_cost
-    FROM milestones m
-    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
-    LEFT JOIN boq b ON mb.boq_id = b.id
-    LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
-    WHERE m.status = 'For Procurement'
-      ORDER BY m.due_date ASC`;
+        mm.id AS mto_id,
+        mm.description AS mto_description,
+        mm.unit AS mto_unit,
+        mm.quantity AS mto_quantity,
+        mm.unit_cost AS mto_unit_cost,
+        mm.total_cost AS mto_total_cost
+      FROM milestones m
+      LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+      LEFT JOIN boq b ON mb.boq_id = b.id
+      LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+      WHERE m.status IN ('For Procurement', 'Finance Rejected')
+      ORDER BY m.due_date ASC;
+      `;
 
   db.query(query, (err, results) => {
     if (err) {
