@@ -1206,10 +1206,59 @@ const getLegals = (req, res) => {
   });
 };
 
+const getProjectDetails = (req, res) => {
+  const { projectId } = req.params;
+
+  if (!projectId) {
+    return res.status(400).json({ error: "Project ID is required" });
+  }
+
+  const query = `
+    SELECT 
+      p.id AS project_id,
+      p.contract_id,
+      p.project_name,
+      p.location,
+      p.status,
+      p.start_date,
+      p.end_date,
+      p.created_at,
+      c.start_date AS contract_start_date,
+      c.end_date AS contract_end_date,
+      pr.id AS proposal_id,
+      pr.title AS proposal_title,
+      pr.description AS proposal_description,
+      pr.scope_of_work,
+      l.client_name,
+      l.site_location,
+      l.latitude,
+      l.longitude,
+      l.site_visit_notes
+    FROM engineer_projects p
+    LEFT JOIN contracts c ON p.contract_id = c.id
+    LEFT JOIN proposals pr ON c.proposal_id = pr.id
+    LEFT JOIN leads l ON l.id = c.lead_id
+    WHERE p.id = ?;
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching project details:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.status(200).json({ project: results[0] });
+  });
+};
+
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
   deleteTask, getReports, submitReport, getMilestoneTaskReports, 
-  getPaymentScheduleByProject, getLegals
+  getPaymentScheduleByProject, getLegals, getProjectDetails
 };
