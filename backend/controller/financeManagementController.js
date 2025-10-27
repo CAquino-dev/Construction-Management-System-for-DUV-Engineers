@@ -448,11 +448,9 @@ const getAllExpensesApprovedByEngineer = (req, res) => {
   });
 };
 
-
-// PATCH /api/project/expenses/:id/finance-approval
 const updateFinanceApprovalStatus = (req, res) => {
   const milestoneId = req.params.id;
-  const { status, financeId } = req.body;
+  const { status, financeId, remarks } = req.body;
 
   if (!status || !["Finance Approved", "Finance Rejected"].includes(status)) {
     return res.status(400).json({ error: "Invalid or missing status" });
@@ -460,27 +458,30 @@ const updateFinanceApprovalStatus = (req, res) => {
 
   const approvalDate = new Date();
 
-  // 1️⃣ Update milestone status
   const updateMilestoneQuery = `
     UPDATE milestones
     SET status = ?, 
         finance_approved_by = ?, 
-        finance_approval_date = ?
+        finance_approval_date = ?,
+        finance_remarks = ?
     WHERE id = ?
   `;
 
-  db.query(updateMilestoneQuery, [status, financeId, approvalDate, milestoneId], (err, result) => {
-    if (err) {
-      console.error("Error updating finance approval status:", err);
-      return res.status(500).json({ error: "Failed to update finance approval status" });
-    }
+  db.query(
+    updateMilestoneQuery,
+    [status, financeId, approvalDate, remarks || null, milestoneId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating finance approval status:", err);
+        return res.status(500).json({ error: "Failed to update finance approval status" });
+      }
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Milestone not found" });
-    }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Milestone not found" });
+      }
 
-    // 2️⃣ If status = Finance Approved → auto-generate Purchase Order
-    if (status === "Finance Approved") {
+      // ✅ APPROVED → generate PO
+      if (status === "Finance Approved") {
       const getQuoteQuery = `
         SELECT pq.id AS quote_id, pq.supplier_id, pq.milestone_id, m.project_id
         FROM procurement_quotes pq
@@ -558,12 +559,30 @@ const updateFinanceApprovalStatus = (req, res) => {
           }
         );
       });
-    } else {
-      // 3️⃣ If Finance Rejected, no PO created
-      res.json({ message: "Finance rejected milestone successfully" });
+      } // ❌ REJECTED → reopen old procurement quotes
+      else {
+          const reopenQuotesQuery = `
+            UPDATE procurement_quotes
+            SET status = 'Pending'
+            WHERE milestone_id = ?
+          `;
+
+        db.query(reopenQuotesQuery, [milestoneId], (err2, result2) => {
+          if (err2) {
+            console.error("Error reopening rejected quotes:", err2);
+            return res.status(500).json({ error: "Failed to reopen rejected quotes" });
+          }
+
+          res.json({
+            message: "Finance rejected milestone. Rejected quotes are now reopened for Procurement review.",
+            reopened_quotes: result2.affectedRows,
+          });
+        });
+      }
     }
-  });
+  );
 };
+
 
 const getContracts = (req, res) => {
   const query = `
@@ -856,7 +875,7 @@ LEFT JOIN boq b
   ON mb.boq_id = b.id
 
 WHERE pq.status = 'Selected'
-  AND m.status NOT IN ('Finance Approved', 'Finance Rejected', "Pending Delivery", "Delivered")
+  AND m.status NOT IN ('Finance Approved', "Pending Delivery", "Delivered")
 
 ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
   `;
