@@ -3,12 +3,12 @@ import axios from "axios";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader } from "../../components/ui/card";
-import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, MessageCircle } from "lucide-react";
 
 const ProcurementReviewDashboard = () => {
   const [milestones, setMilestones] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
-  const [quotes, setQuotes] = useState({});
+  const [quotesData, setQuotesData] = useState({ quotes: {}, finance_remarks: null });
   const [loading, setLoading] = useState(false);
   const [approving, setApproving] = useState(null);
 
@@ -40,7 +40,10 @@ const ProcurementReviewDashboard = () => {
           import.meta.env.VITE_REACT_APP_API_URL
         }/api/procurement/quotes/milestone/${milestone.milestone_id}`
       );
-      setQuotes(res.data.quotes || {});
+      setQuotesData({
+        quotes: res.data.quotes || {},
+        finance_remarks: res.data.finance_remarks || null
+      });
     } catch (err) {
       console.error(err);
       toast.error("Failed to load supplier quotes.");
@@ -53,7 +56,7 @@ const ProcurementReviewDashboard = () => {
   const handleApprove = async (supplierName) => {
     if (!selectedMilestone) return;
 
-    const supplierEntry = Object.entries(quotes).find(
+    const supplierEntry = Object.entries(quotesData.quotes).find(
       ([name]) => name === supplierName
     );
     if (!supplierEntry) return toast.error("Supplier not found.");
@@ -140,15 +143,37 @@ const ProcurementReviewDashboard = () => {
           </div>
         )}
 
+        {/* Finance Remarks Banner - At the very top */}
+        {!loading && selectedMilestone && quotesData.finance_remarks && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+            <div className="flex items-start gap-3">
+              <MessageCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-semibold text-yellow-800">
+                    Finance Remarks:
+                  </span>
+                  <span className="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">
+                    Important
+                  </span>
+                </div>
+                <p className="text-sm text-yellow-700 whitespace-pre-wrap">
+                  {quotesData.finance_remarks}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Supplier Quotes */}
-        {!loading && selectedMilestone && Object.keys(quotes).length > 0 && (
+        {!loading && selectedMilestone && Object.keys(quotesData.quotes).length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <span className="mr-2">💰</span>
               Supplier Quotes for {selectedMilestone.milestone_name}
             </h2>
 
-            {Object.entries(quotes).map(([supplierName, items]) => {
+            {Object.entries(quotesData.quotes).map(([supplierName, items]) => {
               const status = items[0]?.status || "Submitted";
               const grandTotal = items.reduce(
                 (sum, i) => sum + i.quantity * i.unit_price,
@@ -179,6 +204,8 @@ const ProcurementReviewDashboard = () => {
                                 ? "bg-green-100 text-green-800"
                                 : status === "Rejected"
                                 ? "bg-red-100 text-red-800"
+                                : status === "Pending"
+                                ? "bg-yellow-100 text-yellow-800"
                                 : "bg-blue-100 text-blue-800"
                             }`}
                           >
@@ -192,14 +219,20 @@ const ProcurementReviewDashboard = () => {
                                 <AlertCircle className="w-4 h-4 mr-1" />
                                 Rejected
                               </>
+                            ) : status === "Pending" ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                Pending
+                              </>
                             ) : (
-                              "Pending Review"
+                              "Submitted"
                             )}
                           </span>
                         </div>
                       </div>
 
-                      {status === "Submitted" && (
+                      {/* Show button only when status is "Pending" */}
+                      {status === "Pending" && (
                         <Button
                           disabled={approving === items[0]?.quote_id}
                           onClick={() => handleApprove(supplierName)}
@@ -331,7 +364,7 @@ const ProcurementReviewDashboard = () => {
           </div>
         )}
 
-        {!loading && selectedMilestone && Object.keys(quotes).length === 0 && (
+        {!loading && selectedMilestone && Object.keys(quotesData.quotes).length === 0 && (
           <Card className="rounded-2xl shadow-sm border-0">
             <CardContent className="text-center py-12">
               <div className="text-6xl mb-4 text-gray-300">📝</div>
