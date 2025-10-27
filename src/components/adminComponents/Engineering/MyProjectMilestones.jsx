@@ -36,7 +36,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     const getMilestones = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestones/${selectedProject.id}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/project/getMilestones/${selectedProject.id}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -100,7 +102,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
       }
 
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${selectedProject.id}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${
+          selectedProject.id
+        }`,
         {
           method: "POST",
           body: formData,
@@ -125,7 +129,8 @@ export const MyProjectMilestones = ({ selectedProject }) => {
         <h4 className="text-lg sm:text-xl font-bold text-gray-800">
           Milestones
         </h4>
-        {permissions.role_name === "Site Manager" || permissions.role_name === "Admin" && (
+        {(permissions.role_name === "Site Manager" ||
+          permissions.role_name === "Admin") && (
           <button
             onClick={openModal}
             className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition w-full sm:w-auto"
@@ -255,7 +260,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 </label>
                 <textarea
                   value={report.summary}
-                  onChange={(e) => handleReportChange("summary", e.target.value)}
+                  onChange={(e) =>
+                    handleReportChange("summary", e.target.value)
+                  }
                   required
                   placeholder="Write the progress update here..."
                   rows="4"
@@ -269,7 +276,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 <input
                   name="report_file"
                   type="file"
-                  onChange={(e) => handleReportChange("file", e.target.files[0])}
+                  onChange={(e) =>
+                    handleReportChange("file", e.target.files[0])
+                  }
                   className="w-full text-sm"
                 />
               </div>
