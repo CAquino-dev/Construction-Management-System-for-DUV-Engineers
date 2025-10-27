@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import PaginationComponent from "../Pagination";
 import ConfirmationModal from "../ConfirmationModal";
 
@@ -16,6 +16,10 @@ const ViewProposals = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedProposalId, setSelectedProposalId] = useState(null);
 
+  // New State for Search and Filtering
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All"); // 'All', 'Approved', 'Rejected', 'Pending'
+
   useEffect(() => {
     const fetchProposalResponse = async () => {
       try {
@@ -26,7 +30,12 @@ const ViewProposals = () => {
         );
         if (results.ok) {
           const data = await results.json();
-          setProposals(data);
+          // Ensure status fields are handled consistently (e.g., set to 'Pending' if null/undefined)
+          const standardizedData = data.map((p) => ({
+            ...p,
+            status: p.status ? p.status.toLowerCase() : "pending", // Standardize status to lowercase
+          }));
+          setProposals(standardizedData);
         }
       } catch (error) {
         console.error("Failed to fetch proposals:", error);
@@ -79,7 +88,11 @@ const ViewProposals = () => {
       );
       if (results.ok) {
         const updatedData = await results.json();
-        setProposals(updatedData);
+        const standardizedData = updatedData.map((p) => ({
+          ...p,
+          status: p.status ? p.status.toLowerCase() : "pending",
+        }));
+        setProposals(standardizedData);
       }
     } catch (err) {
       setMessage({
@@ -99,32 +112,38 @@ const ViewProposals = () => {
 
   // ✅ Helper to get status color class and badge
   const getStatusInfo = (status) => {
-    if (!status) return { class: "", badge: "bg-gray-100 text-gray-800" };
-    const s = status.toLowerCase();
+    const s = (status || "unknown").toLowerCase();
 
     if (s === "pending")
       return {
         class: "text-yellow-800",
         badge: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+        display: "Pending",
       };
     if (s === "approve" || s === "approved")
       return {
         class: "text-green-800",
         badge: "bg-green-100 text-green-800 border border-green-200",
+        display: "Approved",
       };
     if (s === "rejected" || s === "reject")
       return {
         class: "text-red-800",
         badge: "bg-red-100 text-red-800 border border-red-200",
+        display: "Rejected",
       };
 
-    return { class: "", badge: "bg-gray-100 text-gray-800" };
+    return {
+      class: "",
+      badge: "bg-gray-100 text-gray-800",
+      display: "Unknown",
+    };
   };
 
   // ✅ Helper to check if button should be disabled
   const isButtonDisabled = (status, proposalId) => {
-    if (!status) return loadingStates[proposalId] || false;
-    const s = status.toLowerCase();
+    const s = (status || "pending").toLowerCase();
+    // Disable if loading, pending, or rejected. Only enabled for 'approved' proposals.
     return loadingStates[proposalId] || s === "pending" || s === "rejected";
   };
 
@@ -169,9 +188,50 @@ const ViewProposals = () => {
     setExpandedProposal(expandedProposal === proposalId ? null : proposalId);
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(proposals.length / itemsPerPage);
-  const paginatedProposals = proposals.slice(
+  // ⭐️ New Logic: Filtering and Sorting
+  const filteredProposals = useMemo(() => {
+    let filtered = proposals;
+
+    // 1. Status Filter
+    if (statusFilter !== "All") {
+      const filterStatus = statusFilter.toLowerCase(); // 'approved', 'rejected', 'pending'
+      filtered = filtered.filter((p) => {
+        const status = (p.status || "pending").toLowerCase();
+        if (filterStatus === "approved")
+          return status === "approve" || status === "approved";
+        if (filterStatus === "rejected")
+          return status === "rejected" || status === "reject";
+        return status === filterStatus; // Handles 'pending'
+      });
+    }
+
+    // 2. Search Term Filter (Case-insensitive search on title, client_name, and description)
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchLower) ||
+          p.client_name.toLowerCase().includes(searchLower) ||
+          (p.description && p.description.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Default Sorting: Newest first (assuming 'created_at' is a sortable date)
+    // No explicit sorting requested beyond the status filter, so we'll maintain the current implicit order or sort by date.
+    // Let's sort by created_at descending (newest first)
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    return filtered;
+  }, [proposals, searchTerm, statusFilter]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Pagination logic now uses the filtered list
+  const totalPages = Math.ceil(filteredProposals.length / itemsPerPage);
+  const paginatedProposals = filteredProposals.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -203,6 +263,48 @@ const ViewProposals = () => {
           </div>
         </div>
       )}
+
+      {/* ⭐️ New: Search and Filter Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0 sm:space-x-4">
+        {/* Search Input */}
+        <div className="relative flex-1 w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Search proposals (title, client, description)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-[#4c735c] focus:border-[#4c735c] shadow-sm transition duration-150 ease-in-out"
+          />
+          <svg
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+
+        {/* Status Filter Dropdown */}
+        <div className="w-full sm:w-auto">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full p-3 border border-gray-300 bg-white rounded-lg focus:ring-[#4c735c] focus:border-[#4c735c] shadow-sm transition duration-150 ease-in-out"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+      </div>
+      {/* --- */}
 
       {/* Table for md+ screens */}
       <div className="hidden md:block overflow-hidden rounded-lg border border-gray-200">
@@ -269,9 +371,7 @@ const ViewProposals = () => {
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusInfo.badge}`}
                       >
-                        {p.status
-                          ? p.status.charAt(0).toUpperCase() + p.status.slice(1)
-                          : "Unknown"}
+                        {statusInfo.display}
                       </span>
                     </td>
                     <td className="p-4 text-sm text-gray-600">
@@ -446,9 +546,7 @@ const ViewProposals = () => {
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.badge}`}
                 >
-                  {p.status
-                    ? p.status.charAt(0).toUpperCase() + p.status.slice(1)
-                    : "Unknown"}
+                  {statusInfo.display}
                 </span>
               </div>
 
@@ -597,8 +695,21 @@ const ViewProposals = () => {
         })}
       </div>
 
+      {/* Show message if no proposals match the filter/search */}
+      {filteredProposals.length === 0 && proposals.length > 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-400 text-6xl mb-4">🔍</div>
+          <h3 className="text-lg font-semibold text-gray-500">
+            No Proposals Match Your Search
+          </h3>
+          <p className="text-gray-400 mt-2">
+            Try adjusting your search term or status filter.
+          </p>
+        </div>
+      )}
+
       {/* Pagination */}
-      {proposals.length > 0 && (
+      {filteredProposals.length > 0 && (
         <div className="flex justify-center mt-6">
           <PaginationComponent
             currentPage={currentPage}
@@ -608,6 +719,7 @@ const ViewProposals = () => {
         </div>
       )}
 
+      {/* Fallback for no proposals at all */}
       {proposals.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">📋</div>

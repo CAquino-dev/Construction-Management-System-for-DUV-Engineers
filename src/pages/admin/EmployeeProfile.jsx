@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog";
+import PaginationComponent from "../../components/adminComponents/Pagination";
 
 const EmployeeProfile = () => {
   const [employee, setEmployee] = useState(null);
@@ -23,6 +24,18 @@ const EmployeeProfile = () => {
   const [salaries, setSalaries] = useState([]);
   const [selectedSalary, setSelectedSalary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [attendancePage, setAttendancePage] = useState(1);
+  const [salaryPage, setSalaryPage] = useState(1);
+
+  const rowsPerPage = 10;
+
+  const attendanceStart = (attendancePage - 1) * rowsPerPage;
+  const attendanceEnd = attendanceStart + rowsPerPage;
+  const paginatedAttendance = attendance.slice(attendanceStart, attendanceEnd);
+
+  const salaryStart = (salaryPage - 1) * rowsPerPage;
+  const salaryEnd = salaryStart + rowsPerPage;
+  const paginatedSalaries = salaries.slice(salaryStart, salaryEnd);
 
   const userId = localStorage.getItem("userId");
   const API = import.meta.env.VITE_REACT_APP_API_URL;
@@ -83,9 +96,7 @@ const EmployeeProfile = () => {
     if (status === "Absent") color = "bg-red-200 text-red-800";
 
     return (
-      <span
-        className={`px-2 py-1 rounded-full text-sm font-medium ${color}`}
-      >
+      <span className={`px-2 py-1 rounded-full text-sm font-medium ${color}`}>
         {status}
       </span>
     );
@@ -103,7 +114,9 @@ const EmployeeProfile = () => {
           />
           <div className="flex-1 space-y-1">
             <h2 className="text-2xl font-bold">{employee.full_name}</h2>
-            <p className="text-gray-600">{employee.position} • {employee.name}</p>
+            <p className="text-gray-600">
+              {employee.position} • {employee.name}
+            </p>
             <p className="text-gray-500">{employee.email}</p>
             <p className="text-gray-400 text-sm">
               Hire Date: {new Date(employee.hire_date).toLocaleDateString()}
@@ -119,7 +132,9 @@ const EmployeeProfile = () => {
               <p className="text-gray-500 text-sm">Days Absent</p>
             </div>
             <div>
-              <p className="text-lg font-bold">₱{totalSalary.toLocaleString()}</p>
+              <p className="text-lg font-bold">
+                ₱{totalSalary.toLocaleString()}
+              </p>
               <p className="text-gray-500 text-sm">Total Salary Paid</p>
             </div>
           </div>
@@ -142,9 +157,14 @@ const EmployeeProfile = () => {
             </TableHeader>
             <TableBody>
               {attendance.length > 0 ? (
-                attendance.map((a, idx) => (
-                  <TableRow key={idx} className="hover:bg-gray-50 transition-colors">
-                    <TableCell>{new Date(a.date).toLocaleDateString()}</TableCell>
+                paginatedAttendance.map((a, idx) => (
+                  <TableRow
+                    key={idx}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <TableCell>
+                      {new Date(a.date).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>{getStatusBadge(a.rawStatus)}</TableCell>
                     <TableCell>
                       {a.check_in
@@ -174,6 +194,15 @@ const EmployeeProfile = () => {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination below table */}
+          <div className="flex justify-center mt-4">
+            <PaginationComponent
+              currentPage={attendancePage}
+              totalPages={Math.ceil(attendance.length / rowsPerPage)}
+              setCurrentPage={setAttendancePage}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -192,7 +221,7 @@ const EmployeeProfile = () => {
             </TableHeader>
             <TableBody>
               {salaries.length > 0 ? (
-                salaries.map((sal, idx) => (
+                paginatedSalaries.map((sal, idx) => (
                   <TableRow key={idx}>
                     <TableCell>
                       {new Date(sal.period_start).toLocaleDateString()} -{" "}
@@ -209,11 +238,22 @@ const EmployeeProfile = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan="4">No salary records found</TableCell>
+                  <TableCell colSpan="4" className="text-center">
+                    No salary records found
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination below table */}
+          <div className="flex justify-center mt-4">
+            <PaginationComponent
+              currentPage={salaryPage}
+              totalPages={Math.ceil(salaries.length / rowsPerPage)}
+              setCurrentPage={setSalaryPage}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -244,7 +284,8 @@ const EmployeeProfile = () => {
                 <strong>Overtime Pay:</strong> ₱{selectedSalary.overtime_pay}
               </p>
               <p>
-                <strong>PhilHealth:</strong> ₱{selectedSalary.philhealth_deduction}
+                <strong>PhilHealth:</strong> ₱
+                {selectedSalary.philhealth_deduction}
               </p>
               <p>
                 <strong>SSS:</strong> ₱{selectedSalary.sss_deduction}
@@ -253,13 +294,13 @@ const EmployeeProfile = () => {
                 <strong>Pag-IBIG:</strong> ₱{selectedSalary.pagibig_deduction}
               </p>
               <p>
-                <strong>Total Deductions:</strong> ₱{selectedSalary.total_deductions}
+                <strong>Total Deductions:</strong> ₱
+                {selectedSalary.total_deductions}
               </p>
               <p className="font-bold text-lg">
                 Final Salary: ₱{selectedSalary.final_salary.toLocaleString()}
               </p>
 
-              {/* ✅ Show signature if exists */}
               {selectedSalary.signature_url ? (
                 <div className="mt-4">
                   <strong>Employee Signature:</strong>

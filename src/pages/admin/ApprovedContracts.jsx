@@ -13,7 +13,8 @@ const ApprovedContracts = () => {
   const [selectedContract, setSelectedContract] = useState(null);
   const [signatureFile, setSignatureFile] = useState(null);
   const [showModifyModal, setShowModifyModal] = useState(false);
-  const [selectedContractForModification, setSelectedContractForModification] = useState(null);
+  const [selectedContractForModification, setSelectedContractForModification] =
+    useState(null);
 
   const BASE_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
@@ -51,7 +52,7 @@ const ApprovedContracts = () => {
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith("image/")) {
         setSignatureFile(file);
       } else {
         toast.error("Please select an image file");
@@ -69,7 +70,7 @@ const ApprovedContracts = () => {
 
     try {
       const formData = new FormData();
-      formData.append('signature_photo', signatureFile);
+      formData.append("signature_photo", signatureFile);
 
       const res = await fetch(
         `${BASE_URL}/api/projectManager/uploadSignInPerson/${selectedContract.id}`,
@@ -105,30 +106,34 @@ const ApprovedContracts = () => {
         const scheduleData = await scheduleRes.json();
 
         // Send first invoice
-        const invoiceRes = await fetch(
-          `${BASE_URL}/api/invoice/send-next`,
-          {
-            method: "POST",
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ contractId: scheduleData.contractId || selectedContract.id })
-          }
-        );
+        const invoiceRes = await fetch(`${BASE_URL}/api/invoice/send-next`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contractId: scheduleData.contractId || selectedContract.id,
+          }),
+        });
 
         if (!invoiceRes.ok) {
           throw new Error("Failed to send invoice");
         }
 
-        toast.success("Payment schedule generated and invoice sent to client successfully.");
+        toast.success(
+          "Payment schedule generated and invoice sent to client successfully."
+        );
       } catch (paymentErr) {
         console.error("Payment/invoice error:", paymentErr);
-        toast.error("Contract uploaded but failed to generate payment schedule or send invoice.");
+        toast.error(
+          "Contract uploaded but failed to generate payment schedule or send invoice."
+        );
       }
-
     } catch (err) {
       console.error("Error uploading signed contract:", err);
-      toast.error(err.message || "An error occurred while uploading the contract.");
+      toast.error(
+        err.message || "An error occurred while uploading the contract."
+      );
     } finally {
       setUploading((prev) => ({ ...prev, [selectedContract.id]: false }));
     }
@@ -141,9 +146,11 @@ const ApprovedContracts = () => {
       return contract.status !== "signed";
     } else if (viewMode === "in-person") {
       // Show finance-approved contracts marked for in-person signing that aren't signed yet
-      return contract.approval_status === "approved" && 
-             contract.sign_method === "in_person" && 
-             contract.status !== "signed";
+      return (
+        contract.approval_status === "approved" &&
+        contract.sign_method === "in_person" &&
+        contract.status !== "signed"
+      );
     } else if (viewMode === "signed") {
       // Show ONLY signed contracts
       return contract.status === "signed";
@@ -297,31 +304,46 @@ const ApprovedContracts = () => {
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
             <div className="text-2xl font-bold text-orange-600">
-              {contracts.filter(c => c.approval_status === "approved" && c.sign_method === "in_person" && c.status !== "signed").length}
+              {
+                contracts.filter(
+                  (c) =>
+                    c.approval_status === "approved" &&
+                    c.sign_method === "in_person" &&
+                    c.status !== "signed"
+                ).length
+              }
             </div>
             <div className="text-sm text-gray-600">In-Person</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
             <div className="text-2xl font-bold text-red-600">
-              {contracts.filter(c => c.status === "rejected" || c.approval_status === "rejected").length}
+              {
+                contracts.filter(
+                  (c) =>
+                    c.status === "rejected" || c.approval_status === "rejected"
+                ).length
+              }
             </div>
             <div className="text-sm text-gray-600">Rejected</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
-              {contracts.filter(c => c.status === "signed").length}
+              {contracts.filter((c) => c.status === "signed").length}
             </div>
             <div className="text-sm text-gray-600">Signed</div>
           </div>
         </div>
 
         {/* Contract List */}
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-6 max-h-screen overflow-y-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900 flex items-center">
               <span className="mr-2">
-                {viewMode === "status" ? "📊" : 
-                 viewMode === "in-person" ? "📝" : "✅"}
+                {viewMode === "status"
+                  ? "📊"
+                  : viewMode === "in-person"
+                  ? "📝"
+                  : "✅"}
               </span>
               {viewMode === "status" && "Contract Status Overview"}
               {viewMode === "in-person" && "Contracts for In-Person Signing"}
@@ -335,17 +357,23 @@ const ApprovedContracts = () => {
           {filteredContracts.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4 text-gray-300">
-                {viewMode === "status" ? "📊" : 
-                 viewMode === "in-person" ? "📝" : "✅"}
+                {viewMode === "status"
+                  ? "📊"
+                  : viewMode === "in-person"
+                  ? "📝"
+                  : "✅"}
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 {viewMode === "status" && "No Contracts in Progress"}
-                {viewMode === "in-person" && "No Contracts for In-Person Signing"}
+                {viewMode === "in-person" &&
+                  "No Contracts for In-Person Signing"}
                 {viewMode === "signed" && "No Signed Contracts"}
               </h3>
               <p className="text-gray-600">
-                {viewMode === "status" && "All contracts are either signed or there are no contracts to display."}
-                {viewMode === "in-person" && "All in-person contracts have been processed or there are no contracts marked for in-person signing."}
+                {viewMode === "status" &&
+                  "All contracts are either signed or there are no contracts to display."}
+                {viewMode === "in-person" &&
+                  "All in-person contracts have been processed or there are no contracts marked for in-person signing."}
                 {viewMode === "signed" && "No contracts have been signed yet."}
               </p>
             </div>
@@ -368,17 +396,23 @@ const ApprovedContracts = () => {
                             {/* For Signed View - Simplified Display */}
                             {viewMode === "signed" ? (
                               <>
-                                <div className={`px-3 py-1 rounded-full text-sm font-medium border bg-green-100 text-green-800 border-green-200 whitespace-nowrap flex items-center space-x-1`}>
+                                <div
+                                  className={`px-3 py-1 rounded-full text-sm font-medium border bg-green-100 text-green-800 border-green-200 whitespace-nowrap flex items-center space-x-1`}
+                                >
                                   <span>✅</span>
                                   <span>Signed</span>
                                 </div>
                                 {contract.sign_method && (
-                                  <div className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                                    contract.sign_method === "in_person" 
-                                      ? "bg-orange-100 text-orange-800 border-orange-200"
-                                      : "bg-purple-100 text-purple-800 border-purple-200"
-                                  } whitespace-nowrap`}>
-                                    {contract.sign_method === "in_person" ? "In-Person" : "Digital"}
+                                  <div
+                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                                      contract.sign_method === "in_person"
+                                        ? "bg-orange-100 text-orange-800 border-orange-200"
+                                        : "bg-purple-100 text-purple-800 border-purple-200"
+                                    } whitespace-nowrap`}
+                                  >
+                                    {contract.sign_method === "in_person"
+                                      ? "In-Person"
+                                      : "Digital"}
                                   </div>
                                 )}
                               </>
@@ -392,26 +426,39 @@ const ApprovedContracts = () => {
                                   )} whitespace-nowrap flex items-center space-x-1`}
                                 >
                                   <span>{getStatusIcon(contract.status)}</span>
-                                  <span>Client: {contract.status || "Unknown"}</span>
+                                  <span>
+                                    Client: {contract.status || "Unknown"}
+                                  </span>
                                 </div>
-                                
+
                                 {/* Finance Approval Status */}
                                 <div
                                   className={`px-3 py-1 rounded-full text-sm font-medium border ${getApprovalStatusColor(
                                     contract.approval_status
                                   )} whitespace-nowrap flex items-center space-x-1`}
                                 >
-                                  <span>{getApprovalStatusIcon(contract.approval_status)}</span>
-                                  <span>Finance: {contract.approval_status || "Unknown"}</span>
+                                  <span>
+                                    {getApprovalStatusIcon(
+                                      contract.approval_status
+                                    )}
+                                  </span>
+                                  <span>
+                                    Finance:{" "}
+                                    {contract.approval_status || "Unknown"}
+                                  </span>
                                 </div>
 
                                 {contract.sign_method && (
-                                  <div className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                                    contract.sign_method === "in_person" 
-                                      ? "bg-orange-100 text-orange-800 border-orange-200"
-                                      : "bg-purple-100 text-purple-800 border-purple-200"
-                                  } whitespace-nowrap`}>
-                                    {contract.sign_method === "in_person" ? "In-Person" : "Digital"}
+                                  <div
+                                    className={`px-3 py-1 rounded-full text-sm font-medium border ${
+                                      contract.sign_method === "in_person"
+                                        ? "bg-orange-100 text-orange-800 border-orange-200"
+                                        : "bg-purple-100 text-purple-800 border-purple-200"
+                                    } whitespace-nowrap`}
+                                  >
+                                    {contract.sign_method === "in_person"
+                                      ? "In-Person"
+                                      : "Digital"}
                                   </div>
                                 )}
                               </>
@@ -419,7 +466,8 @@ const ApprovedContracts = () => {
                           </div>
                         </div>
                         <p className="text-gray-600 text-sm">
-                          Contract ID: {contract.id} | Proposal ID: {contract.proposal_id}
+                          Contract ID: {contract.id} | Proposal ID:{" "}
+                          {contract.proposal_id}
                         </p>
                       </div>
                     </div>
@@ -432,7 +480,10 @@ const ApprovedContracts = () => {
                           <span className="font-medium">Budget:</span>
                         </div>
                         <p className="text-lg font-bold text-green-600">
-                          ₱{parseFloat(contract.budget_estimate).toLocaleString()}
+                          ₱
+                          {parseFloat(
+                            contract.budget_estimate
+                          ).toLocaleString()}
                         </p>
                       </div>
 
@@ -442,10 +493,13 @@ const ApprovedContracts = () => {
                           <span className="font-medium">Timeline:</span>
                         </div>
                         <p>
-                          {contract.start_date && contract.end_date 
-                            ? `${new Date(contract.start_date).toLocaleDateString()} - ${new Date(contract.end_date).toLocaleDateString()}`
-                            : "Not specified"
-                          }
+                          {contract.start_date && contract.end_date
+                            ? `${new Date(
+                                contract.start_date
+                              ).toLocaleDateString()} - ${new Date(
+                                contract.end_date
+                              ).toLocaleDateString()}`
+                            : "Not specified"}
                         </p>
                       </div>
 
@@ -453,12 +507,16 @@ const ApprovedContracts = () => {
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-400">📅</span>
                           <span className="font-medium">
-                            {viewMode === "signed" ? "Signed Date:" : "Created:"}
+                            {viewMode === "signed"
+                              ? "Signed Date:"
+                              : "Created:"}
                           </span>
                         </div>
                         <p>
                           {viewMode === "signed" && contract.contract_signed_at
-                            ? new Date(contract.contract_signed_at).toLocaleDateString()
+                            ? new Date(
+                                contract.contract_signed_at
+                              ).toLocaleDateString()
                             : contract.created_at
                             ? new Date(contract.created_at).toLocaleDateString()
                             : "N/A"}
@@ -469,14 +527,15 @@ const ApprovedContracts = () => {
                         <div className="flex items-center space-x-2">
                           <span className="text-gray-400">🔄</span>
                           <span className="font-medium">
-                            {viewMode === "signed" ? "Signing Method:" : "Status:"}
+                            {viewMode === "signed"
+                              ? "Signing Method:"
+                              : "Status:"}
                           </span>
                         </div>
                         <p>
-                          {viewMode === "signed" 
+                          {viewMode === "signed"
                             ? getSigningMethodDisplay(contract)
-                            : contract.status
-                          }
+                            : contract.status}
                         </p>
                       </div>
                     </div>
@@ -504,30 +563,34 @@ const ApprovedContracts = () => {
                     </div>
 
                     {/* Rejection Notes (show for rejected contracts in status view) */}
-                    {viewMode === "status" && contract.status === "rejected" && contract.client_rejection_notes && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                        <h4 className="font-semibold text-red-900 mb-2 flex items-center">
-                          <span className="mr-2">📝</span>
-                          Client Rejection Notes
-                        </h4>
-                        <p className="text-red-800 text-sm">
-                          {contract.client_rejection_notes}
-                        </p>
-                      </div>
-                    )}
+                    {viewMode === "status" &&
+                      contract.status === "rejected" &&
+                      contract.client_rejection_notes && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                          <h4 className="font-semibold text-red-900 mb-2 flex items-center">
+                            <span className="mr-2">📝</span>
+                            Client Rejection Notes
+                          </h4>
+                          <p className="text-red-800 text-sm">
+                            {contract.client_rejection_notes}
+                          </p>
+                        </div>
+                      )}
 
                     {/* Finance Rejection Notes */}
-                    {viewMode === "status" && contract.approval_status === "rejected" && contract.finance_rejection_notes && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                        <h4 className="font-semibold text-red-900 mb-2 flex items-center">
-                          <span className="mr-2">💰</span>
-                          Finance Rejection Notes
-                        </h4>
-                        <p className="text-red-800 text-sm">
-                          {contract.finance_rejection_notes}
-                        </p>
-                      </div>
-                    )}
+                    {viewMode === "status" &&
+                      contract.approval_status === "rejected" &&
+                      contract.finance_rejection_notes && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                          <h4 className="font-semibold text-red-900 mb-2 flex items-center">
+                            <span className="mr-2">💰</span>
+                            Finance Rejection Notes
+                          </h4>
+                          <p className="text-red-800 text-sm">
+                            {contract.finance_rejection_notes}
+                          </p>
+                        </div>
+                      )}
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
@@ -557,7 +620,7 @@ const ApprovedContracts = () => {
                             <span>Upload Signed Contract</span>
                           </button>
                         )}
-                        
+
                         {viewMode === "signed" && (
                           <button
                             onClick={() =>
@@ -573,16 +636,17 @@ const ApprovedContracts = () => {
                         )}
 
                         {/* Modify button for rejected contracts in status view */}
-                        {viewMode === "status" && (contract.status === "rejected" || contract.approval_status === "rejected") && (
-                          <button
-                            onClick={() => handleOpenModifyModal(contract)}
-                            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
-                          >
-                            <span>✏️</span>
-                            <span>Modify Contract</span>
-                          </button>
-                        )}
-
+                        {viewMode === "status" &&
+                          (contract.status === "rejected" ||
+                            contract.approval_status === "rejected") && (
+                            <button
+                              onClick={() => handleOpenModifyModal(contract)}
+                              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                            >
+                              <span>✏️</span>
+                              <span>Modify Contract</span>
+                            </button>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -608,13 +672,17 @@ const ApprovedContracts = () => {
                 ✕
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
                 Upload an image of the signed contract for:
               </p>
-              <p className="font-semibold text-gray-900">{selectedContract.proposal_title}</p>
-              <p className="text-sm text-gray-600">Client: {selectedContract.client_name}</p>
+              <p className="font-semibold text-gray-900">
+                {selectedContract.proposal_title}
+              </p>
+              <p className="text-sm text-gray-600">
+                Client: {selectedContract.client_name}
+              </p>
             </div>
 
             <div className="mb-4">
@@ -622,7 +690,7 @@ const ApprovedContracts = () => {
                 Signed Contract Image
               </label>
               <input
-                name='signature_photo'
+                name="signature_photo"
                 type="file"
                 accept="image/*"
                 onChange={handleFileSelect}

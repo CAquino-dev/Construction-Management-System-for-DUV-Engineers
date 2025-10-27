@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "sonner";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const Appointment = () => {
   const [appointments, setAppointments] = useState([]);
@@ -12,7 +13,16 @@ const Appointment = () => {
   const [sortBy, setSortBy] = useState("date-desc"); // Default sort: newest first
   const [statusFilter, setStatusFilter] = useState("all"); // Default: show all
 
-  const [showModal, setShowModal] = useState(false);
+  // --- Confirmation Modal States ---
+  const [showAddModal, setShowAddModal] = useState(false); // For adding new appointment
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // For Confirm/Cancel status actions
+  const [modalAction, setModalAction] = useState({
+    type: "", // 'Confirm', 'Cancel', 'Add Appointment'
+    id: null, // Appointment ID for status updates
+  });
+  const [remark, setRemark] = useState(""); // For rejection/cancellation remarks
+  // ---------------------------------
+
   const [newAppointment, setNewAppointment] = useState({
     clientName: "",
     clientEmail: "",
@@ -102,7 +112,59 @@ const Appointment = () => {
     fetchBookedDates();
   }, []);
 
-  const updateStatus = async (id, status) => {
+  // --- NEW MODAL HANDLERS ---
+  const openConfirmModal = (id, status) => {
+    setModalAction({
+      id: id,
+      type: status, // 'Confirmed' or 'Cancelled'
+    });
+    setRemark(""); // Clear previous remark
+    setShowConfirmModal(true);
+  };
+
+  const openAddConfirmationModal = (e) => {
+    e.preventDefault();
+    const selectedDateStr = preferredDate?.toISOString().split("T")[0];
+
+    // Basic form validation before opening confirmation modal
+    if (
+      !newAppointment.clientName.trim() ||
+      !newAppointment.clientEmail.trim() ||
+      !selectedDateStr ||
+      !newAppointment.preferredTime ||
+      !newAppointment.purpose
+    ) {
+      toast.error("Please fill all required fields.");
+      return;
+    }
+
+    setModalAction({
+      type: "Add Appointment",
+      id: null,
+    });
+    setShowConfirmModal(true);
+    // Note: The form submission is now tied to handleAdminSubmitConfirm
+  };
+
+  const handleCloseConfirmModal = () => {
+    setShowConfirmModal(false);
+    setModalAction({ type: "", id: null });
+    setRemark("");
+  };
+
+  // --- CONFIRMATION LOGIC ---
+
+  // Unified function to handle confirmation from the modal
+  const handleModalConfirm = () => {
+    if (modalAction.type === "Confirmed" || modalAction.type === "Cancelled") {
+      updateStatus(modalAction.id, modalAction.type, remark);
+    } else if (modalAction.type === "Add Appointment") {
+      handleAdminSubmitConfirmed();
+    }
+    handleCloseConfirmModal(); // Close the modal after action is initiated
+  };
+
+  const updateStatus = async (id, status, remark = "") => {
     setUpdatingId(id);
     try {
       const res = await fetch(
@@ -112,7 +174,8 @@ const Appointment = () => {
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
+          // Include the remark in the body if available
+          body: JSON.stringify({ status, remark }),
         }
       );
       if (!res.ok) {
@@ -135,24 +198,15 @@ const Appointment = () => {
     }));
   };
 
-  const handleAdminSubmit = async (e) => {
-    e.preventDefault();
+  // This function is now only called AFTER the "Add Appointment" confirmation
+  const handleAdminSubmitConfirmed = async () => {
     setIsSubmitting(true);
 
     const selectedDateStr = preferredDate?.toISOString().split("T")[0];
 
-    if (
-      !newAppointment.clientName.trim() ||
-      !newAppointment.clientEmail.trim() ||
-      !selectedDateStr ||
-      !newAppointment.preferredTime ||
-      !newAppointment.purpose
-    ) {
-      setSubmitStatus({
-        success: false,
-        message: "Please fill all required fields.",
-      });
-      toast.error("Please fill all required fields.");
+    // Note: Validation logic is moved to openAddConfirmationModal, but kept a basic check
+    if (!selectedDateStr) {
+      toast.error("Preferred Date is missing.");
       setIsSubmitting(false);
       return;
     }
@@ -160,6 +214,8 @@ const Appointment = () => {
     const submissionData = {
       ...newAppointment,
       preferredDate: selectedDateStr,
+      // You can also add a default remark if needed, but usually not for an admin-added appt.
+      // remark: remark // use this if you want to add a remark to admin-added appt
     };
 
     try {
@@ -173,7 +229,7 @@ const Appointment = () => {
       );
       if (!res.ok) throw new Error("Failed to add appointment");
 
-      setShowModal(false);
+      setShowAddModal(false);
       setSubmitStatus({
         success: true,
         message: "Appointment submitted successfully!",
@@ -263,7 +319,7 @@ const Appointment = () => {
               </p>
             </div>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={() => setShowAddModal(true)}
               className="mt-4 sm:mt-0 bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-6 py-3 rounded-xl font-semibold transition-colors flex items-center space-x-2 shadow-lg hover:shadow-xl"
             >
               <span>+</span>
@@ -370,7 +426,7 @@ const Appointment = () => {
               </p>
               {appointments.length === 0 ? (
                 <button
-                  onClick={() => setShowModal(true)}
+                  onClick={() => setShowAddModal(true)}
                   className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-6 py-3 rounded-xl font-semibold transition-colors"
                 >
                   Add First Appointment
@@ -459,7 +515,9 @@ const Appointment = () => {
                           <>
                             <button
                               disabled={updatingId === appt.id}
-                              onClick={() => updateStatus(appt.id, "Confirmed")}
+                              onClick={() =>
+                                openConfirmModal(appt.id, "Confirmed")
+                              }
                               className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 min-w-20 justify-center"
                             >
                               {updatingId === appt.id ? (
@@ -473,7 +531,9 @@ const Appointment = () => {
                             </button>
                             <button
                               disabled={updatingId === appt.id}
-                              onClick={() => updateStatus(appt.id, "Cancelled")}
+                              onClick={() =>
+                                openConfirmModal(appt.id, "Cancelled")
+                              }
                               className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 min-w-20 justify-center"
                             >
                               {updatingId === appt.id ? (
@@ -508,7 +568,7 @@ const Appointment = () => {
       </div>
 
       {/* Add Appointment Modal */}
-      {showModal && (
+      {showAddModal && (
         <div className="fixed inset-0 bg-gray-900/70 bg-opacity-40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
@@ -518,7 +578,7 @@ const Appointment = () => {
                   Add New Appointment
                 </h2>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => setShowAddModal(false)}
                   className="text-gray-400 hover:text-gray-600 text-2xl p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   ×
@@ -526,7 +586,8 @@ const Appointment = () => {
               </div>
             </div>
 
-            <form onSubmit={handleAdminSubmit} className="p-6 space-y-6">
+            {/* Change onSubmit to open the confirmation modal */}
+            <form onSubmit={openAddConfirmationModal} className="p-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -636,7 +697,7 @@ const Appointment = () => {
 
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-4 border-t border-gray-200">
                 <button
-                  type="submit"
+                  type="submit" // This now triggers openAddConfirmationModal
                   disabled={isSubmitting}
                   className="flex-1 bg-[#4c735c] hover:bg-[#3a5a4a] text-white py-3 px-6 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
@@ -654,7 +715,7 @@ const Appointment = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => setShowAddModal(false)}
                   className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 px-6 rounded-xl font-semibold transition-colors"
                 >
                   Cancel
@@ -664,6 +725,15 @@ const Appointment = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation/Rejection/Add Modal - Rendered Once */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={handleCloseConfirmModal}
+        onConfirm={handleModalConfirm}
+        actionType={modalAction.type}
+        setRemark={setRemark}
+      />
     </div>
   );
 };
