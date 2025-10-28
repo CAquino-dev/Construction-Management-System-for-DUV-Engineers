@@ -20,18 +20,21 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
+import { toast } from "sonner";
 
 export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   const userId = localStorage.getItem("userId");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [remarks, setRemarks] = useState("");
 
-  console.log('finance data', data.id);
+  console.log("finance data", data.id);
 
   const updateFinanceApproval = async (newStatus, remarks = "") => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/${data.id}/finance-approval`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/${
+          data.id
+        }/finance-approval`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -45,14 +48,14 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
 
       if (!res.ok) {
         const errorData = await res.json();
-        alert(errorData.error || "Failed to update finance approval");
+        toast.error(errorData.error || "Failed to update finance approval");
         return false;
       }
 
-      alert(`Request ${newStatus.toLowerCase()} successfully!`);
+      toast.success(`Request ${newStatus.toLowerCase()} successfully!`);
       return true;
     } catch (error) {
-      alert("Network error: " + error.message);
+      toast.error("Network error: " + error.message);
       return false;
     }
   };
@@ -64,11 +67,14 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
 
   const handleReject = async () => {
     if (!remarks.trim()) {
-      alert("Please provide remarks for rejection");
+      toast("Please provide remarks for rejection");
       return;
     }
-    
-    const success = await updateFinanceApproval("Finance Rejected", remarks.trim());
+
+    const success = await updateFinanceApproval(
+      "Finance Rejected",
+      remarks.trim()
+    );
     if (success) {
       setShowRejectModal(false);
       setRemarks("");
@@ -125,7 +131,10 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
             <h2 className="text-lg font-bold">
               Finance Review: {data.title || "Untitled Milestone"}
             </h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-black">
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-black"
+            >
               <X size={24} />
             </button>
           </div>
@@ -168,20 +177,20 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
               💰 BOQ vs Supplier Comparison
             </h3>
             <p>
-              <strong>BOQ Budget:</strong>{" "}
-              ₱{boqTotal.toLocaleString(undefined, {
+              <strong>BOQ Budget:</strong> ₱
+              {boqTotal.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
               })}
             </p>
             <p>
-              <strong>Supplier Total Quote:</strong>{" "}
-              ₱{totalCost.toLocaleString(undefined, {
+              <strong>Supplier Total Quote:</strong> ₱
+              {totalCost.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
               })}
             </p>
             <p>
-              <strong>Difference:</strong>{" "}
-              ₱{(boqTotal - totalCost).toLocaleString(undefined, {
+              <strong>Difference:</strong> ₱
+              {(boqTotal - totalCost).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
               })}{" "}
               {boqTotal - totalCost > 0 ? "(Under budget)" : "(Over budget)"}
@@ -285,11 +294,14 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Rejection Remarks</h3>
-              <button onClick={closeRejectModal} className="text-gray-500 hover:text-black">
+              <button
+                onClick={closeRejectModal}
+                className="text-gray-500 hover:text-black"
+              >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-sm text-gray-600 mb-2">
                 Please provide the reason for rejecting this request:
@@ -301,7 +313,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                 className="w-full h-32 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={closeRejectModal}
@@ -313,8 +325,8 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                 onClick={handleReject}
                 disabled={!remarks.trim()}
                 className={`px-4 py-2 text-white rounded ${
-                  !remarks.trim() 
-                    ? "bg-red-400 cursor-not-allowed" 
+                  !remarks.trim()
+                    ? "bg-red-400 cursor-not-allowed"
                     : "bg-red-600 hover:bg-red-700"
                 }`}
               >

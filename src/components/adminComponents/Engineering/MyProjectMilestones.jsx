@@ -34,11 +34,15 @@ export const MyProjectMilestones = ({ selectedProject }) => {
 
   console.log("name", permissions.role_name);
 
+  console.log("name", permissions.role_name);
+
   useEffect(() => {
     const getMilestones = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getMilestones/${selectedProject.id}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/project/getMilestones/${selectedProject.id}`
         );
         if (res.ok) {
           const data = await res.json();
@@ -102,7 +106,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
       }
 
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${selectedProject.id}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/submitReport/${
+          selectedProject.id
+        }`,
         {
           method: "POST",
           body: formData,
@@ -257,7 +263,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 </label>
                 <textarea
                   value={report.summary}
-                  onChange={(e) => handleReportChange("summary", e.target.value)}
+                  onChange={(e) =>
+                    handleReportChange("summary", e.target.value)
+                  }
                   required
                   placeholder="Write the progress update here..."
                   rows="4"
@@ -271,7 +279,9 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 <input
                   name="report_file"
                   type="file"
-                  onChange={(e) => handleReportChange("file", e.target.files[0])}
+                  onChange={(e) =>
+                    handleReportChange("file", e.target.files[0])
+                  }
                   className="w-full text-sm"
                 />
               </div>

@@ -342,15 +342,6 @@ const SupplierManagement = () => {
                             <Edit2 size={14} />
                             <span>Edit</span>
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => openDeleteModal(s.id)}
-                            className="flex items-center space-x-1"
-                          >
-                            <Trash2 size={14} />
-                            <span>Delete</span>
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -414,15 +405,6 @@ const SupplierManagement = () => {
                         >
                           <Edit2 size={14} />
                           <span>Edit</span>
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => openDeleteModal(s.id)}
-                          className="flex-1 flex items-center justify-center space-x-1"
-                        >
-                          <Trash2 size={14} />
-                          <span>Delete</span>
                         </Button>
                       </div>
                     </div>
