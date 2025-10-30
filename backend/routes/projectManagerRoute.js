@@ -18,7 +18,8 @@ const {
   getForProcurement,
   signInPerson,
   uploadSignInPersonContract,
-  regenerateContract
+  regenerateContract,
+  modifyProposal
 } = require('../controller/projectManagerController');
 
 router.post('/contract/send-to-client/:id', sendContractToClient);
@@ -38,5 +39,6 @@ router.get('/getSiteVisits', getScheduledSiteVisits);
 router.get('/getForProcurement', getForProcurement);
 router.put('/signInPerson/:contractId', signInPerson);
 router.post('/uploadSignInPerson/:contractId', uploadSignInPersonContract);
+router.put('/modifyProposal/:proposal_id', modifyProposal)
 
 module.exports = router;

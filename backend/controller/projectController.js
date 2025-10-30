@@ -799,7 +799,9 @@ const getContractById = (req, res) => {
       p.end_date AS proposal_end_date,
       l.client_name AS client_name,
       l.email AS client_email,
-      l.phone_number AS client_phone
+      l.phone_number AS client_phone,
+      l.site_location,
+      l.site_visit_notes AS notes
     FROM contracts c
     JOIN proposals p ON c.proposal_id = p.id
     JOIN leads l ON p.lead_id = l.id
