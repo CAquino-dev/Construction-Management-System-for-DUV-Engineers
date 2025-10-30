@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const CreateProjectPage = () => {
   const { contractId } = useParams();
@@ -22,6 +23,9 @@ const CreateProjectPage = () => {
     { description: "", unit: "", quantity: "", unit_cost: "" },
   ]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionType, setActionType] = useState(""); // optional, can be like "Create Project"
+  const [remark, setRemark] = useState(""); // modal requires it but for creation won't be needed
 
   // Fetch contract & user list
   useEffect(() => {
@@ -140,7 +144,7 @@ const CreateProjectPage = () => {
         toast.error(result.error || "Failed to create project");
       } else {
         toast.success("Project created successfully!");
-        // navigate("/project");
+        setTimeout(() => navigate(-1), 800); // ✅ ADD THIS
       }
     } catch (err) {
       console.error("Error submitting project:", err);
@@ -620,7 +624,10 @@ const CreateProjectPage = () => {
             {/* Submit Button */}
             <div className="flex justify-end pt-6 border-t border-gray-200">
               <Button
-                onClick={handleSubmit}
+                onClick={() => {
+                  setActionType("Create Project");
+                  setIsModalOpen(true);
+                }}
                 className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
               >
                 Create Project
@@ -628,6 +635,16 @@ const CreateProjectPage = () => {
             </div>
           </div>
         </div>
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={async () => {
+            await handleSubmit();
+            setIsModalOpen(false);
+          }}
+          actionType={actionType}
+          setRemark={setRemark} // even if unused, required prop
+        />
       </div>
     </div>
   );
