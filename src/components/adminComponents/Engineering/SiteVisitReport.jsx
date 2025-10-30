@@ -344,7 +344,7 @@ const SiteVisitReport = ({ isOpen, onClose, leadId }) => {
                     <div className="bg-gray-50 rounded-xl p-4">
                       <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                         <Note size={20} />
-                        Additional Notes
+                        Address Details
                       </h3>
                       <p className="text-gray-700 bg-white rounded-lg p-4 border border-gray-200">
                         {report.notes}

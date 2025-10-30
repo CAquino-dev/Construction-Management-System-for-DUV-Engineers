@@ -23,6 +23,28 @@ const CreateProjectPage = () => {
   ]);
   const [loading, setLoading] = useState(true);
 
+  // Common units for construction BOQ
+  const unitOptions = [
+    "pc", "pcs", "set", "lot", "kg", "ton", "m", "m²", "m³", 
+    "lm", "cu.m", "sq.m", "day", "hr", "month", "lump sum",
+    "unit", "pair", "roll", "box", "bag", "gallon", "liter"
+  ];
+
+  // Calculate 70% of budget
+  const maxBoqBudget = contract ? contract.budget_estimate * 0.7 : 0;
+
+  // Calculate current BOQ total
+  const calculateBoqTotal = () => {
+    return boqItems.reduce((total, item) => {
+      const quantity = parseFloat(item.quantity) || 0;
+      const unitCost = parseFloat(item.unit_cost) || 0;
+      return total + (quantity * unitCost);
+    }, 0);
+  };
+
+  const currentBoqTotal = calculateBoqTotal();
+  const remainingBudget = maxBoqBudget - currentBoqTotal;
+
   // Fetch contract & user list
   useEffect(() => {
     const fetchData = async () => {
@@ -38,11 +60,13 @@ const CreateProjectPage = () => {
         setContract(contractData);
         setUsers(usersData);
 
-        // Auto-fill fields using contract data
+        // Auto-fill location using contract data
         setForm((prev) => ({
           ...prev,
+          location: contractData.site_location || "",
           project_name: contractData.proposal_title || "",
-          location: contractData.client_address || "",
+          start_date: contractData.proposal_start_date ? contractData.proposal_start_date.split('T')[0] : "",
+          end_date: contractData.proposal_end_date ? contractData.proposal_end_date.split('T')[0] : "",
         }));
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -59,17 +83,42 @@ const CreateProjectPage = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // BOQ handlers
+  // BOQ handlers with budget validation
   const handleBoqChange = (index, field, value) => {
+    // If changing quantity or unit_cost, validate against budget
+    if (field === "quantity" || field === "unit_cost") {
+      const newBoq = [...boqItems];
+      const oldValue = newBoq[index][field];
+      newBoq[index][field] = value;
+      
+      // Calculate what the new total would be
+      const newTotal = newBoq.reduce((total, item, idx) => {
+        const quantity = parseFloat(idx === index && field === "quantity" ? value : item.quantity) || 0;
+        const unitCost = parseFloat(idx === index && field === "unit_cost" ? value : item.unit_cost) || 0;
+        return total + (quantity * unitCost);
+      }, 0);
+
+      // Check if new total exceeds budget
+      if (newTotal > maxBoqBudget) {
+        toast.error(`BOQ total cannot exceed 70% of budget (₱${maxBoqBudget.toLocaleString()})`);
+        return;
+      }
+    }
+
+    // If validation passes or it's not a numeric field, update normally
     const newBoq = [...boqItems];
     newBoq[index][field] = value;
     setBoqItems(newBoq);
   };
 
   const addBoqRow = () => {
+    if (currentBoqTotal >= maxBoqBudget) {
+      toast.error(`Cannot add more items. BOQ budget limit reached.`);
+      return;
+    }
     setBoqItems([
       ...boqItems,
-      { item_no: "", description: "", unit: "", quantity: "", unit_cost: "" },
+      { description: "", unit: "", quantity: "", unit_cost: "" },
     ]);
   };
 
@@ -92,11 +141,22 @@ const CreateProjectPage = () => {
       return;
     }
 
+    // Validate BOQ total before submission
+    if (currentBoqTotal > maxBoqBudget) {
+      toast.error(`BOQ total (₱${currentBoqTotal.toLocaleString()}) exceeds 70% of budget (₱${maxBoqBudget.toLocaleString()})`);
+      return;
+    }
+
+    if (currentBoqTotal === 0) {
+      toast.error("Please add at least one BOQ item with valid amount");
+      return;
+    }
+
     const body = {
       client_name: contract.client_name,
       client_email: contract.client_email,
       client_phone: contract.client_phone,
-      client_address: contract.client_address || "",
+      client_address: contract.site_location || contract.client_address || "",
       contractId: contractId,
       projectManagerId: userId,
       project_name: form.project_name,
@@ -106,7 +166,7 @@ const CreateProjectPage = () => {
       budget: contract.budget_estimate,
       cost_breakdown: contract.cost_breakdown || "",
       location: form.location,
-      payment_schedule: contract.payment_schedule || "",
+      payment_schedule: contract.payment_terms || "",
       project_type: contract.project_type || "General",
 
       assigned_users: [
@@ -118,8 +178,8 @@ const CreateProjectPage = () => {
         item_no: index + 1,
         description: item.description,
         unit: item.unit,
-        quantity: parseFloat(item.quantity),
-        unit_cost: parseFloat(item.unit_cost),
+        quantity: parseFloat(item.quantity) || 0,
+        unit_cost: parseFloat(item.unit_cost) || 0,
       })),
     };
 
@@ -214,18 +274,24 @@ const CreateProjectPage = () => {
               <p className="text-gray-900 mt-1">{contract.client_name}</p>
             </div>
             <div>
-              <span className="font-medium text-gray-700">Budget:</span>
+              <span className="font-medium text-gray-700">Total Budget:</span>
               <p className="text-gray-900 mt-1">
                 ₱{parseFloat(contract.budget_estimate).toLocaleString()}
               </p>
             </div>
             <div>
+              <span className="font-medium text-gray-700">BOQ Budget (70%):</span>
+              <p className="text-gray-900 mt-1 font-semibold text-[#4c735c]">
+                ₱{maxBoqBudget.toLocaleString()}
+              </p>
+            </div>
+            <div>
               <span className="font-medium text-gray-700">Start Date:</span>
-              <p className="text-gray-900 mt-1">{contract.start_date}</p>
+              <p className="text-gray-900 mt-1">{new Date(contract.start_date).toLocaleDateString()}</p>
             </div>
             <div>
               <span className="font-medium text-gray-700">End Date:</span>
-              <p className="text-gray-900 mt-1">{contract.end_date}</p>
+              <p className="text-gray-900 mt-1">{new Date(contract.end_date).toLocaleDateString()}</p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Status:</span>
@@ -317,7 +383,7 @@ const CreateProjectPage = () => {
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location - Auto-filled from contract */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Location
@@ -379,12 +445,24 @@ const CreateProjectPage = () => {
             {/* BOQ Section */}
             <div className="mt-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">
-                  Bill of Quantities (BOQ)
-                </h3>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">
+                    Bill of Quantities (BOQ)
+                  </h3>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <span className="font-medium">Budget Limit:</span> ₱{maxBoqBudget.toLocaleString()} 
+                    <span className="mx-2">•</span>
+                    <span className="font-medium">Current Total:</span> ₱{currentBoqTotal.toLocaleString()}
+                    <span className="mx-2">•</span>
+                    <span className={`font-medium ${remainingBudget < 0 ? 'text-red-600' : 'text-[#4c735c]'}`}>
+                      Remaining: ₱{remainingBudget.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
                 <Button
                   onClick={addBoqRow}
-                  className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                  disabled={remainingBudget <= 0}
+                  className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-4 py-2 rounded-lg transition-colors flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   <svg
                     className="w-4 h-4 mr-2"
@@ -402,6 +480,15 @@ const CreateProjectPage = () => {
                   Add Row
                 </Button>
               </div>
+
+              {/* Budget Warning */}
+              {remainingBudget < 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p className="text-red-700 text-sm font-medium">
+                    ⚠️ BOQ total exceeds budget limit by ₱{Math.abs(remainingBudget).toLocaleString()}
+                  </p>
+                </div>
+              )}
 
               {/* Mobile BOQ View */}
               <div className="sm:hidden space-y-4">
@@ -450,7 +537,7 @@ const CreateProjectPage = () => {
                             )
                           }
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                          placeholder="Item description"
+                          placeholder="description"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -458,15 +545,20 @@ const CreateProjectPage = () => {
                           <label className="block text-xs font-medium text-gray-600 mb-1">
                             Unit
                           </label>
-                          <input
-                            type="text"
+                          <select
                             value={item.unit}
                             onChange={(e) =>
                               handleBoqChange(index, "unit", e.target.value)
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                            placeholder="Unit"
-                          />
+                          >
+                            <option value="">Select unit</option>
+                            {unitOptions.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {unit}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -507,111 +599,128 @@ const CreateProjectPage = () => {
                 <table className="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
                   <thead className="bg-gray-100">
                     <tr>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                        Item No
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 w-16">
+                        No
                       </th>
                       <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
                         Description
                       </th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 w-32">
                         Unit
                       </th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 w-32">
                         Quantity
                       </th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 w-32">
                         Unit Cost
                       </th>
-                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 w-32">
+                        Total
+                      </th>
+                      <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700 w-20">
                         Action
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {boqItems.map((item, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="border border-gray-300 px-4 py-3 text-center text-gray-600">
-                          {index + 1}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-3">
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) =>
-                              handleBoqChange(
-                                index,
-                                "description",
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
-                            placeholder="Item description"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-3">
-                          <input
-                            type="text"
-                            value={item.unit}
-                            onChange={(e) =>
-                              handleBoqChange(index, "unit", e.target.value)
-                            }
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
-                            placeholder="Unit"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-3">
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleBoqChange(index, "quantity", e.target.value)
-                            }
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-3">
-                          <input
-                            type="number"
-                            value={item.unit_cost}
-                            onChange={(e) =>
-                              handleBoqChange(
-                                index,
-                                "unit_cost",
-                                e.target.value
-                              )
-                            }
-                            className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
-                            placeholder="0.00"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => removeBoqRow(index)}
-                            className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
-                            title="Remove row"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                    {boqItems.map((item, index) => {
+                      const quantity = parseFloat(item.quantity) || 0;
+                      const unitCost = parseFloat(item.unit_cost) || 0;
+                      const total = quantity * unitCost;
+                      
+                      return (
+                        <tr
+                          key={index}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="border border-gray-300 px-4 py-3 text-center text-gray-600 font-medium">
+                            {index + 1}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3">
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={(e) =>
+                                handleBoqChange(
+                                  index,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
+                              placeholder="description"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3">
+                            <select
+                              value={item.unit}
+                              onChange={(e) =>
+                                handleBoqChange(index, "unit", e.target.value)
+                              }
+                              className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                              <option value="">Select unit</option>
+                              {unitOptions.map((unit) => (
+                                <option key={unit} value={unit}>
+                                  {unit}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3">
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                handleBoqChange(index, "quantity", e.target.value)
+                              }
+                              className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
+                              placeholder="0"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3">
+                            <input
+                              type="number"
+                              value={item.unit_cost}
+                              onChange={(e) =>
+                                handleBoqChange(
+                                  index,
+                                  "unit_cost",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
+                              placeholder="0.00"
+                            />
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-center font-medium">
+                            ₱{total.toLocaleString()}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => removeBoqRow(index)}
+                              className="text-red-600 hover:text-red-700 p-1 rounded transition-colors"
+                              title="Remove row"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -621,7 +730,8 @@ const CreateProjectPage = () => {
             <div className="flex justify-end pt-6 border-t border-gray-200">
               <Button
                 onClick={handleSubmit}
-                className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
+                disabled={currentBoqTotal > maxBoqBudget || currentBoqTotal === 0}
+                className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 Create Project
               </Button>
