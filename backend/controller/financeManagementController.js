@@ -150,8 +150,6 @@ const getApprovedPayslips = (req, res) => {
   });
 };
 
-
-
 const financeUpdatePayslipStatus = (req, res) => {
   const { payslipId, status, remarks, approvedBy } = req.body;
 
@@ -217,7 +215,6 @@ const financeUpdatePayslipStatus = (req, res) => {
     });
   });
 };
-
 
   const financeProcessPayslipPayment = (req, res) => {
   const { payslipId, paymentStatus, remarks, paidBy } = req.body;
@@ -334,7 +331,6 @@ const clientPayment = (req, res) => {
     });
   });
 };
-
 
 // Get projects with milestones pending payment
 const getProjectsWithPendingPayments = (req, res) => {
@@ -1711,11 +1707,203 @@ ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
   });
 };
 
+const getApprovedLtoEto = (req, res) => {
+  const query = `
+    SELECT
+      m.id AS milestone_id,
+      m.project_id,
+      m.title AS milestone_title,
+      m.status AS milestone_status,
+
+      ml.id AS lto_id,
+      ml.description AS lto_description,
+      ml.allocated_budget AS lto_total_cost,
+      ml.remarks AS lto_remarks,
+
+      me.id AS eto_id,
+      me.equipment_name AS eto_equipment_name,
+      me.days AS eto_days,
+      me.daily_rate AS eto_daily_rate,
+      me.total_cost AS eto_total_cost
+
+    FROM milestones m
+    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+    LEFT JOIN milestone_lto ml ON mb.id = ml.milestone_boq_id
+    LEFT JOIN milestone_eto me ON mb.id = me.milestone_boq_id
+    WHERE 
+      m.status = 'Delivered'
+      AND (ml.id IS NOT NULL OR me.id IS NOT NULL)
+      AND m.id NOT IN (SELECT milestone_id FROM cash_handover)
+    ORDER BY m.project_id, m.id;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching approved LTO and ETO:", err);
+      return res.status(500).json({ error: "Failed to fetch approved LTO/ETO" });
+    }
+
+    const milestonesMap = new Map();
+
+    results.forEach((row) => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          milestone_id: row.milestone_id,
+          project_id: row.project_id,
+          title: row.milestone_title,
+          status: row.milestone_status,
+          lto_items: [],
+          eto_items: [],
+        });
+      }
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      // LTO
+      if (row.lto_id) {
+        milestone.lto_items.push({
+          lto_id: row.lto_id,
+          description: row.lto_description,
+          total_cost: row.lto_total_cost,
+          remarks: row.lto_remarks,
+        });
+      }
+
+      // ETO
+      if (row.eto_id) {
+        milestone.eto_items.push({
+          eto_id: row.eto_id,
+          equipment_name: row.eto_equipment_name,
+          days: row.eto_days,
+          daily_rate: row.eto_daily_rate,
+          total_cost: row.eto_total_cost,
+        });
+      }
+    });
+
+    const milestones = Array.from(milestonesMap.values());
+    res.json({ milestones });
+  });
+};
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "public/finance_signatures";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `signature_${Date.now()}${ext}`);
+  },
+});
+
+const cashHandoverUpload = multer({ storage }).single("recipient_signature");
+
+const processCashHandover = (req, res) => {
+  cashHandoverUpload(req, res, (err) => {
+    if (err) {
+      console.error("Upload error:", err);
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    const {
+      milestone_id,
+      amount,
+      recipient_name,
+      handover_date,
+      notes,
+      processed_by,
+    } = req.body;
+
+    if (!milestone_id || !amount || !recipient_name || !handover_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const signaturePath = req.file ? `/finance_signatures/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO cash_handover (
+        milestone_id,
+        amount,
+        recipient_name,
+        handover_date,
+        notes,
+        recipient_signature,
+        processed_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      milestone_id,
+      amount,
+      recipient_name,
+      handover_date,
+      notes || null,
+      signaturePath,
+      processed_by || null,
+    ];
+
+    db.query(query, values, (error, result) => {
+      if (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: error.message,
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Cash handover processed successfully",
+        data: { id: result.insertId },
+      });
+    });
+  });
+};
+
+const getCashHandovers = (req, res) => {
+  const query = `
+    SELECT
+      ch.id AS handover_id,
+      ch.milestone_id,
+      m.title AS milestone_title,
+      m.project_id,
+      ch.amount,
+      ch.recipient_name,
+      ch.handover_date,
+      ch.notes,
+      ch.recipient_signature,
+      ch.processed_by,
+      u.full_name AS processed_by_name,
+      ch.created_at
+    FROM cash_handover ch
+    JOIN milestones m ON ch.milestone_id = m.id
+    LEFT JOIN users u ON ch.processed_by = u.id
+    ORDER BY ch.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching cash handovers:", err);
+      return res.status(500).json({ error: "Failed to fetch cash handovers" });
+    }
+
+    return res.status(200).json({ data: results });
+  });
+};
+
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
   updateContractApprovalStatus, getPendingFinanceApprovalMilestones, uploadSalarySignature,
   getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
-  getPaidPayslips, getPaidPurchaseOrders, getProcurementApprovedMilestones, updateFinanceQuoteApprovalStatus
+  getPaidPayslips, getPaidPurchaseOrders, getProcurementApprovedMilestones, updateFinanceQuoteApprovalStatus,
+  getApprovedLtoEto, processCashHandover, getCashHandovers
  };
