@@ -292,7 +292,11 @@ const getProposalResponse = (req, res) => {
       proposals.end_date,
       proposals.description,
       proposals.scope_of_work,
-      proposals.payment_terms
+      proposals.payment_terms,
+      proposals.lead_id,
+      proposals.file_url,
+      proposals.budget_estimate,
+      leads.email
     FROM proposals
     JOIN leads ON proposals.lead_id = leads.id
     ORDER BY proposals.responded_at DESC, proposals.created_at DESC
@@ -1205,6 +1209,161 @@ const regenerateContract = (req, res) => {
   });
 };
 
+const modifyProposal = (req, res) => {
+  uploadProposalPDF(req, res, (err) => {
+    if (err) {
+      console.error("File upload error:", err.message);
+      return res.status(400).json({ error: err.message });
+    }
+
+    const proposal_id = req.params.proposal_id;
+    const {
+      title,
+      description,
+      scope_of_work,
+      start_date,
+      end_date,
+      payment_term_id,
+      payment_terms,
+      budget_estimate,
+      client_email,
+      client_name,
+    } = req.body;
+
+    if (
+      !title ||
+      !description ||
+      !scope_of_work ||
+      !start_date ||
+      !end_date ||
+      !payment_term_id ||
+      !payment_terms ||
+      !budget_estimate ||
+      !client_email ||
+      !client_name
+    ) {
+      return res.status(400).json({ error: "All required fields must be filled." });
+    }
+
+    // Validate and parse scope_of_work
+    let parsedScope;
+    try {
+      parsedScope = JSON.parse(scope_of_work);
+      if (!Array.isArray(parsedScope)) throw new Error("Not an array");
+    } catch (parseErr) {
+      console.error("Invalid scope_of_work format:", parseErr);
+      return res.status(400).json({ error: "Invalid format for scope_of_work. Must be a JSON array." });
+    }
+
+    const newFileUrl = req.file ? `/uploads/proposals/${req.file.filename}` : null;
+
+    // Check existing proposal
+    const fetchQuery = `SELECT * FROM proposals WHERE id = ? LIMIT 1`;
+    db.query(fetchQuery, [proposal_id], (fetchErr, fetchResult) => {
+      if (fetchErr) {
+        console.error("Database error fetching proposal:", fetchErr);
+        return res.status(500).json({ error: "Failed to fetch proposal." });
+      }
+
+      if (!fetchResult.length) {
+        return res.status(404).json({ error: "Proposal not found." });
+      }
+
+      const existingProposal = fetchResult[0];
+      const finalFileUrl = newFileUrl || existingProposal.file_url;
+
+      // Reset status to pending when modified
+      const updateQuery = `
+        UPDATE proposals 
+        SET 
+          title = ?,
+          description = ?,
+          scope_of_work = ?,
+          start_date = ?,
+          end_date = ?,
+          payment_term_id = ?,
+          payment_terms = ?,
+          budget_estimate = ?,
+          file_url = ?,
+          status = 'pending',
+          updated_at = NOW()
+        WHERE id = ?
+      `;
+
+      const values = [
+        title,
+        description,
+        JSON.stringify(parsedScope),
+        start_date,
+        end_date,
+        payment_term_id,
+        payment_terms,
+        budget_estimate,
+        finalFileUrl,
+        proposal_id,
+      ];
+
+      db.query(updateQuery, values, (updateErr) => {
+        if (updateErr) {
+          console.error("Database error updating proposal:", updateErr);
+          return res.status(500).json({ error: "Failed to update proposal." });
+        }
+
+        // Fetch updated record
+        const selectUpdated = `SELECT * FROM proposals WHERE id = ? LIMIT 1`;
+        db.query(selectUpdated, [proposal_id], (selErr, updatedRes) => {
+          if (selErr) {
+            console.error("Error fetching updated proposal:", selErr);
+            return res.status(500).json({ error: "Proposal updated but fetch failed." });
+          }
+
+          const updatedProposal = updatedRes[0];
+          const approvalLink = `${process.env.FRONTEND_URL}/proposal/respond/${updatedProposal.approval_token}`;
+
+          // Send updated email
+          const mailOptions = {
+            from: `"DUV ENGINEERS" <${process.env.SMTP_EMAIL}>`,
+            to: client_email,
+            subject: `Updated Proposal - ${title}`,
+            html: `
+              <p>Dear ${client_name || "Valued Client"},</p>
+
+              <p>We have updated your proposal <strong>"${title}"</strong> and it is now ready for your review.</p>
+
+              <p><strong>Access your updated proposal here:</strong><br>
+              <a href="${approvalLink}" target="_blank" style="color: #4c735c; text-decoration: underline;">${approvalLink}</a></p>
+
+              <p>The proposal reflects the latest revisions discussed. We are available to address any questions you may have.</p>
+
+              <p>Thank you for considering DUV ENGINEERS for your project needs.</p>
+
+              <br>
+
+              <p>Sincerely,<br>
+              <strong>The DUV ENGINEERS Team</strong></p>
+            `,
+          };
+
+          transporter.sendMail(mailOptions, (emailErr, info) => {
+            if (emailErr) {
+              console.error("Error sending email:", emailErr);
+              // Don’t fail the main flow if email fails
+            } else {
+              console.log("Update email sent:", info.response);
+            }
+          });
+
+          return res.status(200).json({
+            message: "Proposal updated successfully and email sent to client.",
+            proposal: updatedProposal,
+            approvalLink,
+          });
+        });
+      });
+    });
+  });
+};
+
 
 module.exports = {
   createProposal,
@@ -1223,5 +1382,6 @@ module.exports = {
   getForProcurement,
   signInPerson,
   uploadSignInPersonContract,
-  regenerateContract
+  regenerateContract,
+  modifyProposal
 };

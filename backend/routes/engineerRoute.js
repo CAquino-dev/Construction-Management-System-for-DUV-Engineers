@@ -3,7 +3,8 @@ const router = express.Router();
 
 const { getEngineers, createProject, getClients, getClientProject, getEngineerProjects,
      createMilestone, getMilestonesForPaymentByProject, completeMilestone
-    ,updateMtoItems, updateForemanReports, updateMilestoneStatus } = require('../controller/engineerManagementController');
+    ,updateMtoItems, updateForemanReports, updateMilestoneStatus,
+    updateLtoItems, updateEtoItems } = require('../controller/engineerManagementController');
 
 router.get('/getEngineers', getEngineers);
 router.get('/getClients', getClients);
@@ -14,6 +15,8 @@ router.post('/createMilestones/:projectId', createMilestone);
 router.get('/projects/:projectId/milestones/for-payment', getMilestonesForPaymentByProject);
 router.post('/milestones/:id/complete', completeMilestone);
 router.put('/milestones/mto', updateMtoItems);
+router.put('/milestones/lto', updateLtoItems);
+router.put('/milestones/eto', updateEtoItems);
 router.put('/updateForemanReports/:reportId', updateForemanReports);
 router.put('/milestones/update-status', updateMilestoneStatus);
 
