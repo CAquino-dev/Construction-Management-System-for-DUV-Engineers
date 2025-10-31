@@ -1101,20 +1101,6 @@ const AdminNavbar = ({ children }) => {
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
                     <Link
-                      to="/admin-dashboard/projects"
-                      className={`block p-2 rounded-lg cursor-pointer ${
-                        location.pathname ===
-                        "/admin-dashboard/site-manager/projects"
-                          ? "bg-[#5A8366] text-white"
-                          : "hover:bg-[#5A8366]"
-                      }`}
-                      onClick={toggleMobileSidebar}
-                    >
-                      Projects
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
                       to="/admin-dashboard/foreman/attendance"
                       className={`block p-2 rounded-lg cursor-pointer ${
                         location.pathname ===
