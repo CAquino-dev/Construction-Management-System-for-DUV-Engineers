@@ -19,14 +19,16 @@ const {
   updateFinanceApprovalStatus,
   getContracts,
   updateContractApprovalStatus,
-  getProcurementApprovedMilestones,
+  getPendingFinanceApprovalMilestones,
   uploadSalarySignature,
   getReleasedPayslips,
   getDeliveredPurchaseOrders,
   processFinancePayment,
   recordClientCashPayment,
   getPaidPayslips,
-  getPaidPurchaseOrders
+  getPaidPurchaseOrders, 
+  getProcurementApprovedMilestones,
+  updateFinanceQuoteApprovalStatus
 } = require("../controller/financeManagementController");
 
 const financeBaseDir = path.join(__dirname, "../public");
@@ -62,6 +64,7 @@ router.get("/getFinance", getFinance);
 router.get("/getApprovedPayslips", getApprovedPayslips);
 router.get("/getCeoApprovedPayslips", getCeoApprovedPayslips);
 router.get("/getContracts", getContracts);
+router.get("/pendingApproval", getPendingFinanceApprovalMilestones);
 router.get("/procurementApproved", getProcurementApprovedMilestones);
 router.get("/getReleasedPayslips", getReleasedPayslips);
 router.get("/getPaidPayslips", getPaidPayslips);
@@ -75,6 +78,7 @@ router.get("/projects/with-pending-payments", getProjectsWithPendingPayments);
 router.get("/projects/:projectId/milestones/for-payment", getMilestonesForPaymentByProject);
 router.get("/project/expenses/approved-by-engineer", getAllExpensesApprovedByEngineer);
 router.put("/:id/finance-approval", updateFinanceApprovalStatus);
+router.put("/:id/finance-quote-approval", updateFinanceQuoteApprovalStatus);
 router.get("/purchase-orders/delivered-unpaid", getDeliveredPurchaseOrders);
 router.get('/getPaidPurchaseOrders', getPaidPurchaseOrders);
 

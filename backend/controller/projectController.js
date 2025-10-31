@@ -342,6 +342,8 @@ const getMilestones = (req, res) => {
       m.status,
       m.start_date,
       m.due_date,
+      m.finance_rejection_stage,
+      m.finance_remarks,
 
       mb.id AS milestone_boq_id,
       b.id AS boq_id,
@@ -352,6 +354,7 @@ const getMilestones = (req, res) => {
       b.unit_cost AS boq_unit_cost,
       b.total_cost AS boq_total_cost,
 
+      -- MTO
       mm.id AS mto_id,
       mm.description AS mto_description,
       mm.unit AS mto_unit,
@@ -359,13 +362,29 @@ const getMilestones = (req, res) => {
       mm.unit_cost AS mto_unit_cost,
       mm.total_cost AS mto_total_cost,
 
-      -- add task progress info
+      -- LTO
+      ml.id AS lto_id,
+      ml.description AS lto_description,
+      ml.allocated_budget AS lto_total_cost,
+      ml.remarks AS lto_remarks,
+
+      -- ETO
+      me.id AS eto_id,
+      me.equipment_name AS eto_equipment_name,
+      me.days AS eto_days,
+      me.daily_rate AS eto_daily_rate,
+      me.total_cost AS eto_total_cost,
+
+      -- milestone progress
       (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id) AS total_tasks,
       (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id AND t.status = 'Completed') AS completed_tasks
+
     FROM milestones m
     LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
     LEFT JOIN boq b ON mb.boq_id = b.id
     LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+    LEFT JOIN milestone_lto ml ON mb.id = ml.milestone_boq_id
+    LEFT JOIN milestone_eto me ON mb.id = me.milestone_boq_id
     WHERE m.project_id = ?
     ORDER BY m.timestamp DESC, m.id, mb.id, mm.id
   `;
@@ -378,9 +397,9 @@ const getMilestones = (req, res) => {
 
     const milestonesMap = new Map();
 
-    results.forEach(row => {
+    results.forEach((row) => {
       if (!milestonesMap.has(row.milestone_id)) {
-        // calculate milestone progress
+        // Calculate milestone progress
         let progress = 0;
         if (row.total_tasks > 0) {
           progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
@@ -395,15 +414,19 @@ const getMilestones = (req, res) => {
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
-          progress,   // ✅ milestone progress %
-          boq_items: []
+          progress,
+          finance_rejection_stage: row.finance_rejection_stage,
+          finance_remarks: row.finance_remarks,
+          boq_items: [],
         });
       }
 
       const milestone = milestonesMap.get(row.milestone_id);
 
       if (row.milestone_boq_id) {
-        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+        let boqItem = milestone.boq_items.find(
+          (b) => b.milestone_boq_id === row.milestone_boq_id
+        );
 
         if (!boqItem) {
           boqItem = {
@@ -415,11 +438,14 @@ const getMilestones = (req, res) => {
             quantity: row.boq_quantity,
             unit_cost: row.boq_unit_cost,
             total_cost: row.boq_total_cost,
-            mto_items: []
+            mto_items: [],
+            lto: null,
+            eto: null,
           };
           milestone.boq_items.push(boqItem);
         }
 
+        // MTO
         if (row.mto_id) {
           boqItem.mto_items.push({
             mto_id: row.mto_id,
@@ -427,8 +453,29 @@ const getMilestones = (req, res) => {
             unit: row.mto_unit,
             quantity: row.mto_quantity,
             unit_cost: row.mto_unit_cost,
-            total_cost: row.mto_total_cost
+            total_cost: row.mto_total_cost,
           });
+        }
+
+        // LTO
+        if (row.lto_id) {
+          boqItem.lto = {
+            lto_id: row.lto_id,
+            description: row.lto_description,
+            total_cost: row.lto_total_cost,
+            remarks: row.lto_remarks,
+          };
+        }
+
+        // ETO
+        if (row.eto_id) {
+          boqItem.eto = {
+            eto_id: row.eto_id,
+            equipment_name: row.eto_equipment_name,
+            days: row.eto_days,
+            daily_rate: row.eto_daily_rate,
+            total_cost: row.eto_total_cost,
+          };
         }
       }
     });
@@ -437,8 +484,6 @@ const getMilestones = (req, res) => {
     res.json({ milestones });
   });
 };
-
-
 
 
 

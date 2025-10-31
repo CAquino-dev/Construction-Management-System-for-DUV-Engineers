@@ -5,6 +5,7 @@ import { MyProjectViewMilestone } from "./MyProjectViewMilestone";
 
 const STATUS_STYLES = {
   Draft: "bg-gray-100 text-gray-700 border border-gray-300",
+  "Pending Finance Approval": "bg-sky-100 text-sky-800 border border-sky-200",
   "For Review": "bg-yellow-100 text-yellow-800 border border-yellow-200",
   "PM Approved": "bg-green-100 text-green-800 border border-green-200",
   "PM Rejected": "bg-red-100 text-red-800 border border-red-200",
@@ -31,10 +32,6 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const userId = localStorage.getItem("userId");
   const permissions = JSON.parse(localStorage.getItem("permissions"));
   const navigate = useNavigate();
-
-  console.log("name", permissions.role_name);
-
-  console.log("name", permissions.role_name);
 
   useEffect(() => {
     const getMilestones = async () => {
