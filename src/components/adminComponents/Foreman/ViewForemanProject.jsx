@@ -21,10 +21,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   const [teams, setTeams] = useState([]);
   const [reportTab, setReportTab] = useState("create"); // "create" | "sent"
   const [myReports, setMyReports] = useState([]);
-  const [taskReport, setTaskReport] = useState([])
+  const [taskReport, setTaskReport] = useState([]);
 
-  console.log('project id' ,selectedProject.id)
-
+  console.log("project id", selectedProject.id);
 
   const ganttRef = useRef(null);
 
@@ -64,9 +63,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     const fetchTasks = async () => {
       try {
         const res = await fetch(
-          `${
-            import.meta.env.VITE_REACT_APP_API_URL
-          }/api/foreman/getTasks/${selectedProject.id}`
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTasks/${
+            selectedProject.id
+          }`
         );
         if (res.ok) {
           const data = await res.json();
@@ -96,7 +95,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     const fetchReports = async () => {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getReports/${selectedProject.id}`
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getReports/${
+            selectedProject.id
+          }`
         );
         if (res.ok) {
           const data = await res.json();
@@ -109,7 +110,11 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
     const fetchTaskForReports = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/foreman/getTasksForReport/${selectedProject.id}`)
+        const res = await fetch(
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/foreman/getTasksForReport/${selectedProject.id}`
+        );
         if (res.ok) {
           const data = await res.json();
           setTaskReport(data || []);
@@ -126,8 +131,8 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   }, []);
 
   useEffect(() => {
-    console.log('task report', taskReport);
-  }, [taskReport])
+    console.log("task report", taskReport);
+  }, [taskReport]);
 
   const handleSaveTask = (updatedTask) => {
     // TODO: Call API to update task
@@ -282,21 +287,25 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         </div>
       </section>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-4 mb-6">
-        {["overview", "tasks", "workers", "timeline", "reports"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              activeTab === tab
-                ? "bg-[#4c735c] text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
+      {/* Tab Navigation with responsive breakpoints */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-6">
+        <div className="flex gap-2 overflow-x-auto py-2 hide-scrollbar sm:overflow-visible">
+          {["overview", "tasks", "workers", "timeline", "reports"].map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-2 rounded-lg font-medium transition whitespace-nowrap flex-shrink-0 flex-1 sm:flex-none text-sm sm:text-base ${
+                  activeTab === tab
+                    ? "bg-[#4c735c] text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -536,173 +545,307 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </div>
         )}
 
-{activeTab === "reports" && (
-  <div>
-    {/* Reports Sub-Tab Navigation */}
-    <div className="flex gap-4 mb-6">
-      <button
-        onClick={() => setReportTab("create")}
-        className={`px-4 py-2 rounded-lg font-medium transition ${
-          reportTab === "create"
-            ? "bg-[#4c735c] text-white"
-            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-        }`}
-      >
-        Create Report
-      </button>
-      <button
-        onClick={() => setReportTab("sent")}
-        className={`px-4 py-2 rounded-lg font-medium transition ${
-          reportTab === "sent"
-            ? "bg-[#4c735c] text-white"
-            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-        }`}
-      >
-        My Reports
-      </button>
-    </div>
-
-    {/* Create Report Form */}
-    {reportTab === "create" && (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
-        <form onSubmit={handleSubmitReport} className="space-y-4">
-          {/* Task */}
+        {activeTab === "reports" && (
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Task</label>
-            <select
-              className="w-full border rounded-lg px-3 py-2"
-              value={report.task_id}
-              onChange={(e) => setReport({ ...report, task_id: e.target.value })}
-            >
-              <option value="">-- Select Task --</option>
-              {taskReport.map((task) =>
-                  <option key={task.task_id} value={task.task_id}>
-                    {task.milestone_title} - {task.title}
-                  </option>
-              )}
-            </select>
-          </div>
+            {/* Reports Sub-Tab Navigation */}
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setReportTab("create")}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  reportTab === "create"
+                    ? "bg-[#4c735c] text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                Create Report
+              </button>
+              <button
+                onClick={() => setReportTab("sent")}
+                className={`px-4 py-2 rounded-lg font-medium transition ${
+                  reportTab === "sent"
+                    ? "bg-[#4c735c] text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                My Reports
+              </button>
+            </div>
 
-          {/* Report Type */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Report Type
-            </label>
-            <select
-              required
-              className="w-full border rounded-lg px-3 py-2"
-              value={report.report_type}
-              onChange={(e) =>
-                setReport({ ...report, report_type: e.target.value })
-              }
-            >
-              <option value="">-- Select Report Type --</option>
-              <option value="Update">Update</option>
-              <option value="Final">Final</option>
-            </select>
-          </div>
+            {/* Create Report Form */}
+            {reportTab === "create" && (
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Submit Report</h2>
+                <form onSubmit={handleSubmitReport} className="space-y-4">
+                  {/* Task */}
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Task
+                    </label>
+                    <select
+                      className="w-full border rounded-lg px-3 py-2"
+                      value={report.task_id}
+                      onChange={(e) =>
+                        setReport({ ...report, task_id: e.target.value })
+                      }
+                    >
+                      <option value="">-- Select Task --</option>
+                      {taskReport.map((task) => (
+                        <option key={task.task_id} value={task.task_id}>
+                          {task.milestone_title} - {task.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-          {/* Title */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Title
-            </label>
-            <input
-              type="text"
-              className="w-full border rounded-lg px-3 py-2"
-              value={report.title}
-              onChange={(e) => setReport({ ...report, title: e.target.value })}
-            />
-          </div>
+                  {/* Report Type */}
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Report Type
+                    </label>
+                    <select
+                      required
+                      className="w-full border rounded-lg px-3 py-2"
+                      value={report.report_type}
+                      onChange={(e) =>
+                        setReport({ ...report, report_type: e.target.value })
+                      }
+                    >
+                      <option value="">-- Select Report Type --</option>
+                      <option value="Update">Update</option>
+                      <option value="Final">Final</option>
+                    </select>
+                  </div>
 
-          {/* Summary */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Details / Summary
-            </label>
-            <textarea
-              className="w-full border rounded-lg px-3 py-2"
-              rows="4"
-              value={report.summary}
-              onChange={(e) =>
-                setReport({ ...report, summary: e.target.value })
-              }
-            />
-          </div>
+                  {/* Title */}
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Title
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full border rounded-lg px-3 py-2"
+                      value={report.title}
+                      onChange={(e) =>
+                        setReport({ ...report, title: e.target.value })
+                      }
+                    />
+                  </div>
 
-          {/* File Upload */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              File Upload
-            </label>
-            <input
-              name="report_file"
-              type="file"
-              className="w-full"
-              onChange={(e) =>
-                setReport({ ...report, file: e.target.files[0] })
-              }
-            />
-          </div>
+                  {/* Summary */}
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-1">
+                      Details / Summary
+                    </label>
+                    <textarea
+                      className="w-full border rounded-lg px-3 py-2"
+                      rows="4"
+                      value={report.summary}
+                      onChange={(e) =>
+                        setReport({ ...report, summary: e.target.value })
+                      }
+                    />
+                  </div>
 
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Submit Report
-          </button>
-        </form>
-      </div>
-    )}
+                  {/* File Upload */}
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-1">
+                      File Upload
+                    </label>
+                    <input
+                      name="report_file"
+                      type="file"
+                      className="w-full"
+                      onChange={(e) =>
+                        setReport({ ...report, file: e.target.files[0] })
+                      }
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Submit Report
+                  </button>
+                </form>
+              </div>
+            )}
 
             {/* My Reports List */}
             {reportTab === "sent" && (
-              <div>
+              <div className="w-full">
                 <h2 className="text-2xl font-bold mb-6">My Reports</h2>
                 {myReports.length > 0 ? (
-                  <table className="min-w-full border border-gray-200 rounded-lg">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2 border-b text-left text-sm">Title</th>
-                        <th className="px-4 py-2 border-b text-left text-sm">
-                          Report Type
-                        </th>
-                        <th className="px-4 py-2 border-b text-left text-sm">Task</th>
-                        <th className="px-4 py-2 border-b text-left text-sm">
-                          Submitted At
-                        </th>
-                        <th className="px-4 py-2 border-b text-left text-sm">File</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Title
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Report Type
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Task
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Submitted At
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              File
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {myReports.map((r) => (
+                            <tr
+                              key={r.id}
+                              className="hover:bg-gray-50 transition-colors"
+                            >
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                <div className="font-medium">{r.title}</div>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {r.report_type}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {r.task_title}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-500">
+                                {new Date(r.created_at).toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm">
+                                {r.file_url ? (
+                                  <a
+                                    href={r.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                  >
+                                    <svg
+                                      className="w-4 h-4 mr-1"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                      />
+                                    </svg>
+                                    View File
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400 italic">
+                                    No File
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards */}
+                    <div className="md:hidden space-y-4 p-4">
                       {myReports.map((r) => (
-                        <tr key={r.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 border-b">{r.title}</td>
-                          <td className="px-4 py-2 border-b">{r.report_type}</td>
-                          <td className="px-4 py-2 border-b">{r.task_title}</td>
-                          <td className="px-4 py-2 border-b">
-                            {new Date(r.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 border-b">
-                            {r.file_url ? (
-                              <a
-                                href={r.file_url}
-                                target="_blank"
-                                className="text-blue-600 underline"
-                              >
-                                View File
-                              </a>
-                            ) : (
-                              "No File"
-                            )}
-                          </td>
-                        </tr>
+                        <div
+                          key={r.id}
+                          className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-semibold text-gray-900 text-lg">
+                                {r.title}
+                              </h3>
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {r.report_type}
+                              </span>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-sm text-gray-500">Task</p>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {r.task_title}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-sm text-gray-500">
+                                  Submitted
+                                </p>
+                                <p className="text-sm text-gray-900">
+                                  {new Date(r.created_at).toLocaleString()}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-sm text-gray-500">File</p>
+                                {r.file_url ? (
+                                  <a
+                                    href={r.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                                  >
+                                    <svg
+                                      className="w-4 h-4 mr-1"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                      />
+                                    </svg>
+                                    View File
+                                  </a>
+                                ) : (
+                                  <span className="text-gray-400 italic text-sm">
+                                    No File
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 ) : (
-                  <p className="text-gray-500 italic">You haven’t submitted reports yet.</p>
+                  <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+                    <svg
+                      className="mx-auto h-12 w-12 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      No reports
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      You haven't submitted any reports yet.
+                    </p>
+                  </div>
                 )}
               </div>
             )}
