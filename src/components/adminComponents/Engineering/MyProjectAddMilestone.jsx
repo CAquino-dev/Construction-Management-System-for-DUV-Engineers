@@ -64,7 +64,7 @@ export const MyProjectAddMilestone = ({ onSave, onCancel, project }) => {
         toast.success("Milestone Added Successfully");
         onSave(data);
       } else {
-        alert("An error occurred while adding the milestone");
+        toast.error("An error occurred while adding the milestone");
       }
     } catch (error) {
       console.error("Error:", error);

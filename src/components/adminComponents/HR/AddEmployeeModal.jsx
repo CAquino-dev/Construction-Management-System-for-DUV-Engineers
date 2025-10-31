@@ -132,7 +132,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
         toast.success(data.message);
         onClose();
       } else {
-        alert(data.error);
+        toast.error(data.error);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
