@@ -405,7 +405,7 @@ const SiteVisit = () => {
               </div>
 
               <div>
-                <Label>Additional Notes</Label>
+                <Label>Address Details</Label>
                 <Textarea
                   name="notes"
                   value={formData.notes}

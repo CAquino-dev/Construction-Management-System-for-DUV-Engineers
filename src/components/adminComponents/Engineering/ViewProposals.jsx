@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import PaginationComponent from "../Pagination";
 import ConfirmationModal from "../ConfirmationModal";
+import ModifyProposal from "./ModifyProposal";
 
 const ViewProposals = () => {
   const [proposals, setProposals] = useState([]);
@@ -15,6 +16,8 @@ const ViewProposals = () => {
   const itemsPerPage = 5;
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [selectedProposalId, setSelectedProposalId] = useState(null);
+  const [isModifyModalOpen, setIsModifyModalOpen] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState(null);
 
   // New State for Search and Filtering
   const [searchTerm, setSearchTerm] = useState("");
@@ -188,6 +191,29 @@ const ViewProposals = () => {
     setExpandedProposal(expandedProposal === proposalId ? null : proposalId);
   };
 
+  // Add this function to handle opening the modify modal
+  const handleOpenModifyModal = (proposal) => {
+    setSelectedProposal(proposal);
+    setIsModifyModalOpen(true);
+  };
+
+  // Add this function to handle the modified proposal
+  const handleProposalModified = (modifiedProposal) => {
+    // Update the proposals list with the modified proposal
+    setProposals(prev => prev.map(p => 
+      p.id === modifiedProposal.id ? modifiedProposal : p
+    ));
+    setIsModifyModalOpen(false);
+    setSelectedProposal(null);
+    
+    // Show success message
+    setMessage({
+      success: "Proposal modified successfully! It has been resubmitted for approval.",
+      error: "",
+      approvalLink: ""
+    });
+  };
+
   // ⭐️ New Logic: Filtering and Sorting
   const filteredProposals = useMemo(() => {
     let filtered = proposals;
@@ -336,6 +362,7 @@ const ViewProposals = () => {
               const statusInfo = getStatusInfo(p.status);
               const scopeOfWork = parseScopeOfWork(p.scope_of_work);
               const isLoading = loadingStates[p.id];
+              const isRejected = p.status && p.status.toLowerCase() === "rejected";
 
               return (
                 <React.Fragment key={p.id}>
@@ -381,43 +408,56 @@ const ViewProposals = () => {
                       {formatDate(p.responded_at)}
                     </td>
                     <td className="p-4">
-                      <button
-                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center min-w-[140px] ${
-                          isButtonDisabled(p.status, p.id)
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-[#4c735c] text-white hover:bg-[#3a5a48] cursor-pointer shadow-sm"
-                        }`}
-                        onClick={() => handleOpenConfirm(p.id)}
-                        disabled={isButtonDisabled(p.status, p.id)}
-                      >
-                        {isLoading ? (
-                          <>
-                            <svg
-                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Generating...
-                          </>
-                        ) : (
-                          "Generate Contract"
+                      <div className="flex flex-col space-y-2">
+                        {/* Generate Contract Button */}
+                        <button
+                          className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center min-w-[140px] ${
+                            isButtonDisabled(p.status, p.id)
+                              ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              : "bg-[#4c735c] text-white hover:bg-[#3a5a48] cursor-pointer shadow-sm"
+                          }`}
+                          onClick={() => handleOpenConfirm(p.id)}
+                          disabled={isButtonDisabled(p.status, p.id)}
+                        >
+                          {isLoading ? (
+                            <>
+                              <svg
+                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              Generating...
+                            </>
+                          ) : (
+                            "Generate Contract"
+                          )}
+                        </button>
+
+                        {/* Modify Button - Only show for rejected proposals */}
+                        {isRejected && (
+                          <button
+                            className="px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center min-w-[140px] bg-blue-600 text-white hover:bg-blue-700 cursor-pointer shadow-sm"
+                            onClick={() => handleOpenModifyModal(p)}
+                          >
+                            Modify Proposal
+                          </button>
                         )}
-                      </button>
+                      </div>
                     </td>
                   </tr>
                   {expandedProposal === p.id && (
@@ -530,6 +570,7 @@ const ViewProposals = () => {
           const statusInfo = getStatusInfo(p.status);
           const scopeOfWork = parseScopeOfWork(p.scope_of_work);
           const isLoading = loadingStates[p.id];
+          const isRejected = p.status && p.status.toLowerCase() === "rejected";
 
           return (
             <div
@@ -645,50 +686,65 @@ const ViewProposals = () => {
                 </div>
               )}
 
-              <div className="flex justify-between items-center mt-4">
-                <button
-                  onClick={() => toggleProposalDetails(p.id)}
-                  className="text-[#4c735c] hover:text-[#3a5a48] font-medium text-sm transition-colors"
-                >
-                  {expandedProposal === p.id ? "Show Less" : "View Details"}
-                </button>
-                <button
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center min-w-[140px] ${
-                    isButtonDisabled(p.status, p.id)
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-[#4c735c] text-white hover:bg-[#3a5a48] cursor-pointer shadow-sm"
-                  }`}
-                  onClick={() => handleOpenConfirm(p.id)}
-                  disabled={isButtonDisabled(p.status, p.id)}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Contract"
+              <div className="flex flex-col space-y-2 mt-4">
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={() => toggleProposalDetails(p.id)}
+                    className="text-[#4c735c] hover:text-[#3a5a48] font-medium text-sm transition-colors"
+                  >
+                    {expandedProposal === p.id ? "Show Less" : "View Details"}
+                  </button>
+                </div>
+                
+                <div className="flex flex-col space-y-2">
+                  <button
+                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center ${
+                      isButtonDisabled(p.status, p.id)
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-[#4c735c] text-white hover:bg-[#3a5a48] cursor-pointer shadow-sm"
+                    }`}
+                    onClick={() => handleOpenConfirm(p.id)}
+                    disabled={isButtonDisabled(p.status, p.id)}
+                  >
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate Contract"
+                    )}
+                  </button>
+
+                  {/* Modify Button for mobile */}
+                  {isRejected && (
+                    <button
+                      className="px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center bg-blue-600 text-white hover:bg-blue-700 cursor-pointer shadow-sm"
+                      onClick={() => handleOpenModifyModal(p)}
+                    >
+                      Modify Proposal
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
             </div>
           );
@@ -742,6 +798,17 @@ const ViewProposals = () => {
           setIsConfirmModalOpen(false);
         }}
         actionType="Generate Contract"
+      />
+
+      {/* Add the ModifyProposal Modal */}
+      <ModifyProposal
+        isOpen={isModifyModalOpen}
+        onClose={() => {
+          setIsModifyModalOpen(false);
+          setSelectedProposal(null);
+        }}
+        proposal={selectedProposal}
+        onSave={handleProposalModified}
       />
     </div>
   );

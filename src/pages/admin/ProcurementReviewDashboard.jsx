@@ -232,7 +232,7 @@ const ProcurementReviewDashboard = () => {
                       </div>
 
                       {/* Show button only when status is "Pending" */}
-                      {status === "Pending" && (
+                      {status === "Submitted" && (
                         <Button
                           disabled={approving === items[0]?.quote_id}
                           onClick={() => handleApprove(supplierName)}

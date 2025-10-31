@@ -448,7 +448,7 @@ const getAllExpensesApprovedByEngineer = (req, res) => {
   });
 };
 
-const updateFinanceApprovalStatus = (req, res) => {
+const updateFinanceQuoteApprovalStatus = (req, res) => {
   const milestoneId = req.params.id;
   const { status, financeId, remarks } = req.body;
 
@@ -458,12 +458,15 @@ const updateFinanceApprovalStatus = (req, res) => {
 
   const approvalDate = new Date();
 
+  // Update milestone finance status
   const updateMilestoneQuery = `
     UPDATE milestones
-    SET status = ?, 
-        finance_approved_by = ?, 
-        finance_approval_date = ?,
-        finance_remarks = ?
+    SET 
+      status = ?, 
+      finance_approved_by = ?, 
+      finance_approval_date = ?,
+      finance_remarks = ?,
+      finance_rejection_stage = ${status === "Finance Rejected" ? "'Quote'" : "NULL"}
     WHERE id = ?
   `;
 
@@ -480,92 +483,97 @@ const updateFinanceApprovalStatus = (req, res) => {
         return res.status(404).json({ error: "Milestone not found" });
       }
 
-      // ✅ APPROVED → generate PO
+      // ✅ FINANCE APPROVED → Generate Purchase Order
       if (status === "Finance Approved") {
-      const getQuoteQuery = `
-        SELECT pq.id AS quote_id, pq.supplier_id, pq.milestone_id, m.project_id
-        FROM procurement_quotes pq
-        JOIN milestones m ON pq.milestone_id = m.id
-        WHERE pq.milestone_id = ? AND pq.status = 'Selected'
-      `;
-
-      db.query(getQuoteQuery, [milestoneId], (err, results) => {
-        if (err) {
-          console.error("Error fetching approved quote:", err);
-          return res.status(500).json({ message: "Error fetching approved quote" });
-        }
-
-        if (results.length === 0) {
-          return res.status(404).json({ message: "No selected supplier quote found" });
-        }
-
-        const { quote_id, supplier_id, project_id } = results[0];
-        const poNumber = `PO-${Date.now()}`;
-
-        // 3️⃣ Insert into purchase_orders
-        const insertPOQuery = `
-          INSERT INTO purchase_orders (project_id, milestone_id, quote_id, supplier_id, po_number, created_by)
-          VALUES (?, ?, ?, ?, ?, ?)
+        const getQuoteQuery = `
+          SELECT pq.id AS quote_id, pq.supplier_id, pq.milestone_id, m.project_id
+          FROM procurement_quotes pq
+          JOIN milestones m ON pq.milestone_id = m.id
+          WHERE pq.milestone_id = ? AND pq.status = 'Selected'
         `;
 
-        db.query(
-          insertPOQuery,
-          [project_id, milestoneId, quote_id, supplier_id, poNumber, financeId],
-          (err, result) => {
-            if (err) {
-              console.error("Error creating purchase order:", err);
-              return res.status(500).json({ message: "Error creating purchase order" });
-            }
+        db.query(getQuoteQuery, [milestoneId], (err, results) => {
+          if (err) {
+            console.error("Error fetching approved quote:", err);
+            return res.status(500).json({ message: "Error fetching approved quote" });
+          }
 
-            const po_id = result.insertId;
+          if (results.length === 0) {
+            return res.status(404).json({ message: "No selected supplier quote found" });
+          }
 
-            // 4️⃣ Copy all quote items into purchase_order_items
-            const copyItemsQuery = `
-              INSERT INTO purchase_order_items (po_id, material_name, unit, quantity, unit_price, total_cost)
-              SELECT ?, material_name, unit, quantity, unit_price, (quantity * unit_price)
-              FROM procurement_quote_items
-              WHERE quote_id = ?
-            `;
+          const { quote_id, supplier_id, project_id } = results[0];
+          const poNumber = `PO-${Date.now()}`;
 
-            db.query(copyItemsQuery, [po_id, quote_id], (err2) => {
-              if (err2) {
-                console.error("Error copying PO items:", err2);
-                return res.status(500).json({ message: "Error copying PO items" });
+          // Insert new purchase order
+          const insertPOQuery = `
+            INSERT INTO purchase_orders 
+            (project_id, milestone_id, quote_id, supplier_id, po_number, created_by)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `;
+
+          db.query(
+            insertPOQuery,
+            [project_id, milestoneId, quote_id, supplier_id, poNumber, financeId],
+            (err, result) => {
+              if (err) {
+                console.error("Error creating purchase order:", err);
+                return res.status(500).json({ message: "Error creating purchase order" });
               }
 
-              // 5️⃣ Compute total
-              const totalQuery = `
-                UPDATE purchase_orders
-                SET total_amount = (
-                  SELECT SUM(total_cost) FROM purchase_order_items WHERE po_id = ?
-                )
-                WHERE id = ?
+              const po_id = result.insertId;
+
+              // Copy all items from quote → PO items
+              const copyItemsQuery = `
+                INSERT INTO purchase_order_items 
+                (po_id, material_name, unit, quantity, unit_price, total_cost)
+                SELECT ?, material_name, unit, quantity, unit_price, (quantity * unit_price)
+                FROM procurement_quote_items
+                WHERE quote_id = ?
               `;
 
-              db.query(totalQuery, [po_id, po_id], (err3) => {
-                if (err3) {
-                  console.error("Error computing PO total:", err3);
-                  return res.status(500).json({ message: "Error computing PO total" });
+              db.query(copyItemsQuery, [po_id, quote_id], (err2) => {
+                if (err2) {
+                  console.error("Error copying PO items:", err2);
+                  return res.status(500).json({ message: "Error copying PO items" });
                 }
 
-                console.log(`✅ Purchase Order generated: ${poNumber}`);
-                res.json({
-                  message: "Finance approved and Purchase Order generated successfully",
-                  po_id,
-                  po_number: poNumber,
+                // Compute total amount of PO
+                const totalQuery = `
+                  UPDATE purchase_orders
+                  SET total_amount = (
+                    SELECT SUM(total_cost) FROM purchase_order_items WHERE po_id = ?
+                  )
+                  WHERE id = ?
+                `;
+
+                db.query(totalQuery, [po_id, po_id], (err3) => {
+                  if (err3) {
+                    console.error("Error computing PO total:", err3);
+                    return res.status(500).json({ message: "Error computing PO total" });
+                  }
+
+                  console.log(`✅ Purchase Order generated: ${poNumber}`);
+                  res.json({
+                    message: "Finance approved and Purchase Order generated successfully",
+                    po_id,
+                    po_number: poNumber,
+                    status: "Finance Approved",
+                  });
                 });
               });
-            });
-          }
-        );
-      });
-      } // ❌ REJECTED → reopen old procurement quotes
+            }
+          );
+        });
+      }
+
+      // ❌ FINANCE REJECTED → reopen quotes for Procurement
       else {
-          const reopenQuotesQuery = `
-            UPDATE procurement_quotes
-            SET status = 'Pending'
-            WHERE milestone_id = ?
-          `;
+        const reopenQuotesQuery = `
+          UPDATE procurement_quotes
+          SET status = 'Submitted'
+          WHERE milestone_id = ?
+        `;
 
         db.query(reopenQuotesQuery, [milestoneId], (err2, result2) => {
           if (err2) {
@@ -574,14 +582,70 @@ const updateFinanceApprovalStatus = (req, res) => {
           }
 
           res.json({
-            message: "Finance rejected milestone. Rejected quotes are now reopened for Procurement review.",
+            message:
+              "Finance rejected the selected quote. Procurement may now review or select a new quote.",
             reopened_quotes: result2.affectedRows,
+            rejection_stage: "Quote",
+            status: "Finance Rejected",
           });
         });
       }
     }
   );
 };
+
+
+const updateFinanceApprovalStatus = (req, res) => {
+  const milestoneId = req.params.id;
+  const { status, financeId, remarks } = req.body;
+
+  // Validate status
+  if (!status || !["Finance Approved", "Finance Rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid or missing status" });
+  }
+
+  const approvalDate = new Date();
+  const nextStatus = status === "Finance Approved" ? "For Procurement" : "Finance Rejected";
+
+  // Include finance_rejection_stage only when rejected
+  const updateMilestoneQuery = `
+    UPDATE milestones
+    SET 
+      status = ?, 
+      finance_approved_by = ?, 
+      finance_approval_date = ?,
+      finance_remarks = ?,
+      finance_rejection_stage = ${status === "Finance Rejected" ? "'Budget'" : "NULL"}
+    WHERE id = ?
+  `;
+
+  db.query(
+    updateMilestoneQuery,
+    [nextStatus, financeId, approvalDate, remarks || null, milestoneId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating finance approval status:", err);
+        return res.status(500).json({ error: "Failed to update finance approval status" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Milestone not found" });
+      }
+
+      res.json({
+        message:
+          nextStatus === "For Procurement"
+            ? "✅ Finance approved. Milestone is now ready for Procurement."
+            : "❌ Finance rejected during budget review. Please check remarks and modify the milestone.",
+        milestone_id: milestoneId,
+        status: nextStatus,
+        rejection_stage: status === "Finance Rejected" ? "Budget" : null,
+        remarks: remarks || null,
+      });
+    }
+  );
+};
+
 
 
 const getContracts = (req, res) => {
@@ -828,136 +892,156 @@ const updateContractApprovalStatus = (req, res) => {
 // };
 
 // GET /api/finance/procurement-approved
-const getProcurementApprovedMilestones = (req, res) => {
+const getPendingFinanceApprovalMilestones = (req, res) => {
   const query = `
-SELECT 
-  m.id AS milestone_id,
-  m.project_id,
-  m.title,
-  m.details,
-  m.status,
-  m.start_date,
-  m.due_date,
-  m.timestamp,
+    SELECT
+      m.id AS milestone_id,
+      m.project_id,
+      m.timestamp,
+      m.title,
+      m.details,
+      m.status,
+      m.start_date,
+      m.due_date,
 
-  -- Supplier quote data
-  pq.id AS quote_id,
-  pq.supplier_id,
-  s.supplier_name,
-  pq.status AS quote_status,
+      mb.id AS milestone_boq_id,
+      b.id AS boq_id,
+      b.item_no,
+      b.description AS boq_description,
+      b.unit AS boq_unit,
+      b.quantity AS boq_quantity,
+      b.unit_cost AS boq_unit_cost,
+      b.total_cost AS boq_total_cost,
 
-  pqi.id AS quote_item_id,
-  pqi.material_name,
-  pqi.unit AS quote_unit,
-  pqi.quantity AS quote_quantity,
-  pqi.unit_price AS quote_unit_price,
+      -- MTO
+      mm.id AS mto_id,
+      mm.description AS mto_description,
+      mm.unit AS mto_unit,
+      mm.quantity AS mto_quantity,
+      mm.unit_cost AS mto_unit_cost,
+      mm.total_cost AS mto_total_cost,
 
-  -- BOQ data
-  b.id AS boq_id,
-  b.item_no,
-  b.description AS boq_description,
-  b.unit AS boq_unit,
-  b.quantity AS boq_quantity,
-  b.unit_cost AS boq_unit_cost,
-  b.total_cost AS boq_total_cost
+      -- LTO
+      ml.id AS lto_id,
+      ml.description AS lto_description,
+      ml.allocated_budget AS lto_total_cost,
+      ml.remarks AS lto_remarks,
 
-FROM milestones m
-LEFT JOIN procurement_quotes pq 
-  ON pq.milestone_id = m.id 
-  AND pq.status = 'Selected'
-LEFT JOIN suppliers s 
-  ON pq.supplier_id = s.id
-LEFT JOIN procurement_quote_items pqi 
-  ON pq.id = pqi.quote_id
-LEFT JOIN milestone_boq mb 
-  ON m.id = mb.milestone_id
-LEFT JOIN boq b 
-  ON mb.boq_id = b.id
+      -- ETO
+      me.id AS eto_id,
+      me.equipment_name AS eto_equipment_name,
+      me.days AS eto_days,
+      me.daily_rate AS eto_daily_rate,
+      me.total_cost AS eto_total_cost,
 
-WHERE pq.status = 'Selected'
-  AND m.status NOT IN ('Finance Approved', "Pending Delivery", "Delivered")
+      -- milestone progress
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id) AS total_tasks,
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id AND t.status = 'Completed') AS completed_tasks
 
-ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
+    FROM milestones m
+    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+    LEFT JOIN boq b ON mb.boq_id = b.id
+    LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+    LEFT JOIN milestone_lto ml ON mb.id = ml.milestone_boq_id
+    LEFT JOIN milestone_eto me ON mb.id = me.milestone_boq_id
+    WHERE m.status = 'Pending Finance Approval'
+    ORDER BY m.timestamp DESC, m.id, mb.id, mm.id
   `;
 
   db.query(query, (err, results) => {
     if (err) {
-      console.error("Error fetching procurement-approved milestones:", err);
-      return res.status(500).json({ message: "Failed to fetch milestones" });
+      console.error("Error fetching Pending Finance Approval milestones:", err);
+      return res.status(500).json({ error: "Failed to fetch milestones" });
     }
 
     const milestonesMap = new Map();
 
     results.forEach((row) => {
       if (!milestonesMap.has(row.milestone_id)) {
+        // milestone progress %
+        let progress = 0;
+        if (row.total_tasks > 0) {
+          progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
+        }
+
         milestonesMap.set(row.milestone_id, {
-          milestone_id: row.milestone_id,
+          id: row.milestone_id,
           project_id: row.project_id,
+          timestamp: row.timestamp,
           title: row.title,
           details: row.details,
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
-          timestamp: row.timestamp,
-          approved_supplier: {
-            supplier_id: row.supplier_id,
-            supplier_name: row.supplier_name,
-            quote_id: row.quote_id,
-            items: [],
-            total_quote: 0,
-          },
+          progress,
           boq_items: [],
-          boq_total: 0,
-          _boq_ids: new Set(), // 🧠 temporary tracker for deduplication
         });
       }
 
       const milestone = milestonesMap.get(row.milestone_id);
 
-      // ✅ Add supplier quote items
-      if (row.quote_item_id) {
-        const totalCost =
-          parseFloat(row.quote_quantity || 0) *
-          parseFloat(row.quote_unit_price || 0);
+      if (row.milestone_boq_id) {
+        let boqItem = milestone.boq_items.find(
+          (b) => b.milestone_boq_id === row.milestone_boq_id
+        );
 
-        milestone.approved_supplier.items.push({
-          quote_item_id: row.quote_item_id,
-          material_name: row.material_name,
-          unit: row.quote_unit,
-          quantity: row.quote_quantity,
-          unit_price: row.quote_unit_price,
-          total_cost: totalCost,
-        });
+        if (!boqItem) {
+          boqItem = {
+            milestone_boq_id: row.milestone_boq_id,
+            boq_id: row.boq_id,
+            item_no: row.item_no,
+            description: row.boq_description,
+            unit: row.boq_unit,
+            quantity: row.boq_quantity,
+            unit_cost: row.boq_unit_cost,
+            total_cost: row.boq_total_cost,
+            mto_items: [],
+            lto: null,
+            eto: null,
+          };
+          milestone.boq_items.push(boqItem);
+        }
 
-        milestone.approved_supplier.total_quote += totalCost;
-      }
+        // MTO
+        if (row.mto_id) {
+          boqItem.mto_items.push({
+            mto_id: row.mto_id,
+            description: row.mto_description,
+            unit: row.mto_unit,
+            quantity: row.mto_quantity,
+            unit_cost: row.mto_unit_cost,
+            total_cost: row.mto_total_cost,
+          });
+        }
 
-      // ✅ Add BOQ items only once per boq_id
-      if (row.boq_id && !milestone._boq_ids.has(row.boq_id)) {
-        milestone.boq_items.push({
-          boq_id: row.boq_id,
-          item_no: row.item_no,
-          description: row.boq_description,
-          unit: row.boq_unit,
-          quantity: row.boq_quantity,
-          unit_cost: row.boq_unit_cost,
-          total_cost: parseFloat(row.boq_total_cost) || 0,
-        });
+        // LTO
+        if (row.lto_id) {
+          boqItem.lto = {
+            lto_id: row.lto_id,
+            description: row.lto_description,
+            total_cost: row.lto_total_cost,
+            remarks: row.lto_remarks,
+          };
+        }
 
-        milestone.boq_total += parseFloat(row.boq_total_cost) || 0;
-        milestone._boq_ids.add(row.boq_id); // 🧩 Mark as added
+        // ETO
+        if (row.eto_id) {
+          boqItem.eto = {
+            eto_id: row.eto_id,
+            equipment_name: row.eto_equipment_name,
+            days: row.eto_days,
+            daily_rate: row.eto_daily_rate,
+            total_cost: row.eto_total_cost,
+          };
+        }
       }
     });
 
-    // 🧹 Remove temporary _boq_ids before sending response
-    const milestones = Array.from(milestonesMap.values()).map((m) => {
-      delete m._boq_ids;
-      return m;
-    });
-
+    const milestones = Array.from(milestonesMap.values());
     res.json({ milestones });
   });
 };
+
 
 
 
@@ -1496,11 +1580,142 @@ const getPaidPurchaseOrders = (req, res) => {
   });
 };
 
+const getProcurementApprovedMilestones = (req, res) => {
+  const query = `
+SELECT 
+  m.id AS milestone_id,
+  m.project_id,
+  m.title,
+  m.details,
+  m.status,
+  m.start_date,
+  m.due_date,
+  m.timestamp,
+
+  -- Supplier quote data
+  pq.id AS quote_id,
+  pq.supplier_id,
+  s.supplier_name,
+  pq.status AS quote_status,
+
+  pqi.id AS quote_item_id,
+  pqi.material_name,
+  pqi.unit AS quote_unit,
+  pqi.quantity AS quote_quantity,
+  pqi.unit_price AS quote_unit_price,
+
+  -- BOQ data
+  b.id AS boq_id,
+  b.item_no,
+  b.description AS boq_description,
+  b.unit AS boq_unit,
+  b.quantity AS boq_quantity,
+  b.unit_cost AS boq_unit_cost,
+  b.total_cost AS boq_total_cost
+
+FROM milestones m
+LEFT JOIN procurement_quotes pq 
+  ON pq.milestone_id = m.id 
+  AND pq.status = 'Selected'
+LEFT JOIN suppliers s 
+  ON pq.supplier_id = s.id
+LEFT JOIN procurement_quote_items pqi 
+  ON pq.id = pqi.quote_id
+LEFT JOIN milestone_boq mb 
+  ON m.id = mb.milestone_id
+LEFT JOIN boq b 
+  ON mb.boq_id = b.id
+
+WHERE pq.status = 'Selected'
+  AND m.status NOT IN ('Finance Approved', "Pending Delivery", "Delivered")
+
+ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching procurement-approved milestones:", err);
+      return res.status(500).json({ message: "Failed to fetch milestones" });
+    }
+
+    const milestonesMap = new Map();
+
+    results.forEach((row) => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          milestone_id: row.milestone_id,
+          project_id: row.project_id,
+          title: row.title,
+          details: row.details,
+          status: row.status,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          timestamp: row.timestamp,
+          approved_supplier: {
+            supplier_id: row.supplier_id,
+            supplier_name: row.supplier_name,
+            quote_id: row.quote_id,
+            items: [],
+            total_quote: 0,
+          },
+          boq_items: [],
+          boq_total: 0,
+          _boq_ids: new Set(), // 🧠 temporary tracker for deduplication
+        });
+      }
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      // ✅ Add supplier quote items
+      if (row.quote_item_id) {
+        const totalCost =
+          parseFloat(row.quote_quantity || 0) *
+          parseFloat(row.quote_unit_price || 0);
+
+        milestone.approved_supplier.items.push({
+          quote_item_id: row.quote_item_id,
+          material_name: row.material_name,
+          unit: row.quote_unit,
+          quantity: row.quote_quantity,
+          unit_price: row.quote_unit_price,
+          total_cost: totalCost,
+        });
+
+        milestone.approved_supplier.total_quote += totalCost;
+      }
+
+      // ✅ Add BOQ items only once per boq_id
+      if (row.boq_id && !milestone._boq_ids.has(row.boq_id)) {
+        milestone.boq_items.push({
+          boq_id: row.boq_id,
+          item_no: row.item_no,
+          description: row.boq_description,
+          unit: row.boq_unit,
+          quantity: row.boq_quantity,
+          unit_cost: row.boq_unit_cost,
+          total_cost: parseFloat(row.boq_total_cost) || 0,
+        });
+
+        milestone.boq_total += parseFloat(row.boq_total_cost) || 0;
+        milestone._boq_ids.add(row.boq_id); // 🧩 Mark as added
+      }
+    });
+
+    // 🧹 Remove temporary _boq_ids before sending response
+    const milestones = Array.from(milestonesMap.values()).map((m) => {
+      delete m._boq_ids;
+      return m;
+    });
+
+    res.json({ milestones });
+  });
+};
+
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
-  updateContractApprovalStatus, getProcurementApprovedMilestones, uploadSalarySignature,
+  updateContractApprovalStatus, getPendingFinanceApprovalMilestones, uploadSalarySignature,
   getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
-  getPaidPayslips, getPaidPurchaseOrders
+  getPaidPayslips, getPaidPurchaseOrders, getProcurementApprovedMilestones, updateFinanceQuoteApprovalStatus
  };

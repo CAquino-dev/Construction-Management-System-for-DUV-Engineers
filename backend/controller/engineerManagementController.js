@@ -358,6 +358,102 @@ const updateMtoItems = (req, res) => {
   });
 };
 
+const updateLtoItems = (req, res) => {
+  const { milestone_boq_id, lto_items } = req.body;
+
+  if (!milestone_boq_id)
+    return res.status(400).json({ error: "milestone_boq_id is required" });
+
+  if (!Array.isArray(lto_items))
+    return res.status(400).json({ error: "lto_items must be an array" });
+
+  // Step 1: Delete existing LTO items
+  const deleteQuery = `DELETE FROM milestone_lto WHERE milestone_boq_id = ?`;
+  db.query(deleteQuery, [milestone_boq_id], (err) => {
+    if (err)
+      return res.status(500).json({ error: "Failed to clear old LTO items" });
+
+    // Step 2: Insert updated LTO items (if any)
+    if (lto_items.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "LTO items cleared successfully" });
+    }
+
+    // Ensure each LTO item has a remarks field
+    const ltoValues = lto_items.map((item) => [
+      milestone_boq_id,
+      item.description || null,
+      item.allocated_budget || 0,
+      item.remarks || null
+    ]);
+
+    const insertQuery = `
+      INSERT INTO milestone_lto
+      (milestone_boq_id, description, allocated_budget, remarks)
+      VALUES ?
+    `;
+
+    db.query(insertQuery, [ltoValues], (err2) => {
+      if (err2) {
+        console.error("Insert error:", err2);
+        return res
+          .status(500)
+          .json({ error: "Failed to insert updated LTO items" });
+      }
+
+      return res.status(200).json({
+        message: "LTO items updated successfully",
+      });
+    });
+  });
+};
+
+const updateEtoItems = (req, res) => {
+  const { milestone_boq_id, eto_items } = req.body;
+
+  if (!milestone_boq_id)
+    return res.status(400).json({ error: "milestone_boq_id is required" });
+  if (!Array.isArray(eto_items))
+    return res.status(400).json({ error: "eto_items must be an array" });
+
+  // Step 1: Delete existing ETO items
+  const deleteQuery = `DELETE FROM milestone_eto WHERE milestone_boq_id = ?`;
+  db.query(deleteQuery, [milestone_boq_id], (err) => {
+    if (err)
+      return res.status(500).json({ error: "Failed to clear old ETO items" });
+
+    // Step 2: Insert updated ETO items (if any)
+    if (eto_items.length === 0) {
+      return res
+        .status(200)
+        .json({ message: "ETO items cleared successfully" });
+    }
+
+    const etoValues = eto_items.map((item) => [
+      milestone_boq_id,
+      item.equipment_name,
+      item.days,
+      item.daily_rate,
+    ]);
+
+    const insertQuery = `
+      INSERT INTO milestone_eto
+      (milestone_boq_id, equipment_name, days, daily_rate)
+      VALUES ?
+    `;
+
+    db.query(insertQuery, [etoValues], (err2) => {
+      if (err2)
+        return res
+          .status(500)
+          .json({ error: "Failed to insert updated ETO items" });
+      return res.status(200).json({ message: "ETO items updated successfully" });
+    });
+  });
+};
+
+
 const updateMilestoneStatus = (req, res) => {
   const { milestone_id, status } = req.body;
 
@@ -522,5 +618,6 @@ const updateForemanReports = (req, res) => {
 
 module.exports = { getEngineers, createProject, getClients, 
                   getClientProject, getEngineerProjects, createMilestone,
-                getMilestonesForPaymentByProject, completeMilestone, updateMtoItems, 
-                updateForemanReports, updateMilestoneStatus };
+                  getMilestonesForPaymentByProject, completeMilestone, updateMtoItems, 
+                  updateForemanReports, updateMilestoneStatus, updateLtoItems,
+                  updateEtoItems };
