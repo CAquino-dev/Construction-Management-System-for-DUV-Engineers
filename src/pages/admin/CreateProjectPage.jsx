@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const CreateProjectPage = () => {
   const { contractId } = useParams();
@@ -25,9 +26,29 @@ const CreateProjectPage = () => {
 
   // Common units for construction BOQ
   const unitOptions = [
-    "pc", "pcs", "set", "lot", "kg", "ton", "m", "m²", "m³", 
-    "lm", "cu.m", "sq.m", "day", "hr", "month", "lump sum",
-    "unit", "pair", "roll", "box", "bag", "gallon", "liter"
+    "pc",
+    "pcs",
+    "set",
+    "lot",
+    "kg",
+    "ton",
+    "m",
+    "m²",
+    "m³",
+    "lm",
+    "cu.m",
+    "sq.m",
+    "day",
+    "hr",
+    "month",
+    "lump sum",
+    "unit",
+    "pair",
+    "roll",
+    "box",
+    "bag",
+    "gallon",
+    "liter",
   ];
 
   // Calculate 70% of budget
@@ -38,7 +59,7 @@ const CreateProjectPage = () => {
     return boqItems.reduce((total, item) => {
       const quantity = parseFloat(item.quantity) || 0;
       const unitCost = parseFloat(item.unit_cost) || 0;
-      return total + (quantity * unitCost);
+      return total + quantity * unitCost;
     }, 0);
   };
 
@@ -65,8 +86,12 @@ const CreateProjectPage = () => {
           ...prev,
           location: contractData.site_location || "",
           project_name: contractData.proposal_title || "",
-          start_date: contractData.proposal_start_date ? contractData.proposal_start_date.split('T')[0] : "",
-          end_date: contractData.proposal_end_date ? contractData.proposal_end_date.split('T')[0] : "",
+          start_date: contractData.proposal_start_date
+            ? contractData.proposal_start_date.split("T")[0]
+            : "",
+          end_date: contractData.proposal_end_date
+            ? contractData.proposal_end_date.split("T")[0]
+            : "",
         }));
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -90,17 +115,25 @@ const CreateProjectPage = () => {
       const newBoq = [...boqItems];
       const oldValue = newBoq[index][field];
       newBoq[index][field] = value;
-      
+
       // Calculate what the new total would be
       const newTotal = newBoq.reduce((total, item, idx) => {
-        const quantity = parseFloat(idx === index && field === "quantity" ? value : item.quantity) || 0;
-        const unitCost = parseFloat(idx === index && field === "unit_cost" ? value : item.unit_cost) || 0;
-        return total + (quantity * unitCost);
+        const quantity =
+          parseFloat(
+            idx === index && field === "quantity" ? value : item.quantity
+          ) || 0;
+        const unitCost =
+          parseFloat(
+            idx === index && field === "unit_cost" ? value : item.unit_cost
+          ) || 0;
+        return total + quantity * unitCost;
       }, 0);
 
       // Check if new total exceeds budget
       if (newTotal > maxBoqBudget) {
-        toast.error(`BOQ total cannot exceed 70% of budget (₱${maxBoqBudget.toLocaleString()})`);
+        toast.error(
+          `BOQ total cannot exceed 70% of budget (₱${maxBoqBudget.toLocaleString()})`
+        );
         return;
       }
     }
@@ -143,7 +176,9 @@ const CreateProjectPage = () => {
 
     // Validate BOQ total before submission
     if (currentBoqTotal > maxBoqBudget) {
-      toast.error(`BOQ total (₱${currentBoqTotal.toLocaleString()}) exceeds 70% of budget (₱${maxBoqBudget.toLocaleString()})`);
+      toast.error(
+        `BOQ total (₱${currentBoqTotal.toLocaleString()}) exceeds 70% of budget (₱${maxBoqBudget.toLocaleString()})`
+      );
       return;
     }
 
@@ -200,7 +235,7 @@ const CreateProjectPage = () => {
         toast.error(result.error || "Failed to create project");
       } else {
         toast.success("Project created successfully!");
-        // navigate("/project");
+        setTimeout(() => navigate(-1), 800); // ✅ ADD THIS
       }
     } catch (err) {
       console.error("Error submitting project:", err);
@@ -280,18 +315,24 @@ const CreateProjectPage = () => {
               </p>
             </div>
             <div>
-              <span className="font-medium text-gray-700">BOQ Budget (70%):</span>
+              <span className="font-medium text-gray-700">
+                BOQ Budget (70%):
+              </span>
               <p className="text-gray-900 mt-1 font-semibold text-[#4c735c]">
                 ₱{maxBoqBudget.toLocaleString()}
               </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Start Date:</span>
-              <p className="text-gray-900 mt-1">{new Date(contract.start_date).toLocaleDateString()}</p>
+              <p className="text-gray-900 mt-1">
+                {new Date(contract.start_date).toLocaleDateString()}
+              </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">End Date:</span>
-              <p className="text-gray-900 mt-1">{new Date(contract.end_date).toLocaleDateString()}</p>
+              <p className="text-gray-900 mt-1">
+                {new Date(contract.end_date).toLocaleDateString()}
+              </p>
             </div>
             <div>
               <span className="font-medium text-gray-700">Status:</span>
@@ -450,11 +491,17 @@ const CreateProjectPage = () => {
                     Bill of Quantities (BOQ)
                   </h3>
                   <div className="text-sm text-gray-600 mt-1">
-                    <span className="font-medium">Budget Limit:</span> ₱{maxBoqBudget.toLocaleString()} 
+                    <span className="font-medium">Budget Limit:</span> ₱
+                    {maxBoqBudget.toLocaleString()}
                     <span className="mx-2">•</span>
-                    <span className="font-medium">Current Total:</span> ₱{currentBoqTotal.toLocaleString()}
+                    <span className="font-medium">Current Total:</span> ₱
+                    {currentBoqTotal.toLocaleString()}
                     <span className="mx-2">•</span>
-                    <span className={`font-medium ${remainingBudget < 0 ? 'text-red-600' : 'text-[#4c735c]'}`}>
+                    <span
+                      className={`font-medium ${
+                        remainingBudget < 0 ? "text-red-600" : "text-[#4c735c]"
+                      }`}
+                    >
                       Remaining: ₱{remainingBudget.toLocaleString()}
                     </span>
                   </div>
@@ -485,7 +532,8 @@ const CreateProjectPage = () => {
               {remainingBudget < 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                   <p className="text-red-700 text-sm font-medium">
-                    ⚠️ BOQ total exceeds budget limit by ₱{Math.abs(remainingBudget).toLocaleString()}
+                    ⚠️ BOQ total exceeds budget limit by ₱
+                    {Math.abs(remainingBudget).toLocaleString()}
                   </p>
                 </div>
               )}
@@ -627,7 +675,7 @@ const CreateProjectPage = () => {
                       const quantity = parseFloat(item.quantity) || 0;
                       const unitCost = parseFloat(item.unit_cost) || 0;
                       const total = quantity * unitCost;
-                      
+
                       return (
                         <tr
                           key={index}
@@ -672,7 +720,11 @@ const CreateProjectPage = () => {
                               type="number"
                               value={item.quantity}
                               onChange={(e) =>
-                                handleBoqChange(index, "quantity", e.target.value)
+                                handleBoqChange(
+                                  index,
+                                  "quantity",
+                                  e.target.value
+                                )
                               }
                               className="w-full px-3 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#4c735c] focus:border-transparent"
                               placeholder="0"
@@ -730,7 +782,9 @@ const CreateProjectPage = () => {
             <div className="flex justify-end pt-6 border-t border-gray-200">
               <Button
                 onClick={handleSubmit}
-                disabled={currentBoqTotal > maxBoqBudget || currentBoqTotal === 0}
+                disabled={
+                  currentBoqTotal > maxBoqBudget || currentBoqTotal === 0
+                }
                 className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 Create Project
@@ -738,6 +792,16 @@ const CreateProjectPage = () => {
             </div>
           </div>
         </div>
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={async () => {
+            await handleSubmit();
+            setIsModalOpen(false);
+          }}
+          actionType={actionType}
+          setRemark={setRemark} // even if unused, required prop
+        />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "sonner";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 export const AppointmentRequestPage = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +18,8 @@ export const AppointmentRequestPage = () => {
   const [bookedDates, setBookedDates] = useState([]);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionType, setActionType] = useState("Submit Request");
 
   const MAX_APPOINTMENTS_PER_DAY = 1;
 
@@ -50,7 +53,6 @@ export const AppointmentRequestPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
     setIsSubmitting(true);
 
     const selectedDateStr = preferredDate?.toISOString().split("T")[0];
@@ -163,7 +165,13 @@ export const AppointmentRequestPage = () => {
 
         {/* Form Section */}
         <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setActionType("Submit Request");
+              setIsModalOpen(true); // open confirmation modal instead of submitting now
+            }}
+          >
             {/* Personal Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center">
@@ -331,6 +339,16 @@ export const AppointmentRequestPage = () => {
             <span className="text-gray-700">✉️ contact@company.com</span>
           </div>
         </div>
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          actionType={actionType}
+          setRemark={() => {}} // not needed here but keep empty
+          onConfirm={() => {
+            setIsModalOpen(false);
+            handleSubmit(); // <-- your actual submit function
+          }}
+        />
       </div>
     </div>
   );

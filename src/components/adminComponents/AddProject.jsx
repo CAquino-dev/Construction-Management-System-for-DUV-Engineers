@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Button } from '../ui/button';
+import { Button } from "../ui/button";
+import { toast } from "sonner";
 
 export const AddProject = ({ onBack }) => {
   const [projectData, setProjectData] = useState({
@@ -21,7 +22,7 @@ export const AddProject = ({ onBack }) => {
     progress: "",
     remarks: "",
     createdAt: "",
-    updatedAt: ""
+    updatedAt: "",
   });
 
   const [engineers, setEngineers] = useState([]);
@@ -34,7 +35,9 @@ export const AddProject = ({ onBack }) => {
   useEffect(() => {
     const getEngineers = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineers`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getEngineers`
+        );
         const data = await response.json();
         if (response.ok) {
           setEngineers(data);
@@ -46,7 +49,9 @@ export const AddProject = ({ onBack }) => {
 
     const getClients = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getClients`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/getClients`
+        );
         const data = await response.json();
         if (response.ok) {
           setClients(data);
@@ -63,7 +68,7 @@ export const AddProject = ({ onBack }) => {
     const { id, value } = e.target;
     setProjectData((prevData) => ({
       ...prevData,
-      [id]: value
+      [id]: value,
     }));
   };
 
@@ -71,7 +76,7 @@ export const AddProject = ({ onBack }) => {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     setProjectPhoto(file);
-  
+
     // Generate preview of the selected photo
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -81,44 +86,46 @@ export const AddProject = ({ onBack }) => {
       reader.readAsDataURL(file); // Read the file as a base64 URL
     }
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const formData = new FormData();
-    formData.append('project_name', projectData.projectName);
-    formData.append('client_id', selectedClient);
-    formData.append('project_type', projectData.projectType);
-    formData.append('description', projectData.description);
-    formData.append('location', projectData.location);
-    formData.append('start_date', projectData.startDate);
-    formData.append('end_date', projectData.endDate);
-    formData.append('budget', projectData.budgetAllocated);
-    formData.append('status', projectData.status);
-    formData.append('cost_breakdown', projectData.costBreakdown);
-    formData.append('payment_schedule', projectData.paymentSchedule);
-    formData.append('engineer_id', selectedEngineer);
-  
+    formData.append("project_name", projectData.projectName);
+    formData.append("client_id", selectedClient);
+    formData.append("project_type", projectData.projectType);
+    formData.append("description", projectData.description);
+    formData.append("location", projectData.location);
+    formData.append("start_date", projectData.startDate);
+    formData.append("end_date", projectData.endDate);
+    formData.append("budget", projectData.budgetAllocated);
+    formData.append("status", projectData.status);
+    formData.append("cost_breakdown", projectData.costBreakdown);
+    formData.append("payment_schedule", projectData.paymentSchedule);
+    formData.append("engineer_id", selectedEngineer);
+
     if (projectPhoto) {
-      formData.append('project_photo', projectPhoto);  // Append the photo to FormData
+      formData.append("project_photo", projectPhoto); // Append the photo to FormData
     }
-  
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/createProject`, {
-        method: 'POST',
-        body: formData,  // Send the FormData (multipart/form-data)
-      });
-  
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/createProject`,
+        {
+          method: "POST",
+          body: formData, // Send the FormData (multipart/form-data)
+        }
+      );
+
       const data = await response.json();
-  
+
       if (response.ok) {
-        alert('Project Added Successfully');
+        toast.success("Project Added Successfully");
       } else {
-        alert('An error occurred while adding the project');
+        toast.error("An error occurred while adding the project");
       }
     } catch (error) {
-      console.log('Error message:', error);
+      console.log("Error message:", error);
     }
   };
 
@@ -127,11 +134,16 @@ export const AddProject = ({ onBack }) => {
       <Button variant="link" onClick={onBack} className="mb-6 text-[#4c735c]">
         ← Back
       </Button>
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Add a New Project</h2>
+      <h2 className="text-xl font-bold text-gray-800 mb-4">
+        Add a New Project
+      </h2>
       <div className="space-y-4">
         {/* Project Code Input */}
         <div>
-          <label htmlFor="projectCode" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="projectCode"
+            className="block text-sm font-medium text-gray-700"
+          >
             Project Code
           </label>
           <input
@@ -145,7 +157,10 @@ export const AddProject = ({ onBack }) => {
 
         {/* Project Name Input */}
         <div>
-          <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="projectName"
+            className="block text-sm font-medium text-gray-700"
+          >
             Project Name
           </label>
           <input
@@ -159,7 +174,10 @@ export const AddProject = ({ onBack }) => {
 
         {/* Client Name Input */}
         <div>
-          <label htmlFor="client" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="client"
+            className="block text-sm font-medium text-gray-700"
+          >
             Client
           </label>
           <select
@@ -179,7 +197,10 @@ export const AddProject = ({ onBack }) => {
 
         {/* Engineer Selection Dropdown */}
         <div>
-          <label htmlFor="engineer" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="engineer"
+            className="block text-sm font-medium text-gray-700"
+          >
             Select Engineer
           </label>
           <select
@@ -199,7 +220,10 @@ export const AddProject = ({ onBack }) => {
 
         {/* Project Type Dropdown */}
         <div>
-          <label htmlFor="projectType" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="projectType"
+            className="block text-sm font-medium text-gray-700"
+          >
             Project Type
           </label>
           <select
@@ -218,7 +242,9 @@ export const AddProject = ({ onBack }) => {
 
         {/* Project Scope & Details */}
         <div className="mt-4">
-          <h3 className="text-lg font-semibold text-gray-700">Project Scope & Details</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Project Scope & Details
+          </h3>
           <div className="space-y-3 mt-2">
             <textarea
               value={projectData.description}
@@ -272,7 +298,9 @@ export const AddProject = ({ onBack }) => {
 
         {/* Financials & Payments */}
         <div className="mt-4">
-          <h3 className="text-lg font-semibold text-gray-700">Financials & Payments</h3>
+          <h3 className="text-lg font-semibold text-gray-700">
+            Financials & Payments
+          </h3>
           <div className="space-y-3 mt-2">
             <textarea
               value={projectData.costBreakdown}
@@ -293,16 +321,21 @@ export const AddProject = ({ onBack }) => {
 
         {/* Photo Upload Section */}
         <div>
-          <label htmlFor="projectPhoto" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="projectPhoto"
+            className="block text-sm font-medium text-gray-700"
+          >
             Add Contract Photo
           </label>
           <div>
-              <input id="projectPhoto" 
-              name="project_photo"  // Add this to match backend expectation
-              type="file" 
+            <input
+              id="projectPhoto"
+              name="project_photo" // Add this to match backend expectation
+              type="file"
               accept="image/*"
               onChange={handlePhotoChange}
-              className="mt-2 block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-teal-500 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:bg-teal-700 focus:outline-none disabled:pointer-events-none disabled:opacity-60" />
+              className="mt-2 block w-full text-sm file:mr-4 file:rounded-md file:border-0 file:bg-teal-500 file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white hover:file:bg-teal-700 focus:outline-none disabled:pointer-events-none disabled:opacity-60"
+            />
           </div>
           {photoPreview && (
             <div className="mt-2">
