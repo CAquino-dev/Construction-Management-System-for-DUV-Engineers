@@ -23,6 +23,9 @@ const CreateProjectPage = () => {
     { description: "", unit: "", quantity: "", unit_cost: "" },
   ]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionType, setActionType] = useState("");
+  const [remark, setRemark] = useState("");
 
   // Common units for construction BOQ
   const unitOptions = [
@@ -800,7 +803,7 @@ const CreateProjectPage = () => {
             setIsModalOpen(false);
           }}
           actionType={actionType}
-          setRemark={setRemark} // even if unused, required prop
+          setRemark={setRemark}
         />
       </div>
     </div>
