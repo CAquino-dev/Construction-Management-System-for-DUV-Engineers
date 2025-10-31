@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MyProjectAddMilestone } from "./MyProjectAddMilestone";
 import { MyProjectViewMilestone } from "./MyProjectViewMilestone";
+import { toast } from "sonner";
 
 const STATUS_STYLES = {
   Draft: "bg-gray-100 text-gray-700 border border-gray-300",
@@ -114,10 +115,10 @@ export const MyProjectMilestones = ({ selectedProject }) => {
       );
 
       if (res.ok) {
-        alert("Report submitted successfully!");
+        toast.success("Report submitted successfully!");
         closeReportModal();
       } else {
-        alert("Failed to submit report.");
+        toast.error("Failed to submit report.");
       }
     } catch (err) {
       console.error("Error submitting report:", err);
