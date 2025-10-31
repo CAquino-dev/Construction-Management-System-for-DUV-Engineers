@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import PaymentModal from "../../components/adminComponents/Finance/PaymentModal";
+import CashHandoverModal from "../../components/adminComponents/Finance/CashHandoverModal";
 
 const FinancePayment = () => {
   const [payments, setPayments] = useState([]);
   const [paidPayments, setPaidPayments] = useState([]);
+  const [cashHandovers, setCashHandovers] = useState([]);
+  const [paidCashHandovers, setPaidCashHandovers] = useState([]);
   const [filter, setFilter] = useState("Purchase Orders");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedPaidPayment, setSelectedPaidPayment] = useState(null);
+  const [showCashHandoverModal, setShowCashHandoverModal] = useState(false);
+  const [selectedCashHandover, setSelectedCashHandover] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const API = import.meta.env.VITE_REACT_APP_API_URL;
@@ -78,7 +83,7 @@ const FinancePayment = () => {
           notes: item.notes,
           attachments: item.attachments,
           recipientSignature: item.recipient_signature,
-          type: "paid",
+          type: "paid_purchase_order",
         }));
         return formatted;
       }
@@ -89,18 +94,122 @@ const FinancePayment = () => {
     }
   };
 
+  // Fetch paid cash handovers
+  const fetchPaidCashHandovers = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/cash-handovers`
+      );
+      if (res.data.data) {
+        const formatted = res.data.data.map((item) => ({
+          id: item.handover_id,
+          projectName: `Project ${item.project_id}`,
+          milestoneTitle: item.milestone_title,
+          amount: parseFloat(item.amount) || 0,
+          handoverDate: item.handover_date,
+          paidDate: item.created_at,
+          status: "Completed",
+          paymentType: "cash_handover",
+          paymentTypeDisplay: "Cash Handover",
+          referenceNumber: `HANDOVER-${item.handover_id}`,
+          projectId: item.project_id,
+          milestoneId: item.milestone_id,
+          recipientName: item.recipient_name,
+          notes: item.notes,
+          recipientSignature: item.recipient_signature,
+          processedBy: item.processed_by_name,
+          type: "paid_cash_handover",
+        }));
+        return formatted;
+      }
+      return [];
+    } catch (err) {
+      console.error("Error fetching paid cash handovers:", err);
+      return [];
+    }
+  };
+
+  // Fetch cash handover data (LTO/ETO) - Combined per milestone
+  const fetchCashHandovers = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/getApprovedLtoEto`
+      );
+      if (res.data.milestones) {
+        const formatted = res.data.milestones.map((milestone) => {
+          // Calculate total amount from both LTO and ETO
+          const ltoTotal = milestone.lto_items?.reduce((sum, lto) => sum + parseFloat(lto.total_cost || 0), 0) || 0;
+          const etoTotal = milestone.eto_items?.reduce((sum, eto) => sum + parseFloat(eto.total_cost || 0), 0) || 0;
+          const totalAmount = ltoTotal + etoTotal;
+
+          // Create descriptions for both LTO and ETO
+          const ltoDescriptions = milestone.lto_items?.map(lto => lto.description).filter(Boolean) || [];
+          const etoDescriptions = milestone.eto_items?.map(eto => eto.equipment_name).filter(Boolean) || [];
+          const allDescriptions = [...ltoDescriptions, ...etoDescriptions];
+          
+          // Create items breakdown
+          const laborItems = milestone.lto_items?.map(lto => ({
+            type: "Labor",
+            description: lto.description,
+            amount: parseFloat(lto.total_cost) || 0,
+            remarks: lto.remarks
+          })) || [];
+
+          const equipmentItems = milestone.eto_items?.map(eto => ({
+            type: "Equipment",
+            description: eto.equipment_name,
+            amount: parseFloat(eto.total_cost) || 0,
+            days: eto.days,
+            dailyRate: eto.daily_rate
+          })) || [];
+
+          const allItems = [...laborItems, ...equipmentItems];
+
+          return {
+            id: `milestone-${milestone.milestone_id}`,
+            projectName: `Project ${milestone.project_id}`,
+            milestoneTitle: milestone.title,
+            type: "Combined",
+            description: allDescriptions.join(", ") || "Cash handover for milestone completion",
+            amount: totalAmount,
+            dueDate: milestone.created_at,
+            status: "Pending",
+            paymentType: "cash_handover",
+            paymentTypeDisplay: "Cash Handover",
+            referenceNumber: `MIL-${milestone.milestone_id}`,
+            projectId: milestone.project_id,
+            milestoneId: milestone.milestone_id,
+            items: allItems,
+            laborItems: laborItems,
+            equipmentItems: equipmentItems,
+            type: "pending_cash_handover",
+          };
+        });
+        return formatted;
+      }
+      return [];
+    } catch (err) {
+      console.error("Error fetching cash handovers:", err);
+      return [];
+    }
+  };
+
   // Fetch all payments
   useEffect(() => {
     const fetchAllPayments = async () => {
       setLoading(true);
       try {
-        const [pendingData, paidData] = await Promise.all([
+        const [pendingData, paidData, cashHandoverData, paidCashHandoverData] = await Promise.all([
           fetchPendingPayments(),
           fetchPaidPayments(),
+          fetchCashHandovers(),
+          fetchPaidCashHandovers(),
         ]);
 
         setPayments(pendingData);
         setPaidPayments(paidData);
+        setCashHandovers(cashHandoverData);
+        setPaidCashHandovers(paidCashHandoverData);
       } catch (err) {
         console.error("Error fetching all payments:", err);
       } finally {
@@ -115,8 +224,10 @@ const FinancePayment = () => {
     switch (filter) {
       case "Purchase Orders":
         return payments;
+      case "Cash Handover":
+        return cashHandovers;
       case "Paid":
-        return paidPayments;
+        return [...paidPayments, ...paidCashHandovers];
       default:
         return payments;
     }
@@ -136,17 +247,27 @@ const FinancePayment = () => {
     setShowViewModal(true);
   };
 
+  // Handle cash handover action
+  const handleCashHandoverAction = (handover) => {
+    setSelectedCashHandover(handover);
+    setShowCashHandoverModal(true);
+  };
+
   // After payment modal completes
   const handlePaymentComplete = async (paymentRecord) => {
     try {
       // Refetch data to get updated lists
-      const [pendingData, paidData] = await Promise.all([
+      const [pendingData, paidData, cashHandoverData, paidCashHandoverData] = await Promise.all([
         fetchPendingPayments(),
         fetchPaidPayments(),
+        fetchCashHandovers(),
+        fetchPaidCashHandovers(),
       ]);
 
       setPayments(pendingData);
       setPaidPayments(paidData);
+      setCashHandovers(cashHandoverData);
+      setPaidCashHandovers(paidCashHandoverData);
 
       alert(
         `Payment of ₱${paymentRecord.paymentDetails.amount.toLocaleString()} processed successfully!`
@@ -160,6 +281,27 @@ const FinancePayment = () => {
     }
   };
 
+  // After cash handover completes
+  const handleCashHandoverComplete = async () => {
+    try {
+      // Refetch cash handover data
+      const [cashHandoverData, paidCashHandoverData] = await Promise.all([
+        fetchCashHandovers(),
+        fetchPaidCashHandovers(),
+      ]);
+      setCashHandovers(cashHandoverData);
+      setPaidCashHandovers(paidCashHandoverData);
+      
+      alert("Cash handover processed successfully!");
+    } catch (err) {
+      console.error("Error updating cash handover:", err);
+      alert("Failed to update cash handover status.");
+    } finally {
+      setShowCashHandoverModal(false);
+      setSelectedCashHandover(null);
+    }
+  };
+
   // Helpers
   const getStatusColor = (status) => {
     switch (status) {
@@ -167,6 +309,8 @@ const FinancePayment = () => {
         return "bg-green-100 text-green-800";
       case "Pending":
         return "bg-yellow-100 text-yellow-800";
+      case "Completed":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -210,7 +354,9 @@ const FinancePayment = () => {
   // Calculate totals
   const pendingTotal = payments.reduce((sum, p) => sum + p.amount, 0);
   const paidTotal = paidPayments.reduce((sum, p) => sum + p.amount, 0);
-  const overallTotal = pendingTotal + paidTotal;
+  const cashHandoverTotal = cashHandovers.reduce((sum, p) => sum + p.amount, 0);
+  const paidCashHandoverTotal = paidCashHandovers.reduce((sum, p) => sum + p.amount, 0);
+  const overallTotal = pendingTotal + paidTotal + cashHandoverTotal + paidCashHandoverTotal;
 
   if (loading) {
     return (
@@ -229,15 +375,15 @@ const FinancePayment = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Purchase Orders & Payments
+            Finance & Payments
           </h1>
           <p className="text-gray-600 mt-2">
-            Manage purchase order payments and vendor transactions
+            Manage purchase order payments, cash handovers, and vendor transactions
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <h3 className="text-lg font-semibold text-gray-700">
               Pending Purchase Orders
@@ -247,6 +393,17 @@ const FinancePayment = () => {
             </p>
             <p className="text-sm text-gray-500 mt-1">
               {payments.length} purchase orders
+            </p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border">
+            <h3 className="text-lg font-semibold text-gray-700">
+              Cash Handovers
+            </h3>
+            <p className="text-2xl font-bold text-blue-600">
+              {formatCurrency(cashHandoverTotal)}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {cashHandovers.length} milestones
             </p>
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -268,7 +425,7 @@ const FinancePayment = () => {
               {formatCurrency(overallTotal)}
             </p>
             <p className="text-sm text-gray-500 mt-1">
-              {payments.length + paidPayments.length} total
+              {payments.length + paidPayments.length + cashHandovers.length + paidCashHandovers.length} total
             </p>
           </div>
         </div>
@@ -277,7 +434,7 @@ const FinancePayment = () => {
         <div className="bg-white rounded-lg shadow-sm border mb-6 p-4">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div className="flex flex-wrap gap-2">
-              {["Purchase Orders", "Paid"].map((btn) => (
+              {["Purchase Orders", "Cash Handover", "Paid"].map((btn) => (
                 <button
                   key={btn}
                   onClick={() => setFilter(btn)}
@@ -285,6 +442,8 @@ const FinancePayment = () => {
                     filter === btn
                       ? btn === "Purchase Orders"
                         ? "bg-yellow-600 text-white"
+                        : btn === "Cash Handover"
+                        ? "bg-blue-600 text-white"
                         : "bg-green-600 text-white"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
@@ -296,7 +455,9 @@ const FinancePayment = () => {
             <div className="text-sm text-gray-500">
               {filter === "Purchase Orders"
                 ? `${payments.length} pending purchase orders`
-                : `${paidPayments.length} paid purchase orders`}
+                : filter === "Cash Handover"
+                ? `${cashHandovers.length} cash handover milestones`
+                : `${paidPayments.length + paidCashHandovers.length} paid items`}
             </div>
           </div>
         </div>
@@ -308,17 +469,20 @@ const FinancePayment = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Project & Details
+                    {filter === "Cash Handover" ? "Milestone & Details" : "Project & Details"}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Vendor
+                    {filter === "Cash Handover" ? "Type" : filter === "Paid" ? "Type" : "Vendor"}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    {filter === "Paid" ? "Paid Date" : "Delivery Date"}
-                  </th>
+                  {/* Conditionally render date column only for Purchase Orders and Paid tabs */}
+                  {(filter === "Purchase Orders" || filter === "Paid") && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      {filter === "Paid" ? "Paid Date" : "Delivery Date"}
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Status
                   </th>
@@ -331,12 +495,14 @@ const FinancePayment = () => {
                 {filteredPayments.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan={filter === "Cash Handover" ? "5" : "6"}
                       className="text-center text-gray-500 py-6 text-sm"
                     >
                       {filter === "Purchase Orders"
                         ? "No pending purchase orders found."
-                        : "No paid purchase orders found."}
+                        : filter === "Cash Handover"
+                        ? "No cash handover milestones found."
+                        : "No paid items found."}
                     </td>
                   </tr>
                 ) : (
@@ -345,15 +511,30 @@ const FinancePayment = () => {
                       <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {p.projectName}
+                            {filter === "Cash Handover" || p.paymentType === "cash_handover" ? (p.milestoneTitle || "Milestone") : p.projectName}
                           </div>
                           <div className="text-sm text-gray-500">
                             {p.paymentTypeDisplay}
                           </div>
                           <div className="text-xs text-gray-400">
-                            {p.invoiceNumber}
+                            {p.invoiceNumber || p.referenceNumber}
                           </div>
-                          {p.type === "paid" && p.paymentMethod && (
+                          {(filter === "Cash Handover" || p.paymentType === "cash_handover") && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {p.description}
+                              {p.items && p.items.length > 0 && (
+                                <div className="mt-1 text-xs">
+                                  Includes: {p.items.length} item{p.items.length > 1 ? 's' : ''}
+                                </div>
+                              )}
+                              {p.recipientName && (
+                                <div className="mt-1 text-xs">
+                                  Recipient: {p.recipientName}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {p.type === "paid_purchase_order" && p.paymentMethod && (
                             <div className="text-xs text-gray-400 mt-1">
                               Paid via: {p.paymentMethod}
                               {p.referenceNumber && ` (${p.referenceNumber})`}
@@ -362,16 +543,27 @@ const FinancePayment = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        {p.vendor}
+                        {filter === "Cash Handover" || p.paymentType === "cash_handover" ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {p.type === "pending_cash_handover" ? "Combined" : "Cash Handover"}
+                          </span>
+                        ) : (
+                          p.vendor || "N/A"
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         {formatCurrency(p.amount)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {filter === "Paid"
-                          ? formatDate(p.paidDate)
-                          : formatDate(p.dueDate)}
-                      </td>
+                      {/* Conditionally render date cell only for Purchase Orders and Paid tabs */}
+                      {(filter === "Purchase Orders" || filter === "Paid") && (
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {formatDate(
+                            filter === "Paid" 
+                              ? (p.paidDate || p.handoverDate)
+                              : p.dueDate
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
@@ -379,7 +571,7 @@ const FinancePayment = () => {
                           )}`}
                         >
                           {p.status}
-                          {p.type === "paid" && p.processedBy && (
+                          {p.processedBy && (
                             <span className="ml-1 text-xs">
                               by {p.processedBy}
                             </span>
@@ -388,7 +580,7 @@ const FinancePayment = () => {
                       </td>
                       <td className="px-6 py-4 text-sm font-medium">
                         <div className="flex space-x-2">
-                          {p.status === "Pending" && (
+                          {p.status === "Pending" && filter === "Purchase Orders" && (
                             <button
                               onClick={() => handlePaymentAction(p)}
                               className="text-green-600 hover:text-green-900 font-medium"
@@ -396,7 +588,15 @@ const FinancePayment = () => {
                               Pay Now
                             </button>
                           )}
-                          {p.status === "Paid" && (
+                          {p.status === "Pending" && filter === "Cash Handover" && (
+                            <button
+                              onClick={() => handleCashHandoverAction(p)}
+                              className="text-blue-600 hover:text-blue-900 font-medium"
+                            >
+                              Process Handover
+                            </button>
+                          )}
+                          {(p.status === "Paid" || p.status === "Completed") && (
                             <button
                               onClick={() => handleViewAction(p)}
                               className="text-blue-600 hover:text-blue-900 font-medium"
@@ -422,6 +622,14 @@ const FinancePayment = () => {
           onPaymentComplete={handlePaymentComplete}
         />
 
+        {/* Cash Handover Modal */}
+        <CashHandoverModal
+          isOpen={showCashHandoverModal}
+          onClose={() => setShowCashHandoverModal(false)}
+          handover={selectedCashHandover}
+          onHandoverComplete={handleCashHandoverComplete}
+        />
+
         {/* View Paid Payment Modal */}
         {showViewModal && selectedPaidPayment && (
           <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
@@ -429,7 +637,7 @@ const FinancePayment = () => {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Payment Details
+                    {selectedPaidPayment.paymentType === "cash_handover" ? "Cash Handover Details" : "Payment Details"}
                   </h2>
                   <button
                     onClick={() => setShowViewModal(false)}
@@ -452,35 +660,47 @@ const FinancePayment = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left Column - Payment Details */}
+                  {/* Left Column - Details */}
                   <div className="space-y-6">
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Payment Information
+                        {selectedPaidPayment.paymentType === "cash_handover" ? "Handover Information" : "Payment Information"}
                       </h3>
                       <div className="space-y-3">
                         <div>
                           <label className="text-sm font-medium text-gray-600">
-                            Project
+                            {selectedPaidPayment.paymentType === "cash_handover" ? "Milestone" : "Project"}
                           </label>
                           <p className="text-sm text-gray-900">
-                            {selectedPaidPayment.projectName}
+                            {selectedPaidPayment.paymentType === "cash_handover" ? selectedPaidPayment.milestoneTitle : selectedPaidPayment.projectName}
                           </p>
                         </div>
+                        {selectedPaidPayment.paymentType === "cash_handover" && selectedPaidPayment.recipientName && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">
+                              Recipient
+                            </label>
+                            <p className="text-sm text-gray-900">
+                              {selectedPaidPayment.recipientName}
+                            </p>
+                          </div>
+                        )}
+                        {selectedPaidPayment.paymentType === "purchase_order" && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-600">
+                              Vendor
+                            </label>
+                            <p className="text-sm text-gray-900">
+                              {selectedPaidPayment.vendor}
+                            </p>
+                          </div>
+                        )}
                         <div>
                           <label className="text-sm font-medium text-gray-600">
-                            Vendor
+                            {selectedPaidPayment.paymentType === "cash_handover" ? "Reference" : "Purchase Order"}
                           </label>
                           <p className="text-sm text-gray-900">
-                            {selectedPaidPayment.vendor}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Purchase Order
-                          </label>
-                          <p className="text-sm text-gray-900">
-                            {selectedPaidPayment.invoiceNumber}
+                            {selectedPaidPayment.invoiceNumber || selectedPaidPayment.referenceNumber}
                           </p>
                         </div>
                         <div>
@@ -499,58 +719,62 @@ const FinancePayment = () => {
                         Transaction Details
                       </h3>
                       <div className="space-y-3">
+                        {selectedPaidPayment.paymentType === "purchase_order" && (
+                          <>
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">
+                                Payment Method
+                              </label>
+                              <p className="text-sm text-gray-900">
+                                {selectedPaidPayment.paymentMethod}
+                              </p>
+                            </div>
+                            {selectedPaidPayment.referenceNumber && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">
+                                  Reference Number
+                                </label>
+                                <p className="text-sm text-gray-900">
+                                  {selectedPaidPayment.referenceNumber}
+                                </p>
+                              </div>
+                            )}
+                            {selectedPaidPayment.bankName && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">
+                                  Bank Name
+                                </label>
+                                <p className="text-sm text-gray-900">
+                                  {selectedPaidPayment.bankName}
+                                </p>
+                              </div>
+                            )}
+                            {selectedPaidPayment.accountNumber && (
+                              <div>
+                                <label className="text-sm font-medium text-gray-600">
+                                  Account Number
+                                </label>
+                                <p className="text-sm text-gray-900">
+                                  {selectedPaidPayment.accountNumber}
+                                </p>
+                              </div>
+                            )}
+                            <div>
+                              <label className="text-sm font-medium text-gray-600">
+                                Transaction Date
+                              </label>
+                              <p className="text-sm text-gray-900">
+                                {formatDate(selectedPaidPayment.transactionDate)}
+                              </p>
+                            </div>
+                          </>
+                        )}
                         <div>
                           <label className="text-sm font-medium text-gray-600">
-                            Payment Method
+                            {selectedPaidPayment.paymentType === "cash_handover" ? "Handover Date" : "Paid Date"}
                           </label>
                           <p className="text-sm text-gray-900">
-                            {selectedPaidPayment.paymentMethod}
-                          </p>
-                        </div>
-                        {selectedPaidPayment.referenceNumber && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">
-                              Reference Number
-                            </label>
-                            <p className="text-sm text-gray-900">
-                              {selectedPaidPayment.referenceNumber}
-                            </p>
-                          </div>
-                        )}
-                        {selectedPaidPayment.bankName && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">
-                              Bank Name
-                            </label>
-                            <p className="text-sm text-gray-900">
-                              {selectedPaidPayment.bankName}
-                            </p>
-                          </div>
-                        )}
-                        {selectedPaidPayment.accountNumber && (
-                          <div>
-                            <label className="text-sm font-medium text-gray-600">
-                              Account Number
-                            </label>
-                            <p className="text-sm text-gray-900">
-                              {selectedPaidPayment.accountNumber}
-                            </p>
-                          </div>
-                        )}
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Transaction Date
-                          </label>
-                          <p className="text-sm text-gray-900">
-                            {formatDate(selectedPaidPayment.transactionDate)}
-                          </p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-gray-600">
-                            Paid Date
-                          </label>
-                          <p className="text-sm text-gray-900">
-                            {formatDate(selectedPaidPayment.paidDate)}
+                            {formatDate(selectedPaidPayment.paymentType === "cash_handover" ? selectedPaidPayment.handoverDate : selectedPaidPayment.paidDate)}
                           </p>
                         </div>
                         <div>
@@ -604,10 +828,9 @@ const FinancePayment = () => {
                       </div>
                     )}
 
-                    {/* Attachments */}
-                    {selectedPaidPayment.attachments &&
-                      parseAttachments(selectedPaidPayment.attachments).length >
-                        0 && (
+                    {/* Attachments - Only for purchase orders */}
+                    {selectedPaidPayment.paymentType === "purchase_order" && selectedPaidPayment.attachments &&
+                      parseAttachments(selectedPaidPayment.attachments).length > 0 && (
                         <div className="bg-gray-50 p-4 rounded-lg">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">
                             Attachments
