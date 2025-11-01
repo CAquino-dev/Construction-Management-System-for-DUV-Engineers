@@ -31,7 +31,7 @@ export const ViewProjectClient = ({ selectedProject, onBack }) => {
       icon: "🎯",
       fullLabel: "Milestones",
     },
-    { id: "legals", label: "Legals", icon: "⚖️", fullLabel: "Legal Documents" },
+    { id: "legals", label: "Documents", icon: "⚖️", fullLabel: "Legal Documents" },
     { id: "chat", label: "Chat", icon: "💬", fullLabel: "Chat" },
     { id: "payment", label: "Payment", icon: "💰", fullLabel: "Payment" },
   ];
