@@ -486,9 +486,6 @@ const getMilestones = (req, res) => {
   });
 };
 
-
-
-
 const createExpense = (req, res) => {
   const {
     milestone_id,
@@ -1301,6 +1298,71 @@ const getProjectDetails = (req, res) => {
     }
 
     res.status(200).json({ project: results[0] });
+  });
+};
+
+const completeProject = (req, res) => {
+  const { projectId } = req.params;
+
+  // Step 1: Check only milestones that actually have tasks
+  const checkMilestonesQuery = `
+    SELECT 
+      COUNT(DISTINCT m.id) AS total_milestones_with_tasks,
+      SUM(
+        CASE 
+          WHEN (
+            SELECT COUNT(*) 
+            FROM milestone_tasks t 
+            WHERE t.milestone_id = m.id
+          ) = (
+            SELECT COUNT(*) 
+            FROM milestone_tasks t 
+            WHERE t.milestone_id = m.id AND t.status = 'Completed'
+          )
+          THEN 1 ELSE 0 
+        END
+      ) AS fully_completed_milestones
+    FROM milestones m
+    WHERE m.project_id = ?
+      AND EXISTS (
+        SELECT 1 FROM milestone_tasks t WHERE t.milestone_id = m.id
+      )
+  `;
+
+  db.query(checkMilestonesQuery, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error checking milestones:", err);
+      return res.status(500).json({ error: "Failed to verify project milestones" });
+    }
+
+    const { total_milestones_with_tasks, fully_completed_milestones } = results[0];
+
+    if (total_milestones_with_tasks === 0) {
+      return res.status(400).json({ error: "This project has no milestones with tasks yet." });
+    }
+
+    if (fully_completed_milestones !== total_milestones_with_tasks) {
+      return res.status(400).json({ error: "Not all milestone tasks are completed yet." });
+    }
+
+    // Step 2: Mark project as completed
+    const updateQuery = `
+      UPDATE projects
+      SET status = 'Completed', completion_date = NOW()
+      WHERE id = ?
+    `;
+
+    db.query(updateQuery, [projectId], (updateErr, updateResult) => {
+      if (updateErr) {
+        console.error("Error completing project:", updateErr);
+        return res.status(500).json({ error: "Failed to mark project as completed" });
+      }
+
+      res.json({
+        message: "Project marked as completed successfully.",
+        projectId,
+      });
+    });
   });
 };
 

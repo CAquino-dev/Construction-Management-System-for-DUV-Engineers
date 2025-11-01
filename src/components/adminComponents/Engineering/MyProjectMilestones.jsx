@@ -22,8 +22,10 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
+  const [remark, setRemark] = useState(""); // For the confirmation modal
 
   const [report, setReport] = useState({
     title: "",
@@ -63,6 +65,15 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     setIsViewModalOpen(true);
   };
   const closeViewModal = () => setIsViewModalOpen(false);
+
+  const openConfirmationModal = () => {
+    setRemark(""); // Reset remark when opening modal
+    setIsConfirmationModalOpen(true);
+  };
+  const closeConfirmationModal = () => {
+    setIsConfirmationModalOpen(false);
+    setRemark(""); // Reset remark when closing modal
+  };
 
   const addMilestone = (newMilestone) => {
     setMilestonesList((prev) => [
@@ -126,7 +137,54 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   };
 
   const handleCompleteProject = () => {
+    openConfirmationModal();
+  };
 
+  const confirmCompleteProject = async () => {
+    try {
+      // Prepare the request body
+      const requestBody = {
+        completed_by: userId,
+      };
+
+      // Add remark if provided
+      if (remark.trim()) {
+        requestBody.remark = remark.trim();
+      }
+
+      const res = await fetch(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/project/completeProject/${selectedProject.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
+
+      if (res.ok) {
+        toast.success("Project marked as complete successfully!");
+        closeConfirmationModal();
+        
+        // Optional: Refresh the project data or navigate away
+        // You might want to add a callback to refresh the parent component
+        // or navigate to a different page
+        // navigate('/admin-dashboard');
+        
+        // If you have a callback prop to refresh the project status in parent
+        // if (onProjectComplete) onProjectComplete();
+        
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.message || "Failed to mark project as complete.");
+      }
+    } catch (err) {
+      console.error("Error completing project:", err);
+      toast.error("An error occurred while completing the project.");
+    }
   };
 
   return (
@@ -145,11 +203,12 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 + Add Milestone
               </button>
 
+              {/* ✅ Complete Project Button */}
               <button
                 onClick={handleCompleteProject}
                 className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
               >
-                Mark Project as Complete
+                Mark Project as Completed
               </button>
             </>
           )}
@@ -318,6 +377,15 @@ export const MyProjectMilestones = ({ selectedProject }) => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal for Completing Project */}
+      <ConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={closeConfirmationModal}
+        onConfirm={confirmCompleteProject}
+        actionType="Mark this project as completed"
+        setRemark={setRemark}
+      />
     </div>
   );
 };
