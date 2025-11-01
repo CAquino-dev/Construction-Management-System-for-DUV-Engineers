@@ -108,7 +108,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   };
 
   const handleApprove = async () => {
-    const success = await updateFinanceApproval("For Procurement");
+    const success = await updateFinanceApproval("Finance Approved");
     if (success) onClose();
   };
 
