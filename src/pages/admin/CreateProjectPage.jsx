@@ -803,7 +803,7 @@ const CreateProjectPage = () => {
             setIsModalOpen(false);
           }}
           actionType={actionType}
-          setRemark={setRemark}
+          setRemark={setRemark} // even if unused, required prop
         />
       </div>
     </div>
