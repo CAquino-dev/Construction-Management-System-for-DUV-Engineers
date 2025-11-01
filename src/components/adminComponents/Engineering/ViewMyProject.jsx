@@ -34,7 +34,7 @@ export const ViewMyProject = ({ selectedProject, onBack }) => {
       fullLabel: "Milestones",
     },
     { id: "reports", label: "Reports", icon: "📊", fullLabel: "Reports" },
-    { id: "legals", label: "Legals", icon: "⚖️", fullLabel: "Legals" },
+    { id: "legals", label: "Documents", icon: "⚖️", fullLabel: "Legals" },
     { id: "inventory", label: "Inventory", icon: "📦", fullLabel: "Inventory" },
     { id: "chat", label: "Chat", icon: "💬", fullLabel: "Chat" },
   ];

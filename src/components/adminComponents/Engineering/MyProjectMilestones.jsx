@@ -22,8 +22,10 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
+  const [remark, setRemark] = useState(""); // For the confirmation modal
 
   const [report, setReport] = useState({
     title: "",
@@ -63,6 +65,15 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     setIsViewModalOpen(true);
   };
   const closeViewModal = () => setIsViewModalOpen(false);
+
+  const openConfirmationModal = () => {
+    setRemark(""); // Reset remark when opening modal
+    setIsConfirmationModalOpen(true);
+  };
+  const closeConfirmationModal = () => {
+    setIsConfirmationModalOpen(false);
+    setRemark(""); // Reset remark when closing modal
+  };
 
   const addMilestone = (newMilestone) => {
     setMilestonesList((prev) => [
@@ -126,7 +137,30 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   };
 
   const handleCompleteProject = () => {
+    openConfirmationModal();
+  };
 
+  const confirmCompleteProject = async () => {
+    // Step 2: call backend to mark project complete
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/complete/${selectedProject.id}`,
+        { method: "PUT" }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success("Project marked as completed!");
+      } else {
+        toast.error(data.error || "Failed to complete project.");
+      }
+    } catch (err) {
+      console.error("Error completing project:", err);
+      toast.error("Server error.");
+    } finally {
+      setIsConfirmationModalOpen(false); // close modal after confirmation
+    }
   };
 
   return (
@@ -145,11 +179,12 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                 + Add Milestone
               </button>
 
+              {/* ✅ Complete Project Button */}
               <button
                 onClick={handleCompleteProject}
                 className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
               >
-                Mark Project as Complete
+                Mark Project as Completed
               </button>
             </>
           )}
@@ -318,6 +353,15 @@ export const MyProjectMilestones = ({ selectedProject }) => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal for Completing Project */}
+      <ConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        onClose={closeConfirmationModal}
+        onConfirm={confirmCompleteProject}
+        actionType="Mark this project as completed"
+        setRemark={setRemark}
+      />
     </div>
   );
 };
