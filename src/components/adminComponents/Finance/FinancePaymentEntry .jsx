@@ -98,7 +98,6 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
             <thead className="bg-gray-100 text-left">
               <tr>
                 <th className="px-4 py-2 border">Payment Name</th>
-                <th className="px-4 py-2 border">Due Date</th>
                 <th className="px-4 py-2 border">Amount</th>
                 <th className="px-4 py-2 border">Status</th>
                 <th className="px-4 py-2 border">Action</th>
@@ -108,7 +107,6 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
               {schedule.map((item) => (
                 <tr key={item.schedule_id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 border">{item.milestone_name}</td>
-                  <td className="px-4 py-2 border">{item.due_date}</td>
                   <td className="px-4 py-2 border">
                     ₱{parseFloat(item.amount).toLocaleString()}
                   </td>
