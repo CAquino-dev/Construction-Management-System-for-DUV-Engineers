@@ -141,49 +141,25 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   };
 
   const confirmCompleteProject = async () => {
+    // Step 2: call backend to mark project complete
     try {
-      // Prepare the request body
-      const requestBody = {
-        completed_by: userId,
-      };
-
-      // Add remark if provided
-      if (remark.trim()) {
-        requestBody.remark = remark.trim();
-      }
-
       const res = await fetch(
-        `${
-          import.meta.env.VITE_REACT_APP_API_URL
-        }/api/project/completeProject/${selectedProject.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-        }
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/complete/${selectedProject.id}`,
+        { method: "PUT" }
       );
 
+      const data = await res.json();
+
       if (res.ok) {
-        toast.success("Project marked as complete successfully!");
-        closeConfirmationModal();
-        
-        // Optional: Refresh the project data or navigate away
-        // You might want to add a callback to refresh the parent component
-        // or navigate to a different page
-        // navigate('/admin-dashboard');
-        
-        // If you have a callback prop to refresh the project status in parent
-        // if (onProjectComplete) onProjectComplete();
-        
+        toast.success("Project marked as completed!");
       } else {
-        const errorData = await res.json();
-        toast.error(errorData.message || "Failed to mark project as complete.");
+        toast.error(data.error || "Failed to complete project.");
       }
     } catch (err) {
       console.error("Error completing project:", err);
-      toast.error("An error occurred while completing the project.");
+      toast.error("Server error.");
+    } finally {
+      setIsConfirmationModalOpen(false); // close modal after confirmation
     }
   };
 
