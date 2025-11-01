@@ -398,8 +398,8 @@ const getMilestones = (req, res) => {
     const milestonesMap = new Map();
 
     results.forEach((row) => {
+      // Create milestone if not yet added
       if (!milestonesMap.has(row.milestone_id)) {
-        // Calculate milestone progress
         let progress = 0;
         if (row.total_tasks > 0) {
           progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
@@ -424,6 +424,7 @@ const getMilestones = (req, res) => {
       const milestone = milestonesMap.get(row.milestone_id);
 
       if (row.milestone_boq_id) {
+        // Find or create the BOQ item
         let boqItem = milestone.boq_items.find(
           (b) => b.milestone_boq_id === row.milestone_boq_id
         );
@@ -440,13 +441,13 @@ const getMilestones = (req, res) => {
             total_cost: row.boq_total_cost,
             mto_items: [],
             lto: null,
-            eto: null,
+            eto_items: [], // ✅ changed from single eto to array
           };
           milestone.boq_items.push(boqItem);
         }
 
-        // MTO
-        if (row.mto_id) {
+        // ✅ MTO — prevent duplicates
+        if (row.mto_id && !boqItem.mto_items.some((m) => m.mto_id === row.mto_id)) {
           boqItem.mto_items.push({
             mto_id: row.mto_id,
             description: row.mto_description,
@@ -457,7 +458,7 @@ const getMilestones = (req, res) => {
           });
         }
 
-        // LTO
+        // ✅ LTO — single per BOQ
         if (row.lto_id) {
           boqItem.lto = {
             lto_id: row.lto_id,
@@ -467,15 +468,15 @@ const getMilestones = (req, res) => {
           };
         }
 
-        // ETO
-        if (row.eto_id) {
-          boqItem.eto = {
+        // ✅ ETO — multiple equipment items, prevent duplicates
+        if (row.eto_id && !boqItem.eto_items.some((e) => e.eto_id === row.eto_id)) {
+          boqItem.eto_items.push({
             eto_id: row.eto_id,
             equipment_name: row.eto_equipment_name,
             days: row.eto_days,
             daily_rate: row.eto_daily_rate,
             total_cost: row.eto_total_cost,
-          };
+          });
         }
       }
     });
@@ -484,6 +485,7 @@ const getMilestones = (req, res) => {
     res.json({ milestones });
   });
 };
+
 
 
 

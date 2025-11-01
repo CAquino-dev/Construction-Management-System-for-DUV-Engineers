@@ -23,6 +23,8 @@ const CreateProjectPage = () => {
     { description: "", unit: "", quantity: "", unit_cost: "" },
   ]);
   const [loading, setLoading] = useState(true);
+
+  // Add the missing state variables for the modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [actionType, setActionType] = useState("");
   const [remark, setRemark] = useState("");
@@ -244,6 +246,12 @@ const CreateProjectPage = () => {
       console.error("Error submitting project:", err);
       toast.error("Something went wrong.");
     }
+  };
+
+  // Function to open confirmation modal
+  const handleCreateProject = () => {
+    setActionType("create");
+    setIsModalOpen(true);
   };
 
   if (loading || !contract) {
@@ -784,7 +792,7 @@ const CreateProjectPage = () => {
             {/* Submit Button */}
             <div className="flex justify-end pt-6 border-t border-gray-200">
               <Button
-                onClick={handleSubmit}
+                onClick={handleCreateProject}
                 disabled={
                   currentBoqTotal > maxBoqBudget || currentBoqTotal === 0
                 }

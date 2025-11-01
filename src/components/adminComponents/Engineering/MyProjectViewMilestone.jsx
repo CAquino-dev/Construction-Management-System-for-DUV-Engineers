@@ -57,17 +57,19 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     return parseFloat(lto.total_cost) || 0;
   };
 
-  // Get equipment total from eto object
-  const calculateEquipmentTotals = (eto) => {
-    if (!eto || eto === null) return 0;
-    return parseFloat(eto.total_cost) || 0;
+  // Get equipment total from eto items array
+  const calculateEquipmentTotals = (etoItems = []) => {
+    if (!etoItems || !Array.isArray(etoItems)) return 0;
+    return etoItems.reduce((sum, item) => {
+      return sum + (parseFloat(item.total_cost) || 0);
+    }, 0);
   };
 
   // Calculate combined total for all three categories
   const calculateCombinedTotal = (boqItem) => {
     const mtoTotal = calculateMtoTotals(boqItem.mto_items);
     const laborTotal = calculateLaborTotals(boqItem.lto);
-    const equipmentTotal = calculateEquipmentTotals(boqItem.eto);
+    const equipmentTotal = calculateEquipmentTotals(boqItem.eto_items);
     return mtoTotal + laborTotal + equipmentTotal;
   };
 
@@ -89,7 +91,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     const boqBudget = parseFloat(boq.quantity) * parseFloat(boq.unit_cost);
     const mtoTotal = calculateMtoTotals(boq.mto_items);
     const laborTotal = calculateLaborTotals(boq.lto);
-    const equipmentTotal = calculateEquipmentTotals(boq.eto);
+    const equipmentTotal = calculateEquipmentTotals(boq.eto_items);
     return {
       name: boq.description,
       BOQ: boqBudget,
@@ -134,24 +136,23 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     });
   };
 
-  // Equipment change handler - working with single eto object
-  const handleEquipmentChange = (field, value) => {
+  // Equipment change handler - working with eto items array
+  const handleEquipmentChange = (index, field, value) => {
     if (!isEditable() || !selectedEquipment) return;
-    const currentEto = selectedEquipment.eto || {};
-    
-    // Auto-calculate total_cost if days or daily_rate changes
-    const updatedEto = { 
-      ...currentEto, 
+    const updatedItems = [...selectedEquipment.eto_items];
+    updatedItems[index] = { 
+      ...updatedItems[index], 
       [field]: value,
+      // Auto-calculate total_cost if days or daily_rate changes
       ...((field === 'days' || field === 'daily_rate') ? {
-        total_cost: (parseFloat(field === 'days' ? value : currentEto.days) || 0) * 
-                   (parseFloat(field === 'daily_rate' ? value : currentEto.daily_rate) || 0)
+        total_cost: (parseFloat(field === 'days' ? value : updatedItems[index].days) || 0) * 
+                   (parseFloat(field === 'daily_rate' ? value : updatedItems[index].daily_rate) || 0)
       } : {})
     };
     
     setSelectedEquipment({ 
       ...selectedEquipment, 
-      eto: updatedEto 
+      eto_items: updatedItems 
     });
   };
 
@@ -170,10 +171,30 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     });
   };
 
+  const addEquipmentItem = () => {
+    if (!isEditable()) return;
+    const newItem = { 
+      equipment_name: "", 
+      days: 0, 
+      daily_rate: 0,
+      total_cost: 0 
+    };
+    setSelectedEquipment({
+      ...selectedEquipment,
+      eto_items: [...(selectedEquipment.eto_items || []), newItem],
+    });
+  };
+
   const removeMtoItem = (index) => {
     if (!isEditable()) return;
     const updatedItems = selectedBoq.mto_items.filter((_, i) => i !== index);
     setSelectedBoq({ ...selectedBoq, mto_items: updatedItems });
+  };
+
+  const removeEquipmentItem = (index) => {
+    if (!isEditable()) return;
+    const updatedItems = selectedEquipment.eto_items.filter((_, i) => i !== index);
+    setSelectedEquipment({ ...selectedEquipment, eto_items: updatedItems });
   };
 
   const updateMto = async () => {
@@ -258,13 +279,6 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     if (!isEditable()) return;
     
     try {
-      // Transform the data to match backend expectations
-      const eto_items = selectedEquipment.eto ? [{
-        equipment_name: selectedEquipment.eto.equipment_name || "",
-        days: parseFloat(selectedEquipment.eto.days) || 0,
-        daily_rate: parseFloat(selectedEquipment.eto.daily_rate) || 0
-      }] : [];
-
       const response = await fetch(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/engr/milestones/eto`,
         {
@@ -272,7 +286,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             milestone_boq_id: selectedEquipment.milestone_boq_id,
-            eto_items: eto_items,
+            eto_items: selectedEquipment.eto_items,
           }),
         }
       );
@@ -284,7 +298,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
       setItems((prev) =>
         prev.map((item) =>
           item.milestone_boq_id === selectedEquipment.milestone_boq_id
-            ? { ...item, eto: selectedEquipment.eto }
+            ? { ...item, eto_items: selectedEquipment.eto_items }
             : item
         )
       );
@@ -332,7 +346,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     const boqBudget = parseFloat(boqItem.quantity) * parseFloat(boqItem.unit_cost);
     const mtoTotal = calculateMtoTotals(boqItem.mto_items);
     const laborTotal = calculateLaborTotals(boqItem.lto);
-    const equipmentTotal = calculateEquipmentTotals(boqItem.eto);
+    const equipmentTotal = calculateEquipmentTotals(boqItem.eto_items);
     const combinedTotal = calculateCombinedTotal(boqItem);
     const remainingBudget = calculateRemainingBudget(boqItem);
     const isOver = isOverBudget(boqItem);
@@ -494,7 +508,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                   const isOver = isOverBudget(item);
                   const remainingBudget = calculateRemainingBudget(item);
                   const laborTotal = calculateLaborTotals(item.lto);
-                  const equipmentTotal = calculateEquipmentTotals(item.eto);
+                  const equipmentTotal = calculateEquipmentTotals(item.eto_items);
                   const hasLabor = laborTotal > 0;
                   const hasEquipment = equipmentTotal > 0;
                   
@@ -562,12 +576,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                             onClick={() => {
                               setSelectedEquipment({
                                 ...item,
-                                eto: item.eto || {
-                                  equipment_name: "",
-                                  days: 0,
-                                  daily_rate: 0,
-                                  total_cost: 0
-                                }
+                                eto_items: item.eto_items || []
                               });
                             }}
                             disabled={!isEditable()}
@@ -829,10 +838,10 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
           </div>
         )}
 
-        {/* Equipment Modal - Updated for Daily Rates */}
+        {/* Equipment Modal - Updated for Multiple Items */}
         {selectedEquipment && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-[600px] relative">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-[700px] relative max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setSelectedEquipment(null)}
                 className="absolute top-2 right-2 text-gray-600 hover:text-red-500"
@@ -840,71 +849,121 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                 <X size={24} />
               </button>
 
-              <h3 className="text-lg font-semibold mb-4 text-orange-700">
+              <h3 className="text-lg font-semibold mb-2 text-orange-700">
                 Equipment for: {selectedEquipment.description}
                 {!isEditable() && <span className="text-sm text-gray-500 ml-2">(Read Only)</span>}
               </h3>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Equipment Name
-                  </label>
-                  <input
-                    type="text"
-                    className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
-                      !isEditable() ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    value={selectedEquipment.eto?.equipment_name || ""}
-                    onChange={(e) => handleEquipmentChange("equipment_name", e.target.value)}
-                    placeholder="e.g., Backhoe, Excavator, Crane"
-                    disabled={!isEditable()}
-                  />
-                </div>
+              <table className="min-w-full border border-gray-300 mb-4">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border px-3 py-1 text-left">Equipment Name</th>
+                    <th className="border px-3 py-1 text-right">Days</th>
+                    <th className="border px-3 py-1 text-right">Daily Rate (₱)</th>
+                    <th className="border px-3 py-1 text-right">Total</th>
+                    {canModifyMto && isEditable() && (
+                      <th className="border px-3 py-1 text-center">Remove</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedEquipment.eto_items?.length > 0 ? (
+                    selectedEquipment.eto_items.map((equipment, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="border px-3 py-1">
+                          {canModifyMto && isEditable() ? (
+                            <input
+                              className="w-full border px-1 py-0.5 text-sm"
+                              value={equipment.equipment_name}
+                              onChange={(e) =>
+                                handleEquipmentChange(
+                                  idx,
+                                  "equipment_name",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="e.g., Backhoe, Excavator, Crane"
+                            />
+                          ) : (
+                            equipment.equipment_name
+                          )}
+                        </td>
+                        <td className="border px-3 py-1 text-right">
+                          {canModifyMto && isEditable() ? (
+                            <input
+                              type="number"
+                              className="w-20 border px-1 py-0.5 text-sm text-right"
+                              value={equipment.days}
+                              onChange={(e) =>
+                                handleEquipmentChange(idx, "days", e.target.value)
+                              }
+                              step="0.01"
+                            />
+                          ) : (
+                            equipment.days
+                          )}
+                        </td>
+                        <td className="border px-3 py-1 text-right">
+                          {canModifyMto && isEditable() ? (
+                            <input
+                              type="number"
+                              className="w-20 border px-1 py-0.5 text-sm text-right"
+                              value={equipment.daily_rate}
+                              onChange={(e) =>
+                                handleEquipmentChange(
+                                  idx,
+                                  "daily_rate",
+                                  e.target.value
+                                )
+                              }
+                              step="0.01"
+                            />
+                          ) : (
+                            equipment.daily_rate
+                          )}
+                        </td>
+                        <td className="border px-3 py-1 text-right font-semibold">
+                          ₱{(parseFloat(equipment.days) * parseFloat(equipment.daily_rate)).toFixed(2)}
+                        </td>
+                        {canModifyMto && isEditable() && (
+                          <td className="border px-3 py-1 text-center">
+                            <button
+                              onClick={() => removeEquipmentItem(idx)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <X size={18} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={canModifyMto && isEditable() ? 5 : 4}
+                        className="text-center py-3 text-gray-500"
+                      >
+                        No equipment items found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Days
-                  </label>
-                  <input
-                    type="number"
-                    className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
-                      !isEditable() ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    value={selectedEquipment.eto?.days || ""}
-                    onChange={(e) => handleEquipmentChange("days", e.target.value)}
-                    placeholder="5"
-                    disabled={!isEditable()}
-                    step="0.01"
-                  />
-                </div>
+              {canModifyMto && isEditable() && (
+                <button
+                  onClick={addEquipmentItem}
+                  className="mb-4 px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700"
+                >
+                  + Add Equipment Item
+                </button>
+              )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Daily Rate (₱)
-                  </label>
-                  <input
-                    type="number"
-                    className={`w-full border border-gray-300 rounded-md px-3 py-2 text-sm ${
-                      !isEditable() ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    value={selectedEquipment.eto?.daily_rate || ""}
-                    onChange={(e) => handleEquipmentChange("daily_rate", e.target.value)}
-                    placeholder="1000"
-                    disabled={!isEditable()}
-                    step="0.01"
-                  />
-                </div>
-
-                {/* Auto-calculated Total Display */}
-                <div className="p-3 bg-orange-50 rounded border">
-                  <p className="text-sm font-medium text-orange-800">
-                    Equipment Total: ₱{parseFloat(selectedEquipment.eto?.total_cost || 0).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-orange-600">
-                    {selectedEquipment.eto?.days || 0} days × ₱{parseFloat(selectedEquipment.eto?.daily_rate || 0).toFixed(2)}/day
-                  </p>
-                </div>
+              {/* Auto-calculated Total Display */}
+              <div className="p-3 bg-orange-50 rounded border mb-4">
+                <p className="text-sm font-medium text-orange-800">
+                  Equipment Total: ₱{calculateEquipmentTotals(selectedEquipment.eto_items).toFixed(2)}
+                </p>
               </div>
 
               {/* Budget Status */}
