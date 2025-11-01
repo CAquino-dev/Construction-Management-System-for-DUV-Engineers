@@ -1366,10 +1366,98 @@ const completeProject = (req, res) => {
   });
 };
 
+const documentUploadDir = path.join(__dirname, "../public/project_documents");
+if (!fs.existsSync(documentUploadDir)) {
+  fs.mkdirSync(documentUploadDir, { recursive: true });
+}
+
+const documentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, documentUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+// ✅ This must be 'storage', not 'documentStorage'
+const upload = multer({ storage: documentStorage });
+
+const uploadDocument = (req, res) => {
+  upload.single("document_file")(req, res, (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(400).json({ error: "File upload failed" });
+    }
+
+    const { projectId } = req.params;
+    const { title, category, remarks, uploaded_by } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const file_url = `/project_documents/${req.file.filename}`;
+
+    const query = `
+      INSERT INTO project_documents
+      (project_id, title, category, file_url, uploaded_by, remarks)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const values = [projectId, title, category, file_url, uploaded_by, remarks];
+
+    db.query(query, values, (error, result) => {
+      if (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({ error: "Failed to save document" });
+      }
+
+      res.status(201).json({
+        message: "Document uploaded successfully",
+        file_url,
+      });
+    });
+  });
+};
+
+const getDocuments = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = `
+    SELECT 
+      id,
+      project_id,
+      title,
+      category,
+      file_url,
+      remarks,
+      uploaded_by,
+      uploaded_at
+    FROM project_documents
+    WHERE project_id = ?
+    ORDER BY uploaded_at DESC
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch documents" });
+    }
+
+    res.status(200).json({
+      message: "Documents fetched successfully",
+      data: results,
+    });
+  });
+};
+
+
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
   deleteTask, getReports, submitReport, getMilestoneTaskReports, 
-  getPaymentScheduleByProject, getLegals, getProjectDetails
+  getPaymentScheduleByProject, getLegals, getProjectDetails, completeProject, 
+  uploadDocument, getDocuments
 };
