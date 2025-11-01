@@ -54,8 +54,16 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
       // LTO
       totalLto += parseFloat(boqItem.lto?.total_cost) || 0;
 
-      // ETO
-      totalEto += parseFloat(boqItem.eto?.total_cost) || 0;
+      // ETO - handle both single eto object and eto_items array
+      if (boqItem.eto_items && Array.isArray(boqItem.eto_items)) {
+        // New format: eto_items array
+        boqItem.eto_items.forEach(eto => {
+          totalEto += parseFloat(eto.total_cost) || 0;
+        });
+      } else if (boqItem.eto) {
+        // Old format: single eto object
+        totalEto += parseFloat(boqItem.eto.total_cost) || 0;
+      }
     });
 
     const totalBudget = totalMto + totalLto + totalEto;
@@ -74,6 +82,27 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   };
 
   const budgetData = calculateBudgetBreakdown();
+
+  // Calculate total equipment cost for a BOQ item
+  const calculateEquipmentTotal = (boqItem) => {
+    if (boqItem.eto_items && Array.isArray(boqItem.eto_items)) {
+      return boqItem.eto_items.reduce((sum, eto) => sum + (parseFloat(eto.total_cost) || 0), 0);
+    } else if (boqItem.eto) {
+      return parseFloat(boqItem.eto.total_cost) || 0;
+    }
+    return 0;
+  };
+
+  // Get equipment items for display
+  const getEquipmentItems = (boqItem) => {
+    if (boqItem.eto_items && Array.isArray(boqItem.eto_items)) {
+      return boqItem.eto_items;
+    } else if (boqItem.eto) {
+      // Convert single eto object to array for consistent display
+      return [boqItem.eto];
+    }
+    return [];
+  };
 
   const updateFinanceApproval = async (newStatus, remarks = "") => {
     console.log("status", newStatus);
@@ -342,27 +371,62 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                         </div>
                       )}
 
-                      {/* ETO */}
-                      {boqItem.eto && (
+                      {/* ETO - Fixed to handle multiple equipment items */}
+                      {(boqItem.eto_items && boqItem.eto_items.length > 0) || boqItem.eto ? (
                         <div>
                           <h4 className="font-semibold text-gray-800 mb-3 text-orange-700">
                             Equipment (ETO)
                           </h4>
-                          <div className="bg-orange-50 rounded-lg p-4">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <div className="font-medium">{boqItem.eto.equipment_name}</div>
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {boqItem.eto.days} days × {formatCurrency(boqItem.eto.daily_rate)}/day
+                          {getEquipmentItems(boqItem).length > 0 ? (
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Equipment Name</TableHead>
+                                  <TableHead>Days</TableHead>
+                                  <TableHead>Daily Rate</TableHead>
+                                  <TableHead className="text-right">Total Cost</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {getEquipmentItems(boqItem).map((eto, etoIndex) => (
+                                  <TableRow key={eto.eto_id || etoIndex}>
+                                    <TableCell className="font-medium">{eto.equipment_name}</TableCell>
+                                    <TableCell>{eto.days}</TableCell>
+                                    <TableCell>{formatCurrency(eto.daily_rate)}</TableCell>
+                                    <TableCell className="text-right font-semibold">
+                                      {formatCurrency(eto.total_cost)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          ) : (
+                            <div className="bg-orange-50 rounded-lg p-4">
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <div className="font-medium">{boqItem.eto.equipment_name}</div>
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {boqItem.eto.days} days × {formatCurrency(boqItem.eto.daily_rate)}/day
+                                  </div>
+                                </div>
+                                <div className="text-lg font-bold text-orange-600">
+                                  {formatCurrency(boqItem.eto.total_cost)}
                                 </div>
                               </div>
-                              <div className="text-lg font-bold text-orange-600">
-                                {formatCurrency(boqItem.eto.total_cost)}
-                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Show total equipment cost */}
+                          <div className="mt-3 p-3 bg-orange-100 rounded border border-orange-200">
+                            <div className="flex justify-between items-center font-semibold">
+                              <span className="text-orange-800">Total Equipment Cost:</span>
+                              <span className="text-orange-600 text-lg">
+                                {formatCurrency(calculateEquipmentTotal(boqItem))}
+                              </span>
                             </div>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   )}
                 </div>
