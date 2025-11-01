@@ -372,13 +372,6 @@ export const FinanceModal = ({ closeModal, record }) => {
                 <Check size={20} />
                 Approve Payslip
               </button>
-              <button
-                onClick={() => openConfirmationModal("Rejected by Finance")}
-                className="flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md w-full sm:w-auto"
-              >
-                <XCircle size={20} />
-                Reject Payslip
-              </button>
             </div>
 
             <button

@@ -19,14 +19,17 @@ export const ChatClient = ({ selectedProject, clientUserId }) => {
 
     const fetchMessages = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/chat/${selectedProject.id}`);
+        const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/chat/project-messages/${selectedProject.id}`);
         if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
 
-        const apiMessages = data.map(msg => ({
+        // Fixed: Properly map the API response structure
+        const apiMessages = data.messages.map(msg => ({
           id: msg.id,
-          sender: msg.user_id === user ? 'user' : 'bot',
-          text: msg.message
+          sender: msg.sender_id.toString() === user ? 'user' : 'bot',
+          text: msg.message,
+          senderName: msg.sender_name,
+          timestamp: msg.created_at
         }));
 
         setMessages(apiMessages.length ? apiMessages : [
@@ -43,11 +46,11 @@ export const ChatClient = ({ selectedProject, clientUserId }) => {
     // Optional polling every 5 seconds
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
-  }, [selectedProject, clientUserId]);
+  }, [selectedProject, user]); // Fixed: Added user to dependencies
 
   // Send new message to backend and update UI
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !selectedProject) return;
 
     try {
       const res = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/chat`, {
@@ -64,10 +67,16 @@ export const ChatClient = ({ selectedProject, clientUserId }) => {
 
       const data = await res.json();
 
-      setMessages(prev => [
-        ...prev,
-        { id: data.id, sender: 'user', text: data.message }
-      ]);
+      // Fixed: Add new message to state with proper structure
+      const newMessage = {
+        id: data.id || Date.now(), // fallback to timestamp if no id
+        sender: 'user',
+        text: input.trim(),
+        senderName: 'You', // or get from response if available
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, newMessage]);
       setInput('');
     } catch (err) {
       console.error('Error sending message:', err);
@@ -82,14 +91,27 @@ export const ChatClient = ({ selectedProject, clientUserId }) => {
     }
   };
 
+  // Fixed: Auto-resize textarea
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    
+    // Auto-resize textarea
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+  };
+
   return (
     <div className="h-[500px] border border-gray-300 rounded-lg flex flex-col font-sans">
       <div className="flex-1 p-3 overflow-y-auto bg-gray-50">
-        {messages.map(({ id, sender, text }) => (
+        {messages.map(({ id, sender, text, senderName, timestamp }) => (
           <div
             key={id}
             className={`mb-3 text-sm ${sender === 'user' ? 'text-right' : 'text-left'}`}
           >
+            {/* Fixed: Show sender name for bot messages */}
+            {sender === 'bot' && senderName && (
+              <div className="text-xs text-gray-600 mb-1">{senderName}</div>
+            )}
             <div
               className={`inline-block max-w-[80%] break-words px-4 py-2 rounded-2xl ${
                 sender === 'user'
@@ -99,6 +121,12 @@ export const ChatClient = ({ selectedProject, clientUserId }) => {
             >
               {text}
             </div>
+            {/* Fixed: Show timestamp */}
+            {timestamp && (
+              <div className="text-xs text-gray-500 mt-1">
+                {new Date(timestamp).toLocaleTimeString()}
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -109,19 +137,21 @@ export const ChatClient = ({ selectedProject, clientUserId }) => {
           e.preventDefault();
           handleSend();
         }}
-        className="flex p-3 border-t border-gray-300"
+        className="flex items-end p-3 border-t border-gray-300 gap-3"
       >
         <textarea
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
           rows={1}
-          className="flex-1 resize-none border border-gray-300 rounded-full px-4 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 resize-none border border-gray-300 rounded-full px-4 py-2 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-hidden"
+          style={{ minHeight: '40px', maxHeight: '120px' }}
         />
         <button
           type="submit"
-          className="ml-3 bg-[#3b5d47] text-white rounded-full px-5 font-semibold text-sm transition-colors"
+          disabled={!input.trim() || !selectedProject}
+          className="bg-[#3b5d47] text-white rounded-full px-5 py-2 font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Send
         </button>

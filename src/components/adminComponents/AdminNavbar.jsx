@@ -516,7 +516,8 @@ const AdminNavbar = ({ children }) => {
               )}
             </li>
             <li>
-              <button
+              {permissions.can_access_procurement === "Y" && (
+               <button
                 onClick={toggleProcurementDropdown}
                 className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
               >
@@ -530,6 +531,7 @@ const AdminNavbar = ({ children }) => {
                   }`}
                 />
               </button>
+              )}
               {isProcurementOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>

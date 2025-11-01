@@ -3,10 +3,12 @@ import React, { useState, useEffect } from "react";
 export const FinancePaymentEntry = ({ selectedProject }) => {
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // 🔑 error state
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!selectedProject?.id) return;
+
+    console.log(selectedProject)
 
     const fetchSchedule = async () => {
       try {
@@ -18,11 +20,11 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
         if (!res.ok) throw new Error("Failed to fetch payment schedule");
         const data = await res.json();
         setSchedule(data.results);
-        setError(null); // reset error if successful
+        setError(null);
       } catch (err) {
         console.error("Error fetching schedule:", err);
         setSchedule([]);
-        setError("Unable to load payment schedule."); // 🔑 set error
+        setError("Unable to load payment schedule.");
       } finally {
         setLoading(false);
       }
@@ -31,12 +33,24 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
     fetchSchedule();
   }, [selectedProject]);
 
-  if (!selectedProject) {
-    return <p className="text-gray-600">No project selected.</p>;
-  }
-
-  const handlePay = async (amount, scheduleId) => {
+  const handlePay = async (scheduleItem) => {
     try {
+      // ✅ Prepare all required fields for the backend
+      const paymentData = {
+        schedule_id: scheduleItem.schedule_id,
+        milestone_name: scheduleItem.milestone_name,
+        amount: scheduleItem.amount,
+        project_name: selectedProject.project_name,
+        client_id: selectedProject.client_id, // Make sure this is available in selectedProject
+        contract_id: selectedProject.contract_id // Make sure this is available in selectedProject
+      };
+      console.log("data", paymentData);
+      // ✅ Validate that we have all required data
+      if (!paymentData.client_id || !paymentData.contract_id) {
+        alert("Missing client or contract information. Please contact support.");
+        return;
+      }
+
       const res = await fetch(
         `${
           import.meta.env.VITE_REACT_APP_API_URL
@@ -44,10 +58,7 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount, // amount in pesos
-            description: `Payment for schedule #${scheduleId}`,
-          }),
+          body: JSON.stringify(paymentData),
         }
       );
 
@@ -65,6 +76,10 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
     }
   };
 
+  if (!selectedProject) {
+    return <p className="text-gray-600">No project selected.</p>;
+  }
+
   return (
     <div className="p-6 bg-white shadow-lg rounded-xl mt-6">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -73,7 +88,7 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
 
       {loading ? (
         <p>Loading...</p>
-      ) : error ? ( // 🔑 error boundary here
+      ) : error ? (
         <p className="text-red-600">{error}</p>
       ) : schedule.length === 0 ? (
         <p className="text-gray-500">No payment schedule found.</p>
@@ -91,7 +106,7 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
             </thead>
             <tbody>
               {schedule.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
+                <tr key={item.schedule_id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 border">{item.milestone_name}</td>
                   <td className="px-4 py-2 border">{item.due_date}</td>
                   <td className="px-4 py-2 border">
@@ -109,7 +124,7 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
                   <td className="px-4 py-2 border text-center">
                     {item.status !== "Paid" && (
                       <button
-                        onClick={() => handlePay(item.amount, item.id)}
+                        onClick={() => handlePay(item)}
                         className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                       >
                         Pay with PayMongo

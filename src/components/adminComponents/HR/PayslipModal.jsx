@@ -530,16 +530,7 @@ export const PayslipModal = ({ closeModal, payslip }) => {
                 className="flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md w-full sm:w-auto"
               >
                 <Check size={20} />
-                Approve All
-              </button>
-              <button
-                onClick={() =>
-                  openConfirmationModalForPayslip("Rejected by HR")
-                }
-                className="flex items-center justify-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-all duration-200 font-semibold shadow-sm hover:shadow-md w-full sm:w-auto"
-              >
-                <XCircle size={20} />
-                Reject All
+                Send to Finance
               </button>
             </div>
           </div>

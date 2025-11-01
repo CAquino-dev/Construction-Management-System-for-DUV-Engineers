@@ -89,9 +89,13 @@ export const AttendancePage = () => {
     return `${import.meta.env.VITE_REACT_APP_API_URL}${photoPath}`;
   };
 
-  // Group attendance by date
+  // Group attendance by date - FIXED VERSION
   const groupedByDate = attendanceData.reduce((groups, record) => {
+    if (!record.time_in) return groups; // Skip if no time_in
+    
     const date = record.time_in.split("T")[0];
+    if (!date) return groups; // Skip if date extraction fails
+    
     if (!groups[date]) {
       groups[date] = [];
     }
@@ -424,7 +428,7 @@ export const AttendancePage = () => {
                                       {photoUrl ? (
                                         <img
                                           src={photoUrl}
-                                          alt={record.name}
+                                          alt={record.worker_name}
                                           className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover border border-gray-300"
                                           onError={(e) => {
                                             e.target.style.display = "none";
@@ -439,16 +443,18 @@ export const AttendancePage = () => {
                                         } bg-gradient-to-br from-[#4c735c] to-[#3b5d49]`}
                                       >
                                         <span className="text-white font-medium text-xs">
-                                          {record.name
-                                            .split(" ")
-                                            .map((n) => n[0])
-                                            .join("")}
+                                          {record.worker_name
+                                            ? record.worker_name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")
+                                            : "N/A"}
                                         </span>
                                       </div>
                                     </div>
                                     <div className="ml-2 sm:ml-3">
                                       <div className="text-sm font-semibold text-gray-900 line-clamp-1">
-                                        {record.name}
+                                        {record.worker_name}
                                       </div>
                                       <div className="text-xs text-gray-500 line-clamp-1">
                                         {record.skill_type}
@@ -462,7 +468,7 @@ export const AttendancePage = () => {
                                       {record.team_name}
                                     </div>
                                     <div className="text-gray-500 text-xs mt-1 line-clamp-1">
-                                      {record.task_title}
+                                      {record.task_title || "No task assigned"}
                                     </div>
                                   </div>
                                 </td>
