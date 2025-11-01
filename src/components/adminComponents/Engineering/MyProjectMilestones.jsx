@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MyProjectAddMilestone } from "./MyProjectAddMilestone";
 import { MyProjectViewMilestone } from "./MyProjectViewMilestone";
 import { toast } from "sonner";
+import ConfirmationModal from "../ConfirmationModal";
 
 const STATUS_STYLES = {
   Draft: "bg-gray-100 text-gray-700 border border-gray-300",
@@ -124,21 +125,35 @@ export const MyProjectMilestones = ({ selectedProject }) => {
     }
   };
 
+  const handleCompleteProject = () => {
+
+  };
+
   return (
     <div className="p-3 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h4 className="text-lg sm:text-xl font-bold text-gray-800">
-          Milestones
-        </h4>
-        {(permissions.role_name === "Site Manager" || permissions.role_name === "Admin") && (
-          <button
-            onClick={openModal}
-            className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition w-full sm:w-auto"
-          >
-            + Add Milestone
-          </button>
-        )}
+        <h4 className="text-lg sm:text-xl font-bold text-gray-800">Milestones</h4>
+
+        <div className="flex flex-wrap gap-2">
+          {(permissions.role_name === "Site Manager" || permissions.role_name === "Admin") && (
+            <>
+              <button
+                onClick={openModal}
+                className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
+              >
+                + Add Milestone
+              </button>
+
+              <button
+                onClick={handleCompleteProject}
+                className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
+              >
+                Mark Project as Complete
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Milestone list */}
