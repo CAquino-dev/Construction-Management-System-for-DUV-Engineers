@@ -953,8 +953,8 @@ const getPendingFinanceApprovalMilestones = (req, res) => {
     const milestonesMap = new Map();
 
     results.forEach((row) => {
+      // Create milestone if it doesn't exist yet
       if (!milestonesMap.has(row.milestone_id)) {
-        // milestone progress %
         let progress = 0;
         if (row.total_tasks > 0) {
           progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
@@ -977,6 +977,7 @@ const getPendingFinanceApprovalMilestones = (req, res) => {
       const milestone = milestonesMap.get(row.milestone_id);
 
       if (row.milestone_boq_id) {
+        // Find or create BOQ item
         let boqItem = milestone.boq_items.find(
           (b) => b.milestone_boq_id === row.milestone_boq_id
         );
@@ -993,13 +994,13 @@ const getPendingFinanceApprovalMilestones = (req, res) => {
             total_cost: row.boq_total_cost,
             mto_items: [],
             lto: null,
-            eto: null,
+            eto_items: [], // ✅ now array for multiple equipments
           };
           milestone.boq_items.push(boqItem);
         }
 
-        // MTO
-        if (row.mto_id) {
+        // ✅ MTO - prevent duplicates
+        if (row.mto_id && !boqItem.mto_items.some((m) => m.mto_id === row.mto_id)) {
           boqItem.mto_items.push({
             mto_id: row.mto_id,
             description: row.mto_description,
@@ -1010,7 +1011,7 @@ const getPendingFinanceApprovalMilestones = (req, res) => {
           });
         }
 
-        // LTO
+        // ✅ LTO - single per BOQ
         if (row.lto_id) {
           boqItem.lto = {
             lto_id: row.lto_id,
@@ -1020,15 +1021,15 @@ const getPendingFinanceApprovalMilestones = (req, res) => {
           };
         }
 
-        // ETO
-        if (row.eto_id) {
-          boqItem.eto = {
+        // ✅ ETO - multiple equipments
+        if (row.eto_id && !boqItem.eto_items.some((e) => e.eto_id === row.eto_id)) {
+          boqItem.eto_items.push({
             eto_id: row.eto_id,
             equipment_name: row.eto_equipment_name,
             days: row.eto_days,
             daily_rate: row.eto_daily_rate,
             total_cost: row.eto_total_cost,
-          };
+          });
         }
       }
     });
@@ -1037,8 +1038,6 @@ const getPendingFinanceApprovalMilestones = (req, res) => {
     res.json({ milestones });
   });
 };
-
-
 
 
 const uploadSalarySignature = (req, res) => {
