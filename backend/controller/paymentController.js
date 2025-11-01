@@ -1,8 +1,6 @@
 const https = require('https');
 const db = require("../config/db");
 
-const PAYMONGO_SECRET_KEY = 'sk_test_JgUY3ATdxSYcTADVGssDXLYS'; // Replace with your actual secret key
-
 function createPaymentIntent(req, res) {
   const { amount } = req.body;
 
@@ -71,94 +69,102 @@ function createPaymentIntent(req, res) {
 }
 
 function createCheckoutSession(req, res) {
-  const { amount, currency = 'PHP', description = 'Payment for Engineer ERP service' } = req.body;
+  try {
+    const { schedule_id, milestone_name, amount, project_name, client_id, contract_id } = req.body;
 
-  if (!amount || isNaN(amount)) {
-    return res.status(400).json({ message: 'Invalid amount' });
-  }
-
-  const amountInCentavos = Math.round(amount * 100);
-
-//   const postData = JSON.stringify({
-//     data: {
-//       attributes: {
-//         amount: amountInCentavos,
-//         currency,
-//         description,
-//         payment_method_types: ['card', 'gcash', 'grabpay'], // adjust as needed
-//         success_url: 'http://localhost:5173/admin-dashboard/finance/financePayment', // replace with your frontend URLs
-//         cancel_url: 'http://localhost:5173/admin-dashboard/finance/financePayment',
-//       },
-//     },
-//   });
-const postData = JSON.stringify({
-  data: {
-    attributes: {
-      amount: amountInCentavos,
-      currency,
-      description,
-      payment_method_types: ['card', 'gcash'],
-      success_url: 'http://localhost:5173/admin-dashboard/finance/financePayment',
-      cancel_url: 'http://localhost:5173/admin-dashboard/finance/financePayment',
-      line_items: [
-        {
-          name: "Engineer ERP Payment",
-          description: "Milestone payment for Engineer ERP",
-          amount: amountInCentavos,
-          quantity: 1,
-          currency: currency,
-          // images: ["https://example.com/image.png"] // optional
-        }
-      ]
+    // ✅ Validate inputs
+    if (!amount || isNaN(amount)) {
+      return res.status(400).json({ message: 'Invalid or missing amount' });
     }
+    if (!schedule_id || !contract_id || !client_id) {
+      return res.status(400).json({ message: 'Missing required metadata fields' });
+    }
+
+    const amountInCentavos = Math.round(parseFloat(amount) * 100);
+
+    // ✅ Build the PayMongo payload
+    const postData = JSON.stringify({
+      data: {
+        attributes: {
+          amount: amountInCentavos,
+          currency: 'PHP',
+          description: `Payment for ${milestone_name} - ${project_name}`,
+          payment_method_types: ['card', 'gcash'],
+          success_url: `${process.env.FRONTEND_URL}/clientDashboard/projects-client`,
+          cancel_url: `${process.env.FRONTEND_URL}/clientDashboard/projects-client`,
+          line_items: [
+            {
+              name: milestone_name || 'Project Payment',
+              description: project_name || 'Construction Project Payment',
+              amount: amountInCentavos,
+              currency: 'PHP',
+              quantity: 1,
+            },
+          ],
+          // ✅ Include metadata for webhook tracking
+          metadata: {
+            payment_schedule_id: schedule_id,
+            contract_id,
+            client_id,
+            project_name,
+            milestone_name,
+          },
+        },
+      },
+    });
+
+    // ✅ Build the HTTPS request options
+    const auth = Buffer.from(process.env.PAYMONGO_SECRET_KEY + ':').toString('base64');
+    const options = {
+      hostname: 'api.paymongo.com',
+      path: '/v1/checkout_sessions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${auth}`,
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    };
+
+    // ✅ Send request to PayMongo
+    const request = https.request(options, (response) => {
+      let data = '';
+
+      response.on('data', (chunk) => (data += chunk));
+
+      response.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            res.status(201).json({
+              checkout_url: json.data.attributes.checkout_url,
+              session_id: json.data.id,
+              client_key: json.data.attributes.client_key,
+            });
+          } else {
+            res.status(response.statusCode).json({
+              message: 'Failed to create checkout session',
+              error: json,
+            });
+          }
+        } catch (err) {
+          console.error('Response parsing error:', err);
+          res.status(500).json({ message: 'Failed to parse PayMongo response' });
+        }
+      });
+    });
+
+    request.on('error', (error) => {
+      console.error('Request error:', error);
+      res.status(500).json({ message: 'Internal server error', error: error.message });
+    });
+
+    request.write(postData);
+    request.end();
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    res.status(500).json({ message: 'Unexpected server error', error: error.message });
   }
-});
-
-
-  const auth = Buffer.from(PAYMONGO_SECRET_KEY + ':').toString('base64');
-
-  const options = {
-    hostname: 'api.paymongo.com',
-    path: '/v1/checkout_sessions',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Basic ${auth}`,
-      'Content-Length': Buffer.byteLength(postData),
-    },
-  };
-
-  const request = https.request(options, (response) => {
-    let data = '';
-
-    response.on('data', (chunk) => {
-      data += chunk;
-    });
-
-    response.on('end', () => {
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        const json = JSON.parse(data);
-        res.status(201).json({
-          checkout_url: json.data.attributes.checkout_url,
-          id: json.data.id,
-          client_key: json.data.attributes.client_key,
-        });
-      } else {
-        res.status(response.statusCode).json({
-          message: 'Failed to create checkout session',
-          error: data,
-        });
-      }
-    });
-  });
-
-  request.on('error', (error) => {
-    console.error('Request error:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
-  });
-
-  request.write(postData);
-  request.end();
 }
 
 function createInitialPayment(req, res) {

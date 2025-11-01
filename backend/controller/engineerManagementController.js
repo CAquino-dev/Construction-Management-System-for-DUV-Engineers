@@ -128,7 +128,7 @@ const createProject = (req, res) => {
     const { clientId } = req.params;  // Get the clientId from the request params
   
     const query = `
-      SELECT
+        SELECT
         ep.id,
         ep.project_name,
         ep.description,
@@ -138,8 +138,8 @@ const createProject = (req, res) => {
         ep.budget,
         ep.location,
         ep.project_type,
-        -- Modify to return relative path for project photo
-        IFNULL(ep.project_photo, '') AS project_photo,
+        ep.client_id,
+        ep.contract_id,
         u.full_name AS engineer_name
       FROM
         engineer_projects ep

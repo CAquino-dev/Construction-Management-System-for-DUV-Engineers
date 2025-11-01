@@ -119,55 +119,55 @@ const handlePayMongoWebhook = (req, res) => {
 
   const eventType = event.data?.attributes?.type;
   const paymentData = event.data?.attributes?.data;
-  const paymentId = paymentData?.id; // pay_xxx
+  const paymentId = paymentData?.id;
   const metadata = paymentData?.attributes?.metadata;
   const invoiceId = metadata?.invoice_id;
-  const paymentScheduleId = metadata?.payment_schedule_id; // 👈 Add this in your PayMongo metadata if not already
+  const paymentScheduleId = metadata?.payment_schedule_id;
 
-  console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}`);
+  console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}, Schedule ID: ${paymentScheduleId}`);
 
-  if (eventType === "payment.paid" && invoiceId) {
-    const updateInvoiceQuery = `
-      UPDATE invoices
-      SET status = 'Paid',
-          paymongo_payment_id = ?,
-          paid_at = NOW(),
-          updated_at = NOW()
-      WHERE id = ?
-    `;
+  if (eventType === "payment.paid") {
 
-    db.query(updateInvoiceQuery, [paymentId, invoiceId], (err) => {
-      if (err) {
-        console.error("❌ Failed to update invoice:", err);
-        return res.sendStatus(500);
-      }
+    // ✅ Update invoice if it exists
+    if (invoiceId) {
+      const updateInvoiceQuery = `
+        UPDATE invoices
+        SET status = 'Paid',
+            paymongo_payment_id = ?,
+            paid_at = NOW(),
+            updated_at = NOW()
+        WHERE id = ?
+      `;
+      db.query(updateInvoiceQuery, [paymentId, invoiceId], (err) => {
+        if (err) {
+          console.error("❌ Failed to update invoice:", err);
+          return res.sendStatus(500);
+        }
+        console.log(`✅ Invoice ${invoiceId} marked as Paid`);
+      });
+    }
 
-      console.log(`✅ Invoice ${invoiceId} marked as Paid`);
-
-      // ✅ Update payment_schedule status to Paid
-      if (paymentScheduleId) {
-        const updateScheduleQuery = `
-          UPDATE payment_schedule
-          SET status = 'Paid',
-              paid_date = NOW(),
-              updated_at = NOW()
-          WHERE id = ?
-        `;
-
-        db.query(updateScheduleQuery, [paymentScheduleId], (err2) => {
-          if (err2) {
-            console.error("❌ Failed to update payment schedule:", err2);
-            return res.sendStatus(500);
-          }
-
-          console.log(`✅ Payment Schedule ${paymentScheduleId} marked as Paid`);
-          return res.sendStatus(200);
-        });
-      } else {
-        // if no payment_schedule_id in metadata
+    // ✅ Always update payment schedule if metadata exists
+    if (paymentScheduleId) {
+      const updateScheduleQuery = `
+        UPDATE payment_schedule
+        SET status = 'Paid',
+            paid_date = NOW(),
+            updated_at = NOW()
+        WHERE id = ?
+      `;
+      db.query(updateScheduleQuery, [paymentScheduleId], (err) => {
+        if (err) {
+          console.error("❌ Failed to update payment schedule:", err);
+          return res.sendStatus(500);
+        }
+        console.log(`✅ Payment Schedule ${paymentScheduleId} marked as Paid`);
         return res.sendStatus(200);
-      }
-    });
+      });
+    } else {
+      return res.sendStatus(200); // no schedule to update
+    }
+
   } else {
     res.sendStatus(200); // ignore other events
   }
