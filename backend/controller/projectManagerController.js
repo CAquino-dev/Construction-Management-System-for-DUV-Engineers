@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const ejs = require('ejs');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { PDFDocument } = require('pdf-lib');
 const nodemailer = require("nodemailer");
 const qrcode = require("qrcode");
@@ -375,8 +375,8 @@ const generateContract = (req, res) => {
         try {
           const browser = await puppeteer.launch({
             headless: true,
-            args: ["--no-sandbox", "--disable-setuid-sandbox"],
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome',
           });
           const page = await browser.newPage();
           await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });
