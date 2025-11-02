@@ -4,6 +4,7 @@ import { MyProjectAddMilestone } from "./MyProjectAddMilestone";
 import { MyProjectViewMilestone } from "./MyProjectViewMilestone";
 import { toast } from "sonner";
 import ConfirmationModal from "../ConfirmationModal";
+import { X } from "@phosphor-icons/react";
 
 const STATUS_STYLES = {
   Draft: "bg-gray-100 text-gray-700 border border-gray-300",
@@ -25,7 +26,7 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [milestonesList, setMilestonesList] = useState([]);
   const [selectedMilestone, setSelectedMilestone] = useState(null);
-  const [remark, setRemark] = useState(""); // For the confirmation modal
+  const [remark, setRemark] = useState("");
 
   const [report, setReport] = useState({
     title: "",
@@ -67,12 +68,12 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   const closeViewModal = () => setIsViewModalOpen(false);
 
   const openConfirmationModal = () => {
-    setRemark(""); // Reset remark when opening modal
+    setRemark("");
     setIsConfirmationModalOpen(true);
   };
   const closeConfirmationModal = () => {
     setIsConfirmationModalOpen(false);
-    setRemark(""); // Reset remark when closing modal
+    setRemark("");
   };
 
   const addMilestone = (newMilestone) => {
@@ -141,10 +142,11 @@ export const MyProjectMilestones = ({ selectedProject }) => {
   };
 
   const confirmCompleteProject = async () => {
-    // Step 2: call backend to mark project complete
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/complete/${selectedProject.id}`,
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/complete/${
+          selectedProject.id
+        }`,
         { method: "PUT" }
       );
 
@@ -159,112 +161,137 @@ export const MyProjectMilestones = ({ selectedProject }) => {
       console.error("Error completing project:", err);
       toast.error("Server error.");
     } finally {
-      setIsConfirmationModalOpen(false); // close modal after confirmation
+      setIsConfirmationModalOpen(false);
     }
   };
 
   return (
-    <div className="p-3 sm:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h4 className="text-lg sm:text-xl font-bold text-gray-800">Milestones</h4>
-
-        <div className="flex flex-wrap gap-2">
-          {(permissions.role_name === "Site Manager" || permissions.role_name === "Admin") && (
-            <>
-              <button
-                onClick={openModal}
-                className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
-              >
-                + Add Milestone
-              </button>
-
-              {/* ✅ Complete Project Button */}
-              <button
-                onClick={handleCompleteProject}
-                className="bg-[#4c735c] text-white px-4 sm:px-6 py-2 rounded-lg shadow hover:opacity-90 transition"
-              >
-                Mark Project as Completed
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Milestone list */}
-      <div className="space-y-4 sm:space-y-6">
-        {milestonesList.map((milestone) => (
-          <div
-            key={milestone.id}
-            className="bg-white shadow-md rounded-xl p-4 sm:p-6 border border-gray-200"
-          >
-            {/* Header row */}
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-500">
-                {new Date(milestone.timestamp).toLocaleDateString()}
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Milestones</h1>
+              <p className="text-gray-600 text-sm mt-1">
+                Track project progress and milestones
               </p>
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                  STATUS_STYLES[milestone.status] ||
-                  "bg-gray-100 text-gray-700 border border-gray-300"
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                {milestone.status}
-              </span>
             </div>
 
-            {/* Title & Details */}
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
-              {milestone.title}
-            </h3>
-            <p className="text-sm text-gray-600 break-words">
-              {milestone.details}
-            </p>
-
-            {/* Progress Bar */}
-            <div className="mt-4">
-              <div className="flex justify-between mb-1 text-xs sm:text-sm">
-                <span className="text-gray-500">Progress</span>
-                <span className="text-gray-700 font-medium">
-                  {milestone.progress || 0}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
-                <div
-                  className="bg-[#4c735c] h-2 sm:h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${milestone.progress || 0}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4">
-              <button
-                onClick={() => openViewModal(milestone)}
-                className="text-[#4c735c] text-sm sm:text-base font-medium hover:underline"
-              >
-                View Milestone
-              </button>
-              {milestone.status === "Delivered" && (
+            <div className="flex flex-col sm:flex-row gap-2">
+              {(permissions.role_name === "Site Manager" ||
+                permissions.role_name === "Admin") && (
                 <>
                   <button
-                    onClick={() => goToTaskBreakdown(milestone)}
-                    className="text-blue-600 text-sm sm:text-base font-medium hover:underline"
+                    onClick={openModal}
+                    className="bg-[#4c735c] text-white px-4 py-3 rounded-lg font-medium hover:bg-[#3a5a4a] transition-colors flex items-center justify-center gap-2"
                   >
-                    Go to Task Breakdown
+                    <span>+</span>
+                    Add Milestone
                   </button>
+
                   <button
-                    onClick={() => openReportModal(milestone)}
-                    className="text-indigo-600 text-sm sm:text-base font-medium hover:underline"
+                    onClick={handleCompleteProject}
+                    className="bg-green-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                   >
-                    Create Report
+                    <span>✓</span>
+                    Complete Project
                   </button>
                 </>
               )}
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* Milestone list */}
+        <div className="space-y-4">
+          {milestonesList.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <div className="text-4xl mb-3 text-gray-300">📋</div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                No Milestones Yet
+              </h3>
+              <p className="text-gray-500">
+                Add milestones to track your project progress
+              </p>
+            </div>
+          ) : (
+            milestonesList.map((milestone) => (
+              <div
+                key={milestone.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs text-gray-500">
+                        {new Date(milestone.timestamp).toLocaleDateString()}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                          STATUS_STYLES[milestone.status] ||
+                          "bg-gray-100 text-gray-700 border border-gray-300"
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        {milestone.status}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {milestone.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {milestone.details}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <div className="flex justify-between mb-2 text-sm">
+                    <span className="text-gray-600">Progress</span>
+                    <span className="text-gray-700 font-medium">
+                      {milestone.progress || 0}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-[#4c735c] h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${milestone.progress || 0}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => openViewModal(milestone)}
+                    className="text-[#4c735c] font-medium hover:text-[#3a5a4a] transition-colors text-left py-1"
+                  >
+                    View Details
+                  </button>
+                  {milestone.status === "Delivered" && (
+                    <>
+                      <button
+                        onClick={() => goToTaskBreakdown(milestone)}
+                        className="text-blue-600 font-medium hover:text-blue-700 transition-colors text-left py-1"
+                      >
+                        Task Breakdown
+                      </button>
+                      <button
+                        onClick={() => openReportModal(milestone)}
+                        className="text-indigo-600 font-medium hover:text-indigo-700 transition-colors text-left py-1"
+                      >
+                        Create Report
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Add Milestone Modal */}
@@ -284,16 +311,33 @@ export const MyProjectMilestones = ({ selectedProject }) => {
         />
       )}
 
-      {/* Report Modal */}
+      {/* Report Modal - Mobile Friendly */}
       {isReportModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
-              Create Report for: {selectedMilestone?.title}
-            </h3>
-            <form onSubmit={handleReportSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Create Report
+              </h3>
+              <button
+                onClick={closeReportModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleReportSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <p className="text-sm text-gray-600 mb-3">
+                  For:{" "}
+                  <span className="font-medium">
+                    {selectedMilestone?.title}
+                  </span>
+                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Report Title
                 </label>
                 <input
@@ -302,11 +346,12 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                   onChange={(e) => handleReportChange("title", e.target.value)}
                   required
                   placeholder="e.g. Foundation Completion Report"
-                  className="w-full border rounded px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Summary
                 </label>
                 <textarea
@@ -317,11 +362,12 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                   required
                   placeholder="Write the progress update here..."
                   rows="4"
-                  className="w-full border rounded px-3 py-2 text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4c735c] focus:border-transparent resize-none"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Upload File
                 </label>
                 <input
@@ -330,21 +376,21 @@ export const MyProjectMilestones = ({ selectedProject }) => {
                   onChange={(e) =>
                     handleReportChange("file", e.target.files[0])
                   }
-                  className="w-full text-sm"
+                  className="w-full text-sm border border-gray-300 rounded-lg px-4 py-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#4c735c] file:text-white hover:file:bg-[#3a5a4a]"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={closeReportModal}
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#4c735c] text-white rounded hover:opacity-90"
+                  className="flex-1 bg-[#4c735c] text-white py-3 rounded-lg font-medium hover:bg-[#3a5a4a] transition-colors"
                 >
                   Submit Report
                 </button>
