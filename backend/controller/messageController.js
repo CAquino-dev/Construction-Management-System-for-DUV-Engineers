@@ -1,54 +1,69 @@
 const db = require('../config/db');  // Importing the MySQL connection
 
 const sendProjectMessage = (req, res) => {
-    const { projectId } = req.params;
-    const { senderId, message } = req.body;
+  const { projectId } = req.params;
+  const { senderId, message } = req.body;
 
-    // Basic input validation
-    if (!senderId || !message || !projectId) {
-        return res.status(400).json({ error: "Missing senderId, message, or projectId" });
+  if (!senderId || !message || !projectId) {
+    return res.status(400).json({ error: "Missing senderId, message, or projectId" });
+  }
+
+  const checkSenderQuery = `
+    SELECT ep.client_id, pa.user_id AS assigned_user
+    FROM engineer_projects ep
+    LEFT JOIN project_assignments pa ON ep.id = pa.project_id
+    WHERE ep.id = ?
+  `;
+
+  db.query(checkSenderQuery, [projectId], (err, result) => {
+    if (err) {
+      console.error("Database error when checking sender:", err);
+      return res.status(500).json({ error: "Failed to verify sender access" });
     }
 
-    // Step 1: Check if sender is assigned to the project
-    const checkAssignmentQuery = `
-        SELECT * FROM project_assignments 
-        WHERE project_id = ? AND user_id = ?
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    // Convert IDs to numbers for reliable comparison
+    const numericSenderId = Number(senderId);
+    const clientId = Number(result[0].client_id);
+    const assignedUserIds = result
+      .map((r) => Number(r.assigned_user))
+      .filter((id) => !isNaN(id));
+
+    const isAssignedUser = assignedUserIds.includes(numericSenderId);
+    const isClient = numericSenderId === clientId;
+
+    if (!isAssignedUser && !isClient) {
+      return res
+        .status(403)
+        .json({ error: "User not authorized to send messages in this project" });
+    }
+
+    const insertMessageQuery = `
+      INSERT INTO project_chats (project_id, sender_id, message, created_at)
+      VALUES (?, ?, ?, NOW())
     `;
 
-    db.query(checkAssignmentQuery, [projectId, senderId], (err, assignmentResult) => {
-        if (err) {
-            console.error("Database error when checking assignment:", err);
-            return res.status(500).json({ error: "Failed to verify project assignment" });
-        }
+    db.query(insertMessageQuery, [projectId, senderId, message], (err, result) => {
+      if (err) {
+        console.error("Error inserting message:", err);
+        return res.status(500).json({ error: "Failed to send message" });
+      }
 
-        if (assignmentResult.length === 0) {
-            return res.status(403).json({ error: "User is not assigned to this project" });
-        }
-
-        // Step 2: Insert the message
-        const insertMessageQuery = `
-            INSERT INTO project_chats (project_id, sender_id, message, created_at)
-            VALUES (?, ?, ?, NOW())
-        `;
-
-        db.query(insertMessageQuery, [projectId, senderId, message], (err, result) => {
-            if (err) {
-                console.error("Error inserting message:", err);
-                return res.status(500).json({ error: "Failed to send message" });
-            }
-
-            res.status(201).json({
-                message: "Message sent successfully",
-                messageData: {
-                    id: result.insertId,
-                    project_id: projectId,
-                    sender_id: senderId,
-                    message,
-                    sent_at: new Date().toISOString()
-                }
-            });
-        });
+      res.status(201).json({
+        message: "Message sent successfully",
+        messageData: {
+          id: result.insertId,
+          project_id: projectId,
+          sender_id: senderId,
+          message,
+          sent_at: new Date().toISOString(),
+        },
+      });
     });
+  });
 };
 
 const getProjectMessages = (req, res) => {
@@ -64,13 +79,11 @@ const getProjectMessages = (req, res) => {
             pc.project_id,
             pc.sender_id,
             u.full_name AS sender_name,
-            r.role_name AS sender_role,
             pc.message,
             pc.created_at
         FROM project_chats pc
         JOIN users u ON pc.sender_id = u.id
-        JOIN permissions r ON u.role_id = r.id
-        WHERE pc.project_id = ?
+        WHERE pc.project_id = 36
         ORDER BY pc.created_at ASC;
     `;
 
