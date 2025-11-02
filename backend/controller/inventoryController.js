@@ -206,53 +206,49 @@ const createTransaction = (req, res) => {
   const {
     project_id,
     material_id,
-    transaction_type,
     quantity,
     unit,
     reference,
     created_by
   } = req.body;
 
-  // If OUT, check available stock first
-  if (transaction_type === "OUT") {
-    const checkStockQuery = `
-      SELECT quantity FROM project_inventory
-      WHERE project_id = ? AND material_id = ?
-    `;
-
-    db.query(checkStockQuery, [project_id, material_id], (err, rows) => {
-      if (err) {
-        console.error("Error checking stock:", err);
-        return res.status(500).json({ success: false, message: "Error checking stock" });
-      }
-
-      const currentQty = rows.length > 0 ? parseFloat(rows[0].quantity) : 0;
-
-      if (currentQty < quantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Not enough stock. Available: ${currentQty}, Requested: ${quantity}`
-        });
-      }
-
-      // Proceed with transaction if stock is enough
-      insertTransaction();
-    });
-  } else {
-    // If IN, no need to check stock
-    insertTransaction();
+  if (!project_id || !material_id || !quantity || !unit || !created_by) {
+    return res.status(400).json({ success: false, message: "Missing required fields" });
   }
 
-  function insertTransaction() {
+  const qty = parseFloat(quantity);
+
+  // Check available stock first
+  const checkStockQuery = `
+    SELECT quantity FROM project_inventory
+    WHERE project_id = ? AND id = ?
+  `;
+
+  db.query(checkStockQuery, [project_id, material_id], (err, rows) => {
+    if (err) {
+      console.error("Error checking stock:", err);
+      return res.status(500).json({ success: false, message: "Error checking stock" });
+    }
+
+    const currentQty = rows.length > 0 ? parseFloat(rows[0].quantity) : 0;
+
+    if (currentQty < qty) {
+      return res.status(400).json({
+        success: false,
+        message: `Not enough stock. Available: ${currentQty}, Requested: ${qty}`
+      });
+    }
+
+    // Insert transaction
     const insertTransactionQuery = `
       INSERT INTO inventory_transactions
         (project_id, material_id, transaction_type, quantity, unit, reference, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, 'OUT', ?, ?, ?, ?)
     `;
 
     db.query(
       insertTransactionQuery,
-      [project_id, material_id, transaction_type, quantity, unit, reference, created_by],
+      [project_id, material_id, qty, unit, reference, created_by],
       (err, result) => {
         if (err) {
           console.error("Error inserting transaction:", err);
@@ -261,38 +257,30 @@ const createTransaction = (req, res) => {
 
         const transactionId = result.insertId;
 
-        // Update project_inventory
+        // Update project inventory
         const updateInventoryQuery = `
-          INSERT INTO project_inventory (project_id, material_id, quantity, unit)
-          VALUES (?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE
-            quantity = CASE
-              WHEN ? = 'IN' THEN quantity + VALUES(quantity)
-              WHEN ? = 'OUT' THEN quantity - VALUES(quantity)
-              ELSE quantity
-            END
+          UPDATE project_inventory
+          SET quantity = quantity - ?
+          WHERE project_id = ? AND id = ?
         `;
 
-        db.query(
-          updateInventoryQuery,
-          [project_id, material_id, quantity, unit, transaction_type, transaction_type],
-          (err2) => {
-            if (err2) {
-              console.error("Error updating project inventory:", err2);
-              return res.status(500).json({ success: false, message: "Error updating project inventory" });
-            }
-
-            return res.status(201).json({
-              success: true,
-              message: "Transaction recorded and inventory updated",
-              transaction_id: transactionId
-            });
+        db.query(updateInventoryQuery, [qty, project_id, material_id], (err2) => {
+          if (err2) {
+            console.error("Error updating inventory:", err2);
+            return res.status(500).json({ success: false, message: "Error updating inventory" });
           }
-        );
+
+          return res.status(201).json({
+            success: true,
+            message: "OUT transaction recorded and inventory updated",
+            transaction_id: transactionId
+          });
+        });
       }
     );
-  }
+  });
 };
+
 
 const getProjectInventory = (req, res) => {
     const { projectId } = req.params;
@@ -617,10 +605,40 @@ const markAsDelivered = (req, res) => {
   });
 };
 
+const getTransactionHistory = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = `
+    SELECT 
+      t.id AS transaction_id,
+      t.material_id,
+      pi.material_name,
+      t.quantity,
+      t.unit,
+      t.created_at,
+      u.full_name
+    FROM inventory_transactions t
+    JOIN project_inventory pi ON t.material_id = pi.id
+    JOIN users u ON u.id = t.created_by
+    WHERE pi.project_id = ?
+    ORDER BY t.created_at DESC
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching transaction history:", err);
+      return res.status(500).json({ error: "Database error." });
+    }
+
+    res.json(results);
+  });
+};
+
+
 module.exports = { 
 getInventoryItems, updateInventoryItem, addInventoryItem, 
 inventoryRequest, getInventoryRequests, updateRequestStatus,
 getUserRequest, claimItem, getMaterialCatalog, createTransaction,
 getProjectInventory, getPendingDeliveries, updateDeliveredQuantity,
-markAsDelivered
+markAsDelivered, getTransactionHistory
 };
