@@ -8,8 +8,6 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
   useEffect(() => {
     if (!selectedProject?.id) return;
 
-    console.log(selectedProject)
-
     const fetchSchedule = async () => {
       try {
         const res = await fetch(
@@ -35,19 +33,19 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
 
   const handlePay = async (scheduleItem) => {
     try {
-      // ✅ Prepare all required fields for the backend
       const paymentData = {
         schedule_id: scheduleItem.schedule_id,
         milestone_name: scheduleItem.milestone_name,
         amount: scheduleItem.amount,
         project_name: selectedProject.project_name,
-        client_id: selectedProject.client_id, // Make sure this is available in selectedProject
-        contract_id: selectedProject.contract_id // Make sure this is available in selectedProject
+        client_id: selectedProject.client_id,
+        contract_id: selectedProject.contract_id,
       };
-      console.log("data", paymentData);
-      // ✅ Validate that we have all required data
+
       if (!paymentData.client_id || !paymentData.contract_id) {
-        alert("Missing client or contract information. Please contact support.");
+        alert(
+          "Missing client or contract information. Please contact support."
+        );
         return;
       }
 
@@ -68,7 +66,6 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
       }
 
       const data = await res.json();
-      // Redirect to PayMongo checkout page
       window.location.href = data.checkout_url;
     } catch (err) {
       console.error("Payment error:", err);
@@ -77,62 +74,76 @@ export const FinancePaymentEntry = ({ selectedProject }) => {
   };
 
   if (!selectedProject) {
-    return <p className="text-gray-600">No project selected.</p>;
+    return (
+      <div className="p-4 text-center">
+        <p className="text-gray-500">Select a project to view payments</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4c735c] mx-auto"></div>
+        <p className="text-gray-500 mt-2">Loading payments...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 bg-white shadow-lg rounded-xl mt-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">
-        Payment Schedule for {selectedProject.name}
-      </h2>
+    <div className="p-4">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Payment Schedule</h2>
+        <p className="text-gray-600">For {selectedProject.project_name}</p>
+      </div>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : error ? (
-        <p className="text-red-600">{error}</p>
-      ) : schedule.length === 0 ? (
-        <p className="text-gray-500">No payment schedule found.</p>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      {schedule.length === 0 ? (
+        <div className="bg-gray-50 rounded-lg p-6 text-center">
+          <p className="text-gray-500">No payment schedule found.</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-200 rounded-lg">
-            <thead className="bg-gray-100 text-left">
-              <tr>
-                <th className="px-4 py-2 border">Payment Name</th>
-                <th className="px-4 py-2 border">Amount</th>
-                <th className="px-4 py-2 border">Status</th>
-                <th className="px-4 py-2 border">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {schedule.map((item) => (
-                <tr key={item.schedule_id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 border">{item.milestone_name}</td>
-                  <td className="px-4 py-2 border">
+        <div className="space-y-3">
+          {schedule.map((item) => (
+            <div
+              key={item.schedule_id}
+              className="bg-white border border-gray-200 rounded-lg p-4"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    {item.milestone_name}
+                  </h3>
+                  <p className="text-lg font-bold text-[#4c735c] mt-1">
                     ₱{parseFloat(item.amount).toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2 border">
-                    {item.status === "Paid" ? (
-                      <span className="text-green-600 font-medium">Paid</span>
-                    ) : (
-                      <span className="text-yellow-600 font-medium">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 border text-center">
-                    {item.status !== "Paid" && (
-                      <button
-                        onClick={() => handlePay(item)}
-                        className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                      >
-                        Pay with PayMongo
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    item.status === "Paid"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {item.status}
+                </span>
+              </div>
+
+              {item.status !== "Paid" && (
+                <button
+                  onClick={() => handlePay(item)}
+                  className="w-full bg-[#4c735c] hover:bg-[#3a5a4a] text-white py-2 rounded-lg font-medium transition-colors"
+                >
+                  Pay with PayMongo
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
