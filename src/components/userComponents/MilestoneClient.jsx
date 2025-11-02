@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { ViewMilestoneClient } from "./ViewMilestoneClient"; // Import the component
 
 export const MilestoneClient = ({ selectedProject }) => {
   const [milestones, setMilestones] = useState([]);
@@ -9,6 +10,7 @@ export const MilestoneClient = ({ selectedProject }) => {
   const [activeReport, setActiveReport] = useState(null); // report selected for modal
   const [activeMilestoneId, setActiveMilestoneId] = useState(null);
   const [showReports, setShowReports] = useState(false);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState(null); // For budget view
 
   const userId = localStorage.getItem("userId");
 
@@ -105,6 +107,16 @@ export const MilestoneClient = ({ selectedProject }) => {
     }
   };
 
+  // Open budget view
+  const openBudgetView = (milestoneId) => {
+    setSelectedMilestoneId(milestoneId);
+  };
+
+  // Close budget view
+  const closeBudgetView = () => {
+    setSelectedMilestoneId(null);
+  };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold mb-4">Project Milestones</h2>
@@ -119,10 +131,20 @@ export const MilestoneClient = ({ selectedProject }) => {
               className="border rounded-lg p-4 shadow-sm bg-white"
             >
               {/* Title & Description */}
-              <h3 className="text-lg font-bold text-gray-800">
-                {milestone.title}
-              </h3>
-              <p className="text-gray-600 mb-2">{milestone.description}</p>
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    {milestone.title}
+                  </h3>
+                  <p className="text-gray-600">{milestone.description}</p>
+                </div>
+                <button
+                  onClick={() => openBudgetView(milestone.id)}
+                  className="bg-[#4c735c] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#3a5a4a] transition-colors"
+                >
+                  View Budget
+                </button>
+              </div>
 
               {/* Timeline */}
               <div className="text-sm text-gray-500 mb-2">
@@ -299,6 +321,14 @@ export const MilestoneClient = ({ selectedProject }) => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Budget View Modal */}
+      {selectedMilestoneId && (
+        <ViewMilestoneClient 
+          milestoneId={selectedMilestoneId} 
+          onClose={closeBudgetView} 
+        />
       )}
     </div>
   );

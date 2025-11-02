@@ -23,21 +23,23 @@ const ProjectInventory = ({ selectedProject }) => {
   const userId = localStorage.getItem("userId");
   const [inventory, setInventory] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [open, setOpen] = useState(false);
   const [expandedPO, setExpandedPO] = useState(null);
-  const [materialCatalog, setMaterialCatalog] = useState([]);
   const [deliveryInputs, setDeliveryInputs] = useState({});
 
   const [transaction, setTransaction] = useState({
     project_id: selectedProject.id,
     material_id: "",
-    transaction_type: "IN",
+    transaction_type: "OUT",
     quantity: "",
     unit: "",
     created_by: userId,
   });
 
-  // Fetch data functions remain the same
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+
+  // Fetch data functions
   const fetchInventory = async () => {
     try {
       const res = await axios.get(
@@ -48,19 +50,6 @@ const ProjectInventory = ({ selectedProject }) => {
       setInventory(res.data);
     } catch (err) {
       console.error("Error fetching inventory:", err);
-    }
-  };
-
-  const fetchMaterialCatalog = async () => {
-    try {
-      const res = await axios.get(
-        `${
-          import.meta.env.VITE_REACT_APP_API_URL
-        }/api/inventory/getMaterialCatalog`
-      );
-      setMaterialCatalog(res.data);
-    } catch (error) {
-      console.error("Failed to fetch material catalog", error);
     }
   };
 
@@ -77,12 +66,28 @@ const ProjectInventory = ({ selectedProject }) => {
     }
   };
 
+  const fetchTransactionHistory = async () => {
+    try {
+      const res = await axios.get(
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/inventory/getTransactionHistory/${selectedProject.id}`
+      );
+      console.log('history', res.data);
+      setTransactions(res.data);
+    } catch (err) {
+      console.error("Error fetching transactions:", err);
+    }
+  };
+
   const handleDeliveryInput = (poId, itemIndex, value) => {
+    // Prevent negative numbers
+    const numericValue = Math.max(0, Number(value));
     setDeliveryInputs((prev) => ({
       ...prev,
       [poId]: {
         ...(prev[poId] || {}),
-        [itemIndex]: value,
+        [itemIndex]: numericValue,
       },
     }));
   };
@@ -134,6 +139,7 @@ const ProjectInventory = ({ selectedProject }) => {
       toast.success(res.data.message || "Marked as delivered!");
       fetchExpectedDeliveries();
       fetchInventory();
+      fetchTransactionHistory();
     } catch (err) {
       console.error("Error marking delivery:", err);
       toast.error("Failed to mark as delivered");
@@ -142,15 +148,59 @@ const ProjectInventory = ({ selectedProject }) => {
 
   useEffect(() => {
     fetchInventory();
-    fetchMaterialCatalog();
     fetchExpectedDeliveries();
+    fetchTransactionHistory();
   }, []);
+
+  const handleMaterialSelect = (value) => {
+    const selected = inventory.find((item) => item.id === parseInt(value));
+    setSelectedMaterial(selected);
+    setTransaction({
+      ...transaction,
+      material_id: value,
+      unit: selected?.unit || "",
+      quantity: "" // Reset quantity when material changes
+    });
+  };
+
+  const handleQuantityChange = (value) => {
+    const numericValue = Number(value);
+    
+    // Prevent negative numbers
+    if (numericValue < 0) {
+      toast.error("Quantity cannot be negative");
+      return;
+    }
+
+    // Check if quantity exceeds available inventory
+    if (selectedMaterial && numericValue > selectedMaterial.quantity) {
+      toast.error(`Quantity cannot exceed available stock (${selectedMaterial.quantity} ${selectedMaterial.unit})`);
+      return;
+    }
+
+    setTransaction({
+      ...transaction,
+      quantity: numericValue
+    });
+  };
 
   const handleTransaction = async () => {
     if (!transaction.material_id || !transaction.quantity) {
       toast.error("Please fill all fields");
       return;
     }
+
+    // Final validation before submission
+    if (transaction.quantity <= 0) {
+      toast.error("Please enter a valid quantity");
+      return;
+    }
+
+    if (selectedMaterial && transaction.quantity > selectedMaterial.quantity) {
+      toast.error(`Quantity cannot exceed available stock (${selectedMaterial.quantity} ${selectedMaterial.unit})`);
+      return;
+    }
+
     try {
       await axios.post(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/inventory/transaction`,
@@ -158,7 +208,17 @@ const ProjectInventory = ({ selectedProject }) => {
       );
       toast.success("Transaction saved!");
       setOpen(false);
+      setTransaction({
+        project_id: selectedProject.id,
+        material_id: "",
+        transaction_type: "OUT",
+        quantity: "",
+        unit: "",
+        created_by: userId,
+      });
+      setSelectedMaterial(null);
       fetchInventory();
+      fetchTransactionHistory();
     } catch (err) {
       console.error("Error saving transaction:", err);
       toast.error("Failed to save transaction");
@@ -169,12 +229,23 @@ const ProjectInventory = ({ selectedProject }) => {
     setExpandedPO(expandedPO === po_id ? null : po_id);
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div className="p-4">
       <Tabs defaultValue="inventory">
-        <TabsList className="mb-4 grid grid-cols-2 w-full">
+        <TabsList className="mb-4 grid grid-cols-3 w-full">
           <TabsTrigger value="inventory">Project Inventory</TabsTrigger>
           <TabsTrigger value="deliveries">Expected Deliveries</TabsTrigger>
+          <TabsTrigger value="history">Transaction History</TabsTrigger>
         </TabsList>
 
         {/* 📦 Project Inventory */}
@@ -185,7 +256,7 @@ const ProjectInventory = ({ selectedProject }) => {
               className="bg-[#4c735c] hover:bg-[#4c735c]/90 text-white w-full sm:w-auto cursor-pointer"
               onClick={() => setOpen(true)}
             >
-              Add Transaction
+              Add Outgoing Transaction
             </Button>
           </div>
 
@@ -357,6 +428,7 @@ const ProjectInventory = ({ selectedProject }) => {
                                                 <Input
                                                   type="number"
                                                   min="0"
+                                                  max={missing}
                                                   placeholder="Qty"
                                                   className="w-20 text-sm"
                                                   value={
@@ -527,6 +599,7 @@ const ProjectInventory = ({ selectedProject }) => {
                                       <Input
                                         type="number"
                                         min="0"
+                                        max={missing}
                                         placeholder="Add quantity"
                                         className="flex-1 text-sm"
                                         value={
@@ -572,78 +645,215 @@ const ProjectInventory = ({ selectedProject }) => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* 📊 Transaction History */}
+        <TabsContent value="history">
+          <h2 className="text-xl font-bold mb-4">Transaction History</h2>
+          <Card>
+            <CardContent className="p-0 sm:p-4">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="p-3 font-semibold text-sm">Date</th>
+                      <th className="p-3 font-semibold text-sm">Material</th>
+                      <th className="p-3 font-semibold text-sm">Type</th>
+                      <th className="p-3 font-semibold text-sm">Quantity</th>
+                      <th className="p-3 font-semibold text-sm">Unit</th>
+                      <th className="p-3 font-semibold text-sm">Created By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.length > 0 ? (
+                      transactions.map((transaction) => (
+                        <tr key={transaction.transaction_id} className="border-b hover:bg-gray-50">
+                          <td className="p-3 text-sm text-gray-600">
+                            {formatDate(transaction.created_at)}
+                          </td>
+                          <td className="p-3 font-medium">
+                            {transaction.material_name}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                transaction.transaction_type === "IN"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {transaction.transaction_type || "OUT"}
+                            </span>
+                          </td>
+                          <td className="p-3 font-medium">
+                            {transaction.quantity}
+                          </td>
+                          <td className="p-3 text-gray-600">
+                            {transaction.unit}
+                          </td>
+                          <td className="p-3 text-sm text-gray-600">
+                            {transaction.full_name || "System"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="text-center p-8 text-gray-500"
+                        >
+                          No transaction history found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-3 p-4">
+                {transactions.length > 0 ? (
+                  transactions.map((transaction) => (
+                    <div
+                      key={transaction.transaction_id}
+                      className="border rounded-lg p-4 bg-white shadow-sm"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-gray-900">
+                          {transaction.material_name}
+                        </h3>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            transaction.transaction_type === "IN"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {transaction.transaction_type || "OUT"}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                        <div>
+                          <span className="text-gray-500">Quantity:</span>
+                          <p className="font-semibold">
+                            {transaction.quantity} {transaction.unit}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Date:</span>
+                          <p className="font-semibold text-xs">
+                            {formatDate(transaction.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        By: {transaction.full_name || "System"}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No transaction history found
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* ➕ Add Transaction Modal */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Transaction</DialogTitle>
+            <DialogTitle className="text-center text-xl font-semibold">
+              Add Outgoing Transaction
+            </DialogTitle>
           </DialogHeader>
-          <Tabs
-            defaultValue="IN"
-            onValueChange={(value) =>
-              setTransaction({ ...transaction, transaction_type: value })
-            }
-          >
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="IN">IN</TabsTrigger>
-              <TabsTrigger value="OUT">OUT</TabsTrigger>
-            </TabsList>
-            {["IN", "OUT"].map((type) => (
-              <TabsContent key={type} value={type}>
-                <div className="space-y-3">
-                  <Select
-                    onValueChange={(value) => {
-                      const selected = materialCatalog.find(
-                        (mat) => mat.id === parseInt(value)
-                      );
-                      setTransaction({
-                        ...transaction,
-                        material_id: value,
-                        unit: selected?.unit || "",
-                      });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialCatalog.map((m) => (
-                        <SelectItem key={m.id} value={String(m.id)}>
-                          {m.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    placeholder="Quantity"
-                    value={transaction.quantity}
-                    onChange={(e) =>
-                      setTransaction({
-                        ...transaction,
-                        quantity: e.target.value,
-                      })
-                    }
-                  />
-                  <Input
-                    placeholder="Unit"
-                    value={transaction.unit}
-                    onChange={(e) =>
-                      setTransaction({ ...transaction, unit: e.target.value })
-                    }
-                  />
-                  <Button
-                    className="w-full bg-[#4c735c] text-white hover:bg-[#4c735c]/90 cursor-pointer"
-                    onClick={handleTransaction}
-                  >
-                    Save {type} Transaction
-                  </Button>
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+          
+          <div className="space-y-4 py-2">
+            {/* Material Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Select Material *
+              </label>
+              <Select
+                onValueChange={handleMaterialSelect}
+                value={transaction.material_id}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose from inventory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {inventory.map((item) => (
+                    <SelectItem key={item.id} value={String(item.id)}>
+                      <div className="flex justify-between w-full">
+                        <span>{item.material_name}</span>
+                        <span className="text-gray-500 ml-2">
+                          ({item.quantity} {item.unit})
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Quantity Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Quantity *
+              </label>
+              <Input
+                type="number"
+                placeholder="Enter quantity"
+                value={transaction.quantity}
+                onChange={(e) => handleQuantityChange(e.target.value)}
+                min="0"
+                max={selectedMaterial?.quantity || undefined}
+                className="w-full"
+              />
+              {selectedMaterial && (
+                <p className="text-xs text-gray-500">
+                  Available: {selectedMaterial.quantity} {selectedMaterial.unit}
+                </p>
+              )}
+            </div>
+
+            {/* Unit Display */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Unit
+              </label>
+              <Input
+                placeholder="Unit will auto-fill"
+                value={transaction.unit}
+                onChange={(e) =>
+                  setTransaction({ ...transaction, unit: e.target.value })
+                }
+                className="w-full bg-gray-50"
+                disabled
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-[#4c735c] text-white hover:bg-[#4c735c]/90 cursor-pointer"
+                onClick={handleTransaction}
+                disabled={!transaction.material_id || !transaction.quantity || transaction.quantity <= 0}
+              >
+                Save OUT Transaction
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
