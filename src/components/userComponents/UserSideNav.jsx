@@ -7,7 +7,8 @@ import {
   List,
   ClipboardText,
   Envelope,
-} from "@phosphor-icons/react"; // Add necessary icons
+  SignOut,
+} from "@phosphor-icons/react"; // Added SignOut icon
 import DUVLogoWhite from "../../assets/DUVLogoWhite.png";
 import ConfirmationModal from "../adminComponents/ConfirmationModal";
 
@@ -33,16 +34,14 @@ export const UserSideNav = ({ children }) => {
   ];
 
   const currentPage = (() => {
-    // Check against menuItems to determine the current page name based on the URL
     const matchedPage = menuItems.find(
       (item) => location.pathname === item.href
     )?.name;
-
     return matchedPage || "Home";
   })();
 
   const handleLogout = () => {
-    // Handle user logout logic here (e.g., clear session, navigate to login)
+    localStorage.clear();
     navigate("/login");
   };
 
@@ -60,8 +59,7 @@ export const UserSideNav = ({ children }) => {
             className="flex items-center gap-2 cursor-pointer"
             onClick={toggleProfileDropdown}
           >
-            <div className="w-8 h-8 bg-black rounded-full"></div>{" "}
-            {/* Profile Picture */}
+            <div className="w-8 h-8 bg-black rounded-full"></div>
             <p className="text-sm font-semibold text-gray-800 hidden md:block">
               Christian Aquino
             </p>
@@ -69,10 +67,13 @@ export const UserSideNav = ({ children }) => {
           </button>
 
           {profileDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2">
+            <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2 z-50">
               <button
-                className="block px-4 py-2 text-black hover:bg-gray-700 w-full"
-                onClick={handleLogout}
+                className="block px-4 py-2 text-black hover:bg-gray-100 w-full text-left"
+                onClick={() => {
+                  setIsLogoutModalOpen(true);
+                  setProfileDropdownOpen(false);
+                }}
               >
                 Logout
               </button>
@@ -112,7 +113,7 @@ export const UserSideNav = ({ children }) => {
             className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full"
             onClick={() => setIsLogoutModalOpen(true)}
           >
-            <X size={22} /> Logout
+            <SignOut size={22} /> Logout
           </button>
         </div>
       </div>
@@ -143,6 +144,19 @@ export const UserSideNav = ({ children }) => {
               </li>
             ))}
           </ul>
+
+          {/* Logout Button in Mobile Sidebar */}
+          <div className="mt-auto pt-4 border-t border-[#5A8366]">
+            <button
+              className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg w-full"
+              onClick={() => {
+                setIsLogoutModalOpen(true);
+                setMobileSidebarOpen(false);
+              }}
+            >
+              <SignOut size={22} /> Logout
+            </button>
+          </div>
         </div>
       )}
 
@@ -162,7 +176,6 @@ export const UserSideNav = ({ children }) => {
           mobileSidebarOpen ? "ml-0" : "lg:ml-64"
         }`}
       >
-        {/* Add your main content here */}
         {children}
       </div>
 
@@ -171,10 +184,7 @@ export const UserSideNav = ({ children }) => {
         title="Logout Confirmation"
         message="Are you sure you want to log out?"
         onCancel={() => setIsLogoutModalOpen(false)}
-        onConfirm={() => {
-          localStorage.clear(); // or sessionStorage.clear()
-          navigate("/login");
-        }}
+        onConfirm={handleLogout}
       />
     </div>
   );

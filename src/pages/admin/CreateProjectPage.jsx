@@ -23,7 +23,7 @@ const CreateProjectPage = () => {
     { description: "", unit: "", quantity: "", unit_cost: "" },
   ]);
   const [loading, setLoading] = useState(true);
-  
+
   // Add the missing state variables for the modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [actionType, setActionType] = useState("");
