@@ -517,20 +517,20 @@ const AdminNavbar = ({ children }) => {
             </li>
             <li>
               {permissions.can_access_procurement === "Y" && (
-               <button
-                onClick={toggleProcurementDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-              >
-                <span className="flex items-center gap-3 font-semibold">
-                  <Handshake size={20} /> Procurement
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isEngineerOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+                <button
+                  onClick={toggleProcurementDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <Handshake size={20} /> Procurement
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isEngineerOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
               )}
               {isProcurementOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
@@ -814,18 +814,26 @@ const AdminNavbar = ({ children }) => {
             </button>
           </div>
           <ul className="space-y-4 flex-1">
-            {menuItems.map((item, index) => (
-              <li key={index}>
-                <Link
-                  to={item.href}
-                  className="flex items-center gap-3 p-3 hover:bg-[#5A8366] rounded-lg"
-                  onClick={toggleMobileSidebar}
-                >
-                  {item.icon}
-                  {item.name}
-                </Link>
-              </li>
-            ))}
+            {menuItems
+              .filter(
+                (item) =>
+                  !item.permission || permissions?.[item.permission] === "Y"
+              )
+              .map((item, index) => (
+                <li key={index}>
+                  <Link
+                    to={item.href}
+                    className={`flex items-center gap-3 p-3 rounded-lg font-semibold ${
+                      location.pathname === item.href
+                        ? "bg-[#5A8366] text-white"
+                        : "hover:bg-[#5A8366]"
+                    }`}
+                  >
+                    {item.icon}
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
             {/* Collapsible Engineering Section */}
             <li>
               {permissions.can_access_engineer === "Y" && (
@@ -1199,20 +1207,22 @@ const AdminNavbar = ({ children }) => {
             </li>
             {/* Procurement Section in Mobile Sidebar */}
             <li>
-              <button
-                onClick={toggleProcurementDropdown}
-                className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
-              >
-                <span className="flex items-center gap-3 font-semibold">
-                  <Briefcase size={20} /> Procurement
-                </span>
-                <CaretDown
-                  size={20}
-                  className={`transform transition-all ${
-                    isProcurementOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+              {permissions.can_access_procurement === "Y" && (
+                <button
+                  onClick={toggleProcurementDropdown}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#5A8366] rounded-lg cursor-pointer"
+                >
+                  <span className="flex items-center gap-3 font-semibold">
+                    <Handshake size={20} /> Procurement
+                  </span>
+                  <CaretDown
+                    size={20}
+                    className={`transform transition-all ${
+                      isEngineerOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
               {isProcurementOpen && (
                 <ul className="pl-6 mt-2 space-y-2">
                   <li>
