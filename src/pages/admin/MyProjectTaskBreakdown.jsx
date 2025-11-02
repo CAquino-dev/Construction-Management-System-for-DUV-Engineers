@@ -4,20 +4,18 @@ import axios from "axios";
 
 export const MyProjectTaskBreakdown = () => {
   const userId = localStorage.getItem("userId");
-
   const { projectId, milestoneId } = useParams();
   const [milestone, setMilestone] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [reports, setReports] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
-  const [activeTab, setActiveTab] = useState("tasks"); // NEWS
+  const [activeTab, setActiveTab] = useState("tasks");
   const [comment, setComment] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [action, setAction] = useState("");
   const [reportId, setReportId] = useState("");
-
-    const permissions = JSON.parse(localStorage.getItem("permissions"));
+  const permissions = JSON.parse(localStorage.getItem("permissions"));
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -29,7 +27,6 @@ export const MyProjectTaskBreakdown = () => {
   });
 
   const [editTaskData, setEditTaskData] = useState(null);
-
   const navigate = useNavigate();
 
   // Fetch milestone + tasks
@@ -187,348 +184,439 @@ export const MyProjectTaskBreakdown = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-semibold">Task Breakdown</h2>
-          {milestone && (
-            <p className="text-gray-600">
-              Milestone: <span className="font-medium">{milestone.title}</span>
-            </p>
-          )}
+      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="flex-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+              Task Breakdown
+            </h2>
+            {milestone && (
+              <p className="text-gray-600 mt-1">
+                Milestone:{" "}
+                <span className="font-semibold text-[#4c735c]">
+                  {milestone.title}
+                </span>
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto"
+          >
+            ← Back
+          </button>
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="bg-gray-300 px-4 py-2 rounded-md"
-        >
-          Back
-        </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-4 border-b mb-4">
-        <button
-          onClick={() => setActiveTab("tasks")}
-          className={`px-4 py-2 ${
-            activeTab === "tasks"
-              ? "border-b-2 border-[#4c735c] font-semibold"
-              : "text-gray-500"
-          }`}
-        >
-          Tasks
-        </button>
-        <button
-          onClick={() => setActiveTab("reports")}
-          className={`px-4 py-2 ${
-            activeTab === "reports"
-              ? "border-b-2 border-[#4c735c] font-semibold"
-              : "text-gray-500"
-          }`}
-        >
-          Task Reports
-        </button>
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="flex border-b">
+          <button
+            onClick={() => setActiveTab("tasks")}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === "tasks"
+                ? "border-b-2 border-[#4c735c] text-[#4c735c]"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Tasks
+          </button>
+          <button
+            onClick={() => setActiveTab("reports")}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === "reports"
+                ? "border-b-2 border-[#4c735c] text-[#4c735c]"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Task Reports
+          </button>
+        </div>
       </div>
 
-      {/* Tasks Tab */}
-      {activeTab === "tasks" && (
-        <>
+      {/* Content */}
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Tasks Tab */}
+        {activeTab === "tasks" && (
           <div className="space-y-4">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className="p-4 border rounded-lg shadow-sm bg-white space-y-2"
-              >
-                {editingTaskId === task.id ? (
-                  <div className="space-y-2">
+            {/* Tasks List */}
+            {tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No tasks created yet.</p>
+                {permissions?.role_name === "Engineer" && (
+                  <p className="text-sm mt-2">
+                    Click "Add Task" to create your first task.
+                  </p>
+                )}
+              </div>
+            ) : (
+              tasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  {editingTaskId === task.id ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editTaskData.title}
+                        onChange={(e) =>
+                          setEditTaskData({
+                            ...editTaskData,
+                            title: e.target.value,
+                          })
+                        }
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                        placeholder="Task title"
+                      />
+                      <textarea
+                        value={editTaskData.details}
+                        onChange={(e) =>
+                          setEditTaskData({
+                            ...editTaskData,
+                            details: e.target.value,
+                          })
+                        }
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                        placeholder="Task details"
+                        rows="3"
+                      />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          type="date"
+                          value={editTaskData.start_date}
+                          onChange={(e) =>
+                            setEditTaskData({
+                              ...editTaskData,
+                              start_date: e.target.value,
+                            })
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                        />
+                        <input
+                          type="date"
+                          value={editTaskData.due_date}
+                          onChange={(e) =>
+                            setEditTaskData({
+                              ...editTaskData,
+                              due_date: e.target.value,
+                            })
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <select
+                          value={editTaskData.priority}
+                          onChange={(e) =>
+                            setEditTaskData({
+                              ...editTaskData,
+                              priority: e.target.value,
+                            })
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                        >
+                          <option value="Low">Low Priority</option>
+                          <option value="Medium">Medium Priority</option>
+                          <option value="High">High Priority</option>
+                        </select>
+                        <select
+                          value={editTaskData.status}
+                          onChange={(e) =>
+                            setEditTaskData({
+                              ...editTaskData,
+                              status: e.target.value,
+                            })
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Blocked">Blocked</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={handleUpdateTask}
+                          className="flex-1 bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                        <button
+                          onClick={() => setEditingTaskId(null)}
+                          className="flex-1 bg-gray-300 hover:bg-gray-400 px-4 py-3 rounded-lg font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-semibold text-gray-800 text-lg">
+                          {task.title}
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditTask(task)}
+                            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-gray-600 mb-3">{task.details}</p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-700">
+                            Dates:
+                          </span>
+                          <span className="text-gray-600">
+                            {task.start_date
+                              ? `${new Date(
+                                  task.start_date
+                                ).toLocaleDateString()} - `
+                              : ""}
+                            {new Date(task.due_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-700">
+                            Status:
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              task.status === "Completed"
+                                ? "bg-green-100 text-green-800"
+                                : task.status === "In Progress"
+                                ? "bg-blue-100 text-blue-800"
+                                : task.status === "Blocked"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {task.status}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-700">
+                            Priority:
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              task.priority === "High"
+                                ? "bg-red-100 text-red-800"
+                                : task.priority === "Medium"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {task.priority}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+
+            {/* Add Task Section */}
+            {permissions?.role_name === "Engineer" && (
+              <div className="mt-6">
+                {!isAddingTask ? (
+                  <button
+                    onClick={() => setIsAddingTask(true)}
+                    className="w-full sm:w-auto bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>+</span>
+                    <span>Add New Task</span>
+                  </button>
+                ) : (
+                  <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 space-y-4">
+                    <h3 className="font-semibold text-gray-800">
+                      Create New Task
+                    </h3>
                     <input
                       type="text"
-                      value={editTaskData.title}
+                      placeholder="Task title"
+                      value={newTask.title}
                       onChange={(e) =>
-                        setEditTaskData({
-                          ...editTaskData,
-                          title: e.target.value,
-                        })
+                        setNewTask({ ...newTask, title: e.target.value })
                       }
-                      className="w-full p-2 border rounded"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
                     />
                     <textarea
-                      value={editTaskData.details}
+                      placeholder="Task details"
+                      value={newTask.details}
                       onChange={(e) =>
-                        setEditTaskData({
-                          ...editTaskData,
-                          details: e.target.value,
-                        })
+                        setNewTask({ ...newTask, details: e.target.value })
                       }
-                      className="w-full p-2 border rounded"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                      rows="3"
                     />
-                    <input
-                      type="date"
-                      value={editTaskData.start_date}
-                      onChange={(e) =>
-                        setEditTaskData({
-                          ...editTaskData,
-                          start_date: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
-                    <input
-                      type="date"
-                      value={editTaskData.due_date}
-                      onChange={(e) =>
-                        setEditTaskData({
-                          ...editTaskData,
-                          due_date: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <input
+                        type="date"
+                        value={newTask.start_date}
+                        onChange={(e) =>
+                          setNewTask({ ...newTask, start_date: e.target.value })
+                        }
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                      />
+                      <input
+                        type="date"
+                        value={newTask.due_date}
+                        onChange={(e) =>
+                          setNewTask({ ...newTask, due_date: e.target.value })
+                        }
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
+                      />
+                    </div>
                     <select
-                      value={editTaskData.priority}
+                      value={newTask.priority}
                       onChange={(e) =>
-                        setEditTaskData({
-                          ...editTaskData,
-                          priority: e.target.value,
-                        })
+                        setNewTask({ ...newTask, priority: e.target.value })
                       }
-                      className="w-full p-2 border rounded"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent"
                     >
-                      <option value="Low">Low</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
+                      <option value="Low">Low Priority</option>
+                      <option value="Medium">Medium Priority</option>
+                      <option value="High">High Priority</option>
                     </select>
-                    <select
-                      value={editTaskData.status}
-                      onChange={(e) =>
-                        setEditTaskData({
-                          ...editTaskData,
-                          status: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Blocked">Blocked</option>
-                    </select>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-2">
                       <button
-                        onClick={handleUpdateTask}
-                        className="bg-[#4c735c] text-white px-4 py-2 rounded-md"
+                        onClick={handleAddTask}
+                        className="flex-1 bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-4 py-3 rounded-lg font-medium transition-colors"
                       >
-                        Save
+                        Create Task
                       </button>
                       <button
-                        onClick={() => setEditingTaskId(null)}
-                        className="bg-gray-300 px-4 py-2 rounded-md"
+                        onClick={() => setIsAddingTask(false)}
+                        className="flex-1 bg-gray-300 hover:bg-gray-400 px-4 py-3 rounded-lg font-medium transition-colors"
                       >
                         Cancel
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    <h3 className="font-semibold">{task.title}</h3>
-                    <p className="text-sm text-gray-600">{task.details}</p>
-                    <p className="text-xs text-gray-500">
-                      {task.start_date
-                        ? `Start: ${new Date(
-                            task.start_date
-                          ).toLocaleDateString()}`
-                        : ""}
-                      {" | "}
-                      Due: {new Date(task.due_date).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs">
-                      <span className="font-medium">Status:</span> {task.status}{" "}
-                      | <span className="font-medium">Priority:</span>{" "}
-                      {task.priority}
-                    </p>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEditTask(task)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </>
                 )}
               </div>
-            ))}
-          </div>
-
-          {/* Add Task button */}
-          <div className="mt-6">
-            {permissions.role_name === "Engineer" && (
-              !isAddingTask ? (
-                <button
-                  onClick={() => setIsAddingTask(true)}
-                  className="bg-[#4c735c] text-white px-6 py-3 rounded-md"
-                >
-                  + Add Task
-                </button>
-              ) : (
-                <div className="p-4 border rounded-lg bg-gray-50 space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Task title"
-                    value={newTask.title}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, title: e.target.value })
-                    }
-                    className="w-full p-2 border rounded"
-                  />
-                  <textarea
-                    placeholder="Task details"
-                    value={newTask.details}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, details: e.target.value })
-                    }
-                    className="w-full p-2 border rounded"
-                  />
-                  <input
-                    type="date"
-                    value={newTask.start_date}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, start_date: e.target.value })
-                    }
-                    className="w-full p-2 border rounded"
-                  />
-                  <input
-                    type="date"
-                    value={newTask.due_date}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, due_date: e.target.value })
-                    }
-                    className="w-full p-2 border rounded"
-                  />
-                  <select
-                    value={newTask.priority}
-                    onChange={(e) =>
-                      setNewTask({ ...newTask, priority: e.target.value })
-                    }
-                    className="w-full p-2 border rounded"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleAddTask}
-                      className="bg-[#4c735c] text-white px-4 py-2 rounded-md"
-                    >
-                      Save Task
-                    </button>
-                    <button
-                      onClick={() => setIsAddingTask(false)}
-                      className="bg-gray-300 px-4 py-2 rounded-md"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )
             )}
           </div>
+        )}
 
-        </>
-      )}
-
-      {/* Reports Tab */}
-      {activeTab === "reports" && (
-        <div className="space-y-4">
-          {reports.length === 0 ? (
-            <p className="text-gray-500">No reports submitted yet.</p>
-          ) : (
-            reports.map((report) => (
-              <div
-                key={report.id}
-                className="p-4 border rounded-lg shadow-sm bg-white"
-              >
-                <h3 className="font-semibold">{report.task_title}</h3>
-                <h4 className=" text-gray-600 font-semibold">{report.title}</h4>
-                <p className="text-sm text-gray-600">
-                  report type: {report.report_type}
-                </p>
-                <p className="text-sm text-gray-600">{report.summary}</p>
-                <p className="text-xs text-gray-500">
-                  Submitted on:{" "}
-                  {new Date(report.created_at).toLocaleDateString()}
-                </p>
-                {report.file_url && (
-                  <div>
-                    <strong>Attached Proposal PDF:</strong>
-                    <br />
-                    <a
-                      href={`${import.meta.env.VITE_REACT_APP_API_URL}${
-                        report.file_url
-                      }`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline"
-                    >
-                      View/Download PDF
-                    </a>
-                  </div>
-                )}
-                <div className="flex items-center justify-start space-x-2 ">
-                  <button
-                    onClick={() => openPopup("accepted", report.id)}
-                    className="px-2 py-1 bg-green-500 text-white rounded"
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => openPopup("rejected", report.id)}
-                    className="px-2 py-1 bg-red-500 text-white rounded"
-                  >
-                    Reject
-                  </button>
-                </div>
+        {/* Reports Tab */}
+        {activeTab === "reports" && (
+          <div className="space-y-4">
+            {reports.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No reports submitted yet.</p>
               </div>
-            ))
-          )}
-        </div>
-      )}
+            ) : (
+              reports.map((report) => (
+                <div
+                  key={report.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-lg">
+                        {report.task_title}
+                      </h3>
+                      <h4 className="text-gray-600 font-medium">
+                        {report.title}
+                      </h4>
+                    </div>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      {report.report_type}
+                    </span>
+                  </div>
 
+                  <p className="text-gray-600 mb-3">{report.summary}</p>
+
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
+                    <div className="text-gray-500">
+                      Submitted:{" "}
+                      {new Date(report.created_at).toLocaleDateString()}
+                    </div>
+
+                    {report.file_url && (
+                      <a
+                        href={`${import.meta.env.VITE_REACT_APP_API_URL}${
+                          report.file_url
+                        }`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        <span>📄</span>
+                        <span>View Proposal PDF</span>
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2 mt-4 pt-3 border-t border-gray-200">
+                    <button
+                      onClick={() => openPopup("accepted", report.id)}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => openPopup("rejected", report.id)}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-medium transition-colors text-sm"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Modal Popup */}
       {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/70 z-50">
-          <div className="bg-white p-6 rounded-xl shadow-lg w-96">
-            <h2 className="text-lg font-semibold mb-4">
-              {action === "accepted" ? "Accept Report" : "Reject Report"}
-            </h2>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Write your comment..."
-              rows={4}
-            ></textarea>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold mb-4">
+                {action === "accepted" ? "Accept Report" : "Reject Report"}
+              </h2>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4c735c] focus:border-transparent outline-none"
+                placeholder="Write your comment..."
+                rows={4}
+              ></textarea>
 
-            <div className="flex justify-end mt-4 space-x-2">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleReport}
-                className="px-4 py-2 bg-[#4c735c] text-white rounded-lg"
-              >
-                Submit
-              </button>
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReport}
+                  className="flex-1 bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Submit
+                </button>
+              </div>
             </div>
           </div>
         </div>
