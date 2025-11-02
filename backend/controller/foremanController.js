@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 
 const getForemanTasks = (req, res) => {
-  const { foremanId } = req.params;
+  const { projectId } = req.params;
 
   const query = `
     SELECT
@@ -18,15 +18,17 @@ const getForemanTasks = (req, res) => {
       mt.priority,
       m.id AS milestone_id,
       m.title AS milestone_title,
-      ta.team_id
+      ta.team_id,
+      t.team_name
     FROM milestone_tasks mt
     JOIN milestones m ON mt.milestone_id = m.id
     LEFT JOIN team_assignments ta ON ta.task_id = mt.id
-    WHERE mt.assigned_to = ?
+    LEFT JOIN worker_teams t ON ta.team_id = t.id
+    WHERE m.project_id = ?
     ORDER BY m.id, mt.id;
   `;
 
-  db.query(query, [foremanId], (err, results) => {
+  db.query(query, [projectId], (err, results) => {
     if (err) {
       console.error("Failed to fetch foreman tasks", err);
       return res.status(500).json({ error: "Failed to fetch foreman tasks" });
@@ -43,22 +45,34 @@ const getForemanTasks = (req, res) => {
         };
       }
 
-      milestones[row.milestone_id].tasks.push({
-        task_id: row.task_id,
-        title: row.task_title,
-        details: row.details,
-        start_date: row.start_date,
-        due_date: row.due_date,
-        status: row.status,
-        priority: row.priority,
-        team_id: row.team_id // ✅ include team assignment
-      });
+      // Check if task already exists
+      let task = milestones[row.milestone_id].tasks.find(t => t.task_id === row.task_id);
+      if (!task) {
+        task = {
+          task_id: row.task_id,
+          title: row.task_title,
+          details: row.details,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          status: row.status,
+          priority: row.priority,
+          assigned_teams: []
+        };
+        milestones[row.milestone_id].tasks.push(task);
+      }
+
+      // Add assigned team if exists
+      if (row.team_id) {
+        task.assigned_teams.push({
+          team_id: row.team_id,
+          team_name: row.team_name
+        });
+      }
     });
 
     res.json(Object.values(milestones));
   });
 };
-
 
 const getForemanMaterials = (req, res) => {
   const { taskId } = req.params;
@@ -275,27 +289,43 @@ const getWorkerById = (req, res) => {
 };
 
 const assignTeam = (req, res) => {
-  const { 
-  taskId,
-  teamId
-  } = req.body;
-  
-  const query = 'INSERT INTO team_assignments(team_id, task_id) VALUES(?,?)';
+  const { taskId, teamId } = req.body;
 
-  db.query(query, [teamId, taskId], (err, results) => {
-    if(err){
-      console.error("error creating worker", err);
-      return res.status(500).json({ error: "Failed to create worker" });
+  // Step 1: Insert into team_assignments
+  const insertQuery = 'INSERT INTO team_assignments (team_id, task_id) VALUES (?, ?)';
+
+  db.query(insertQuery, [teamId, taskId], (err, results) => {
+    if (err) {
+      console.error("Error assigning team:", err);
+      return res.status(500).json({ error: "Failed to assign team" });
     }
 
-  return res.json({
-    id: results.insertId,
-    team_id: teamId, 
-    task_id: taskId,
-  });
+    // Step 2: Update the task status to 'In Progress'
+    const updateQuery = `
+      UPDATE milestone_tasks 
+      SET status = 'In Progress', updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?;
+    `;
 
+    db.query(updateQuery, [taskId], (updateErr) => {
+      if (updateErr) {
+        console.error("Error updating task status:", updateErr);
+        return res.status(500).json({ error: "Team assigned but failed to update task status" });
+      }
+
+      // Step 3: Return success response
+      return res.json({
+        message: "Team assigned and task marked as In Progress",
+        assignment: {
+          id: results.insertId,
+          team_id: teamId,
+          task_id: taskId
+        }
+      });
+    });
   });
-}
+};
+
 
 const uploadDir = path.join(__dirname, '../uploads/reports')
 if (!fs.existsSync(uploadDir)) {
@@ -332,22 +362,24 @@ const foremanReport = (req, res) => {
       return res.status(400).json({ error: err.message || "File upload failed" });
     }
 
-    const { title, taskId, summary, created_by, report_type } = req.body;
+    const { title, taskId, summary, created_by, report_type, project_id } = req.body;
 
-    if (!taskId || !title || !created_by) {
-      return res.status(400).json({ error: "taskId, title, and created_by are required" });
+    if (!taskId || !title || !created_by || !project_id) {
+      return res.status(400).json({
+        error: "taskId, title, created_by, and project_id are required",
+      });
     }
 
     const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
 
     const insertQuery = `
-      INSERT INTO reports (task_id, title, summary, file_url, created_by, report_type, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, NOW())
+      INSERT INTO reports (project_id, task_id, title, summary, file_url, created_by, report_type, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
     `;
 
     db.query(
       insertQuery,
-      [taskId, title, summary || null, fileUrl, created_by, report_type || "Update"],
+      [project_id, taskId, title, summary || null, fileUrl, created_by, report_type || "Update"],
       (err, result) => {
         if (err) {
           console.error("Error inserting report:", err);
@@ -364,7 +396,7 @@ const foremanReport = (req, res) => {
           db.query(updateTaskQuery, [taskId], (updateErr) => {
             if (updateErr) {
               console.error("Error updating task status:", updateErr);
-              // don’t fail the request, just log
+              // Don’t fail the request, just log
             }
           });
         }
@@ -373,6 +405,7 @@ const foremanReport = (req, res) => {
           message: "Report submitted successfully",
           report: {
             id: result.insertId,
+            project_id,
             task_id: taskId,
             title,
             summary,
@@ -490,23 +523,23 @@ const getForemanReports = (req, res) => {
   const { foremanId } = req.params;
 
   const query = `
-    SELECT 
-      r.id,
-      mt.title AS task_title,
-      m.title AS milestone_title,
-      r.title,
-      r.summary,
-      r.file_url,
-      r.report_type,
-      r.created_at,
-      r.review_status,
-      r.review_comment,
-      u.full_name AS foreman_name
-    FROM reports r
-    LEFT JOIN milestone_tasks mt ON mt.id = r.task_id
-    LEFT JOIN milestones m ON m.id = mt.milestone_id
-    LEFT JOIN users u ON u.id = r.created_by
-    WHERE u.id = ?;
+  SELECT 
+    r.id,
+    mt.title AS task_title,
+    m.title AS milestone_title,
+    r.title,
+    r.summary,
+    r.file_url,
+    r.report_type,
+    r.created_at,
+    r.review_status,
+    r.review_comment,
+    u.full_name AS foreman_name
+  FROM reports r
+  LEFT JOIN milestone_tasks mt ON mt.id = r.task_id
+  LEFT JOIN milestones m ON m.id = mt.milestone_id
+  LEFT JOIN users u ON u.id = r.created_by
+  WHERE r.project_id = ?;
   `;
 
   db.query(query, [foremanId], (err, results) => {
@@ -525,7 +558,89 @@ const getForemanReports = (req, res) => {
   });
 };
 
+const getTasksForReport = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = 
+  `SELECT
+    mt.id AS task_id,
+    mt.title AS task_title,
+    mt.details,
+    mt.start_date,
+    mt.due_date,
+    mt.status,
+    mt.priority,
+    m.id AS milestone_id,
+    m.title AS milestone_title,
+    ta.team_id
+  FROM milestone_tasks mt
+  JOIN milestones m ON mt.milestone_id = m.id
+  JOIN team_assignments ta ON ta.task_id = mt.id
+  WHERE m.project_id = ?
+  ORDER BY m.id, mt.id`;
+
+  db.query(query, [projectId], (err, result) => {
+      if (err) {
+      console.error("Error fetching tasks", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching tasks",
+      });
+    }
+
+    res.json(result);
+  });
+}
+
+const getWorkerAttendance = (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT DISTINCT
+      wa.id AS attendance_id,
+      wa.time_in,
+      wa.time_out,
+      wa.hours_worked,
+      w.id AS worker_id,
+      w.name AS worker_name,
+      w.skill_type,
+      w.photo,
+      wt.id AS team_id,
+      wt.team_name
+    FROM worker_attendance wa
+    JOIN workers w ON w.id = wa.worker_id
+    JOIN worker_teams wt ON wt.id = w.team_id
+    LEFT JOIN team_assignments ta ON ta.team_id = wt.id
+    LEFT JOIN milestone_tasks mt ON mt.id = ta.task_id
+    WHERE (mt.assigned_to = ? OR wt.foreman_id = ?)
+    ORDER BY wa.time_in DESC;
+  `;
+
+  db.query(query, [userId, userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching worker attendance:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching worker attendance",
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No attendance records found for this foreman",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: results,
+    });
+  });
+};
+
 
 module.exports = { getForemanTasks, getForemanMaterials, addTeam, 
-  getForemanTeam, addWorker, assignTeam, 
-  foremanReport, getWorkerById, scanWorker, getForemanWorkers, getForemanReports }
+  getForemanTeam, addWorker, assignTeam, foremanReport, 
+  getWorkerById, scanWorker, getForemanWorkers, getForemanReports,
+  getTasksForReport, getWorkerAttendance }

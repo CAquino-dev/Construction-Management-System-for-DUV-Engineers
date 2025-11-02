@@ -1,4 +1,19 @@
 const db = require("../config/db");
+const fs = require('fs');
+const path = require('path');
+const multer = require("multer");
+const nodemailer = require("nodemailer");
+const qrcode = require("qrcode");
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_EMAIL,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 const getFinance = (req, res) => {
     const query = `SELECT 
@@ -135,45 +150,71 @@ const getApprovedPayslips = (req, res) => {
   });
 };
 
-
-
 const financeUpdatePayslipStatus = (req, res) => {
-    const { payslipId, status, remarks, approvedBy } = req.body;
+  const { payslipId, status, remarks, approvedBy } = req.body;
+
+  if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
+    return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+  }
+
+  // Step 1: Update the finance status of the payslip
+  const updatePayslipQuery = `
+    UPDATE payslip 
+    SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() 
+    WHERE id = ?`;
   
-    if (!payslipId || !["Approved by Finance", "Rejected by Finance"].includes(status)) {
-        return res.status(400).json({ error: "Invalid request. Check payslipId and status." });
+  db.query(updatePayslipQuery, [status, remarks || null, approvedBy, payslipId], (err, result) => {
+    if (err) {
+      console.error("Error updating payslip status:", err);
+      return res.status(500).json({ error: "Failed to update payslip status." });
     }
-  
-    // Update the finance status of the payslip
-    const updatePayslipQuery = `UPDATE payslip 
-      SET finance_status = ?, finance_rejection_remarks = ?, approved_by_id = ?, approved_at = NOW() 
-      WHERE id = ?`;
-  
-    db.query(updatePayslipQuery, [status, remarks || null, approvedBy, payslipId], (err, result) => {
-      if (err) {
-        console.error("Error updating payslip status:", err);
-        return res.status(500).json({ error: "Failed to update payslip status." });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Payslip not found." });
+    }
+
+    // Step 2: Update the finance status of payslip items
+    const updatePayslipItemsQuery = `
+      UPDATE payslip_items 
+      SET finance_status = ?, finance_rejection_remarks = ?
+      WHERE payslip_id = ?`;
+
+    db.query(updatePayslipItemsQuery, [status, remarks || null, payslipId], (err2) => {
+      if (err2) {
+        console.error("Error updating payslip items' finance status:", err2);
+        return res.status(500).json({ error: "Failed to update payslip items' finance status." });
       }
-  
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ error: "Payslip not found." });
-      }
-  
-      // Update the finance status of the payslip items
-      const updatePayslipItemsQuery = `UPDATE payslip_items 
-        SET finance_status = ?, finance_rejection_remarks = ?
-        WHERE payslip_id = ?`;
-  
-      db.query(updatePayslipItemsQuery, [status, remarks || null, payslipId], (err2, result2) => {
-        if (err2) {
-          console.error("Error updating payslip items' finance status:", err2);
-          return res.status(500).json({ error: "Failed to update payslip items' finance status." });
-        }
-  
+
+      // ✅ Step 3: If finance approved → mark salaries as Released (not Paid yet)
+      if (status === "Approved by Finance") {
+        const releaseQuery = `
+          UPDATE payslip_items
+          SET 
+            payment_status = 'Released',
+            payment_remarks = ?,
+            paid_by = ?,
+            paid_at = NOW()
+          WHERE payslip_id = ? 
+            AND finance_status = 'Approved by Finance'
+            AND payment_status = 'Pending'`;
+
+        db.query(releaseQuery, [remarks || "Salaries released by Finance", approvedBy, payslipId], (err3, result3) => {
+          if (err3) {
+            console.error("Error releasing salaries:", err3);
+            return res.status(500).json({ error: "Payslip approved but failed to release salaries." });
+          }
+
+          return res.json({ 
+            message: `Payslip approved and ${result3.affectedRows} salaries marked as Released.` 
+          });
+        });
+      } else {
+        // If rejected → just confirm rejection
         res.json({ message: `Payslip and associated items have been ${status}.` });
-      });
+      }
     });
-  };
+  });
+};
 
   const financeProcessPayslipPayment = (req, res) => {
   const { payslipId, paymentStatus, remarks, paidBy } = req.body;
@@ -249,7 +290,7 @@ const getCeoApprovedPayslips = (req, res) => {
   });
 };
 
-const createPayment = (req, res) => {
+const clientPayment = (req, res) => {
   const {
     milestone_id,
     payment_date,
@@ -291,14 +332,25 @@ const createPayment = (req, res) => {
   });
 };
 
-
 // Get projects with milestones pending payment
 const getProjectsWithPendingPayments = (req, res) => {
   const query = `
-    SELECT DISTINCT p.id, p.project_name
-    FROM engineer_projects p
-    JOIN milestones m ON m.project_id = p.id
-    WHERE m.progress_status = 'For Payment'
+    SELECT 
+      ep.id AS project_id,
+      ep.project_name,
+      ep.client_id,
+      ep.contract_id,
+      ps.id AS schedule_id,
+      ps.milestone_name AS payment_name,
+      ps.due_date,
+      ps.amount,
+      ps.status,
+      ps.paid_date,
+      ps.created_at
+    FROM payment_schedule ps
+    JOIN engineer_projects ep ON ps.contract_id = ep.contract_id
+    WHERE ps.status = 'Pending'
+    ORDER BY ep.id, ps.due_date ASC
   `;
 
   db.query(query, (err, results) => {
@@ -306,9 +358,39 @@ const getProjectsWithPendingPayments = (req, res) => {
       console.error('Error fetching projects:', err);
       return res.status(500).json({ error: 'Internal server error' });
     }
-    res.json(results);
+
+    // Group by project
+    const grouped = results.reduce((acc, row) => {
+      const projectId = row.project_id;
+      if (!acc[projectId]) {
+        acc[projectId] = {
+          project_id: row.project_id,
+          project_name: row.project_name,
+          client_id: row.client_id,
+          contract_id: row.contract_id,
+          pending_payments: [],
+        };
+      }
+      acc[projectId].pending_payments.push({
+        schedule_id: row.schedule_id,
+        payment_name: row.payment_name,
+        due_date: row.due_date,
+        amount: row.amount,
+        status: row.status,
+        paid_date: row.paid_date,
+        created_at: row.created_at,
+      });
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      success: true,
+      message: 'Projects with pending payments retrieved successfully',
+      data: Object.values(grouped),
+    });
   });
 };
+
 
 // Get milestones with 'For Payment' status by project ID
 const getMilestonesForPaymentByProject = (req, res) => {
@@ -362,37 +444,202 @@ const getAllExpensesApprovedByEngineer = (req, res) => {
   });
 };
 
-
-// PATCH /api/project/expenses/:id/finance-approval
-const updateFinanceApprovalStatus = (req, res) => {
+const updateFinanceQuoteApprovalStatus = (req, res) => {
   const milestoneId = req.params.id;
-  const { status, financeId } = req.body;
+  const { status, financeId, remarks } = req.body;
 
-  // Only allow Finance-related statuses
-  if (!status || !['Finance Approved', 'Finance Rejected'].includes(status)) {
+  if (!status || !["Finance Approved", "Finance Rejected"].includes(status)) {
     return res.status(400).json({ error: "Invalid or missing status" });
   }
 
   const approvalDate = new Date();
 
-  const query = `
+  // Update milestone finance status
+  const updateMilestoneQuery = `
     UPDATE milestones
-    SET status = ?, 
-        finance_approved_by = ?, 
-        finance_approval_date = ?
+    SET 
+      status = ?, 
+      finance_approved_by = ?, 
+      finance_approval_date = ?,
+      finance_remarks = ?,
+      finance_rejection_stage = ${status === "Finance Rejected" ? "'Quote'" : "NULL"}
     WHERE id = ?
   `;
 
-  db.query(query, [status, financeId, approvalDate, milestoneId], (err, result) => {
-    if (err) {
-      console.error("Error updating finance approval status:", err);
-      return res.status(500).json({ error: "Failed to update finance approval status" });
+  db.query(
+    updateMilestoneQuery,
+    [status, financeId, approvalDate, remarks || null, milestoneId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating finance approval status:", err);
+        return res.status(500).json({ error: "Failed to update finance approval status" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Milestone not found" });
+      }
+
+      // ✅ FINANCE APPROVED → Generate Purchase Order
+      if (status === "Finance Approved") {
+        const getQuoteQuery = `
+          SELECT pq.id AS quote_id, pq.supplier_id, pq.milestone_id, m.project_id
+          FROM procurement_quotes pq
+          JOIN milestones m ON pq.milestone_id = m.id
+          WHERE pq.milestone_id = ? AND pq.status = 'Selected'
+        `;
+
+        db.query(getQuoteQuery, [milestoneId], (err, results) => {
+          if (err) {
+            console.error("Error fetching approved quote:", err);
+            return res.status(500).json({ message: "Error fetching approved quote" });
+          }
+
+          if (results.length === 0) {
+            return res.status(404).json({ message: "No selected supplier quote found" });
+          }
+
+          const { quote_id, supplier_id, project_id } = results[0];
+          const poNumber = `PO-${Date.now()}`;
+
+          // Insert new purchase order
+          const insertPOQuery = `
+            INSERT INTO purchase_orders 
+            (project_id, milestone_id, quote_id, supplier_id, po_number, created_by)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `;
+
+          db.query(
+            insertPOQuery,
+            [project_id, milestoneId, quote_id, supplier_id, poNumber, financeId],
+            (err, result) => {
+              if (err) {
+                console.error("Error creating purchase order:", err);
+                return res.status(500).json({ message: "Error creating purchase order" });
+              }
+
+              const po_id = result.insertId;
+
+              // Copy all items from quote → PO items
+              const copyItemsQuery = `
+                INSERT INTO purchase_order_items 
+                (po_id, material_name, unit, quantity, unit_price, total_cost)
+                SELECT ?, material_name, unit, quantity, unit_price, (quantity * unit_price)
+                FROM procurement_quote_items
+                WHERE quote_id = ?
+              `;
+
+              db.query(copyItemsQuery, [po_id, quote_id], (err2) => {
+                if (err2) {
+                  console.error("Error copying PO items:", err2);
+                  return res.status(500).json({ message: "Error copying PO items" });
+                }
+
+                // Compute total amount of PO
+                const totalQuery = `
+                  UPDATE purchase_orders
+                  SET total_amount = (
+                    SELECT SUM(total_cost) FROM purchase_order_items WHERE po_id = ?
+                  )
+                  WHERE id = ?
+                `;
+
+                db.query(totalQuery, [po_id, po_id], (err3) => {
+                  if (err3) {
+                    console.error("Error computing PO total:", err3);
+                    return res.status(500).json({ message: "Error computing PO total" });
+                  }
+
+                  console.log(`✅ Purchase Order generated: ${poNumber}`);
+                  res.json({
+                    message: "Finance approved and Purchase Order generated successfully",
+                    po_id,
+                    po_number: poNumber,
+                    status: "Finance Approved",
+                  });
+                });
+              });
+            }
+          );
+        });
+      }
+
+      // ❌ FINANCE REJECTED → reopen quotes for Procurement
+      else {
+        const reopenQuotesQuery = `
+          UPDATE procurement_quotes
+          SET status = 'Submitted'
+          WHERE milestone_id = ?
+        `;
+
+        db.query(reopenQuotesQuery, [milestoneId], (err2, result2) => {
+          if (err2) {
+            console.error("Error reopening rejected quotes:", err2);
+            return res.status(500).json({ error: "Failed to reopen rejected quotes" });
+          }
+
+          res.json({
+            message:
+              "Finance rejected the selected quote. Procurement may now review or select a new quote.",
+            reopened_quotes: result2.affectedRows,
+            rejection_stage: "Quote",
+            status: "Finance Rejected",
+          });
+        });
+      }
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Milestone not found" });
+  );
+};
+
+
+const updateFinanceApprovalStatus = (req, res) => {
+  const milestoneId = req.params.id;
+  const { status, financeId, remarks } = req.body;
+
+  // Validate status
+  if (!status || !["Finance Approved", "Finance Rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid or missing status" });
+  }
+
+  const approvalDate = new Date();
+  const nextStatus = status === "Finance Approved" ? "For Procurement" : "Finance Rejected";
+
+  // Include finance_rejection_stage only when rejected
+  const updateMilestoneQuery = `
+    UPDATE milestones
+    SET 
+      status = ?, 
+      finance_approved_by = ?, 
+      finance_approval_date = ?,
+      finance_remarks = ?,
+      finance_rejection_stage = ${status === "Finance Rejected" ? "'Budget'" : "NULL"}
+    WHERE id = ?
+  `;
+
+  db.query(
+    updateMilestoneQuery,
+    [nextStatus, financeId, approvalDate, remarks || null, milestoneId],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating finance approval status:", err);
+        return res.status(500).json({ error: "Failed to update finance approval status" });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: "Milestone not found" });
+      }
+
+      res.json({
+        message:
+          nextStatus === "For Procurement"
+            ? "✅ Finance approved. Milestone is now ready for Procurement."
+            : "❌ Finance rejected during budget review. Please check remarks and modify the milestone.",
+        milestone_id: milestoneId,
+        status: nextStatus,
+        rejection_stage: status === "Finance Rejected" ? "Budget" : null,
+        remarks: remarks || null,
+      });
     }
-    res.json({ message: "Finance approval status updated successfully" });
-  });
+  );
 };
 
 
@@ -407,10 +654,13 @@ const getContracts = (req, res) => {
       contracts.created_at AS contract_created_at,
       contracts.access_link,
       contracts.approval_status,
+      contracts.start_date AS contract_start_date,
+      contracts.end_date AS contract_end_date,
 
       proposals.title AS proposal_title,
       proposals.budget_estimate,
-      proposals.timeline_estimate,
+      proposals.start_date AS proposal_start_date,
+      proposals.end_date AS proposal_end_date,
       proposals.scope_of_work,
       proposals.status AS proposal_status,
 
@@ -434,34 +684,161 @@ const getContracts = (req, res) => {
 };
 
 
-const approveContract = (req, res) => {
+const updateContractApprovalStatus = (req, res) => {
   const contractId = req.params.id;
+  const { status, finance_id, finance_rejection_notes } = req.body;
 
-  const query = `UPDATE contracts SET approval_status = 'approved' WHERE id = ?`;
-
-  db.query(query, [contractId], (err) => {
-    if (err) return res.status(500).json({ error: "Approval failed" });
-    res.json({ success: true });
-  });
-}
-
-const rejectContract = (req, res) => {
-  const contractId = req.params.id;
-  const { finance_rejection_notes } = req.body;
-
-  if (!finance_rejection_notes) {
-    return res.status(400).json({ error: "Rejection notes are required" });
+  if (!status || !["approved", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid or missing approval status" });
   }
 
-  const query = `UPDATE contracts 
-    SET approval_status = 'rejected', finance_rejection_notes = ? 
-    WHERE id = ?`;
+  if (!finance_id) {
+    return res.status(400).json({ error: "Missing finance_id" });
+  }
 
-  db.query(query, [finance_rejection_notes, contractId], (err) => {
-    if (err) return res.status(500).json({ error: "Rejection failed" });
-    res.json({ success: true });
+  let query = "";
+  let params = [];
+
+  if (status === "approved") {
+    query = `
+      UPDATE contracts 
+      SET approval_status = ?, 
+          finance_id = ?, 
+          finance_rejection_notes = NULL 
+      WHERE id = ?
+    `;
+    params = [status, finance_id, contractId];
+  } else {
+    if (!finance_rejection_notes) {
+      return res.status(400).json({
+        error: "Rejection notes are required when rejecting a contract",
+      });
+    }
+
+    query = `
+      UPDATE contracts 
+      SET approval_status = ?, 
+          finance_id = ?, 
+          finance_rejection_notes = ? 
+      WHERE id = ?
+    `;
+    params = [status, finance_id, finance_rejection_notes, contractId];
+  }
+
+  // Step 1: Update the contract status
+  db.query(query, params, (err, result) => {
+    if (err) {
+      console.error("Contract approval update failed:", err);
+      return res.status(500).json({ error: "Database error during approval update" });
+    }
+
+    // ✅ Step 2: If approved, send the email
+    if (status === "approved") {
+      const fetchQuery = `
+        SELECT c.*, l.email, l.client_name
+        FROM contracts c
+        JOIN leads l ON c.lead_id = l.id
+        WHERE c.id = ?;
+      `;
+
+      db.query(fetchQuery, [contractId], (fetchErr, results) => {
+        if (fetchErr) {
+          console.error("Error fetching contract info:", fetchErr);
+          return res.status(500).json({ error: "Failed to fetch contract data" });
+        }
+
+        if (results.length === 0) {
+          return res.status(404).json({ error: "Contract not found" });
+        }
+
+        const contract = results[0];
+        const approvalLink = `${process.env.FRONTEND_URL}/contract/respond/${contract.id}`;
+
+        if (!contract.email) {
+          console.warn("Missing client email for contract:", contract.id);
+          return res.status(400).json({ error: "Client email is missing" });
+        }
+
+        // Generate QR code
+        qrcode.toDataURL(approvalLink, (qrErr, qrCodeDataURL) => {
+          if (qrErr) {
+            console.error("QR code generation error:", qrErr);
+            return res.status(500).json({ error: "Failed to generate QR code" });
+          }
+
+          const base64Data = qrCodeDataURL.replace(/^data:image\/png;base64,/, "");
+
+          // Setup email transport
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: process.env.SMTP_EMAIL,
+              pass: process.env.SMTP_PASS,
+            },
+          });
+
+          const mailOptions = {
+            from: '"DUV Engineers" <caquino.dev@gmail.com>',
+            to: contract.email,
+            subject: "Your Contract is Ready for Review",
+            html: `
+              <p>Hi ${contract.client_name},</p>
+
+              <p>Great news! Your contract has been <strong>approved by our Finance Department</strong> and is now ready for your final review and approval.</p>
+
+              <p>You can access it directly using the link or the QR code below:</p>
+
+              <p style="text-align: center; margin: 25px 0;">
+                  <a href="${approvalLink}" style="background-color: #4A90E2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+                      👉 Review & Approve Contract
+                  </a>
+              </p>
+
+              <p style="text-align: center; margin: 25px 0;">
+                  <img src="cid:qrcode" alt="QR Code for Contract Approval" style="border: 1px solid #eee; border-radius: 8px;" />
+                  <br />
+                  <small><em>Scan to view the contract</em></small>
+              </p>
+
+              <p>If you have any questions, please do not hesitate to reach out.</p>
+
+              <p>Best regards,<br/>
+              <strong>The DUV Engineers Team</strong></p>
+            `,
+            attachments: [
+              {
+                filename: "qrcode.png",
+                content: base64Data,
+                encoding: "base64",
+                cid: "qrcode",
+              },
+            ],
+          };
+
+          transporter.sendMail(mailOptions, (emailErr, info) => {
+            if (emailErr) {
+              console.error("Error sending email:", emailErr);
+              return res.status(500).json({ error: "Failed to send approval email" });
+            }
+
+            console.log("Approval email sent:", info.response);
+            res.json({
+              success: true,
+              message: "Contract approved and email sent to client successfully",
+            });
+          });
+        });
+      });
+    } else {
+      // ✅ Rejection response
+      res.json({
+        success: true,
+        message: "Contract rejected successfully",
+      });
+    }
   });
 };
+
 
 // const getPmApprovedMilestones = (req, res) => {
 //   const query = 
@@ -510,10 +887,10 @@ const rejectContract = (req, res) => {
 //   });
 // };
 
-const getPmApprovedMilestones = (req, res) => {
-
-  const query = 
-    `    SELECT
+// GET /api/finance/procurement-approved
+const getPendingFinanceApprovalMilestones = (req, res) => {
+  const query = `
+    SELECT
       m.id AS milestone_id,
       m.project_id,
       m.timestamp,
@@ -532,30 +909,57 @@ const getPmApprovedMilestones = (req, res) => {
       b.unit_cost AS boq_unit_cost,
       b.total_cost AS boq_total_cost,
 
+      -- MTO
       mm.id AS mto_id,
       mm.description AS mto_description,
       mm.unit AS mto_unit,
       mm.quantity AS mto_quantity,
       mm.unit_cost AS mto_unit_cost,
-      mm.total_cost AS mto_total_cost
+      mm.total_cost AS mto_total_cost,
+
+      -- LTO
+      ml.id AS lto_id,
+      ml.description AS lto_description,
+      ml.allocated_budget AS lto_total_cost,
+      ml.remarks AS lto_remarks,
+
+      -- ETO
+      me.id AS eto_id,
+      me.equipment_name AS eto_equipment_name,
+      me.days AS eto_days,
+      me.daily_rate AS eto_daily_rate,
+      me.total_cost AS eto_total_cost,
+
+      -- milestone progress
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id) AS total_tasks,
+      (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id AND t.status = 'Completed') AS completed_tasks
+
     FROM milestones m
     LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
     LEFT JOIN boq b ON mb.boq_id = b.id
     LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
-    WHERE m.status = 'PM Approved'
-       AND m.finance_approval_status = 'Pending'
-     ORDER BY m.due_date ASC`;
+    LEFT JOIN milestone_lto ml ON mb.id = ml.milestone_boq_id
+    LEFT JOIN milestone_eto me ON mb.id = me.milestone_boq_id
+    WHERE m.status = 'Pending Finance Approval'
+    ORDER BY m.timestamp DESC, m.id, mb.id, mm.id
+  `;
 
   db.query(query, (err, results) => {
     if (err) {
-      console.error("Error fetching milestones:", err);
+      console.error("Error fetching Pending Finance Approval milestones:", err);
       return res.status(500).json({ error: "Failed to fetch milestones" });
     }
 
     const milestonesMap = new Map();
 
-    results.forEach(row => {
+    results.forEach((row) => {
+      // Create milestone if it doesn't exist yet
       if (!milestonesMap.has(row.milestone_id)) {
+        let progress = 0;
+        if (row.total_tasks > 0) {
+          progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
+        }
+
         milestonesMap.set(row.milestone_id, {
           id: row.milestone_id,
           project_id: row.project_id,
@@ -565,14 +969,18 @@ const getPmApprovedMilestones = (req, res) => {
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
-          boq_items: []
+          progress,
+          boq_items: [],
         });
       }
 
       const milestone = milestonesMap.get(row.milestone_id);
 
       if (row.milestone_boq_id) {
-        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+        // Find or create BOQ item
+        let boqItem = milestone.boq_items.find(
+          (b) => b.milestone_boq_id === row.milestone_boq_id
+        );
 
         if (!boqItem) {
           boqItem = {
@@ -584,19 +992,43 @@ const getPmApprovedMilestones = (req, res) => {
             quantity: row.boq_quantity,
             unit_cost: row.boq_unit_cost,
             total_cost: row.boq_total_cost,
-            mto_items: []
+            mto_items: [],
+            lto: null,
+            eto_items: [], // ✅ now array for multiple equipments
           };
           milestone.boq_items.push(boqItem);
         }
 
-        if (row.mto_id) {
+        // ✅ MTO - prevent duplicates
+        if (row.mto_id && !boqItem.mto_items.some((m) => m.mto_id === row.mto_id)) {
           boqItem.mto_items.push({
             mto_id: row.mto_id,
             description: row.mto_description,
             unit: row.mto_unit,
             quantity: row.mto_quantity,
             unit_cost: row.mto_unit_cost,
-            total_cost: row.mto_total_cost
+            total_cost: row.mto_total_cost,
+          });
+        }
+
+        // ✅ LTO - single per BOQ
+        if (row.lto_id) {
+          boqItem.lto = {
+            lto_id: row.lto_id,
+            description: row.lto_description,
+            total_cost: row.lto_total_cost,
+            remarks: row.lto_remarks,
+          };
+        }
+
+        // ✅ ETO - multiple equipments
+        if (row.eto_id && !boqItem.eto_items.some((e) => e.eto_id === row.eto_id)) {
+          boqItem.eto_items.push({
+            eto_id: row.eto_id,
+            equipment_name: row.eto_equipment_name,
+            days: row.eto_days,
+            daily_rate: row.eto_daily_rate,
+            total_cost: row.eto_total_cost,
           });
         }
       }
@@ -607,12 +1039,870 @@ const getPmApprovedMilestones = (req, res) => {
   });
 };
 
- 
 
+const uploadSalarySignature = (req, res) => {
+  const { base64Signature, payslipItemId, userId } = req.body;
+
+  if (!base64Signature || !payslipItemId || !userId) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Ensure salary signature folder exists
+  const salarySignatureDir = path.join(__dirname, "../public/salary_signatures");
+  if (!fs.existsSync(salarySignatureDir)) {
+    fs.mkdirSync(salarySignatureDir, { recursive: true });
+  }
+
+  // Save signature file
+  const signatureFileName = `salary_signature_${payslipItemId}_${Date.now()}.png`;
+  const signatureFilePath = path.join(salarySignatureDir, signatureFileName);
+
+  const base64Data = base64Signature.replace(/^data:image\/png;base64,/, "");
+  fs.writeFile(signatureFilePath, base64Data, "base64", (err) => {
+    if (err) {
+      console.error("Error saving salary signature:", err);
+      return res.status(500).json({ error: "Failed to save signature" });
+    }
+
+    // Update DB record
+    const query = `
+      UPDATE payslip_items
+      SET payment_status = 'Paid',
+          paid_by = ?,
+          paid_at = NOW(),
+          signature_url = ? 
+      WHERE id = ?
+    `;
+
+    db.query(
+      query,
+      [userId, `/salary_signatures/${signatureFileName}`, payslipItemId],
+      (dbErr, result) => {
+        if (dbErr) {
+          console.error("DB error updating payslip item:", dbErr);
+          return res.status(500).json({ error: "Database error" });
+        }
+
+        return res.status(200).json({
+          message: "Salary marked as Paid with signature",
+          payslipItemId,
+          signatureUrl: `/salary_signatures/${signatureFileName}`,
+        });
+      }
+    );
+  });
+};
+
+// ✅ Get payslips ready for salary release (Approved by Finance, Released but not Paid)
+const getReleasedPayslips = (req, res) => {
+  const query = `
+    SELECT 
+        ps.id AS payslip_id,
+        ps.title,
+        ps.period_start,
+        ps.period_end,
+        ps.created_at AS payslip_created_at,
+        creator.full_name AS created_by_name,
+        pi.id AS payslip_item_id,
+        pr.id AS payroll_id,
+        e.full_name AS employee_name,
+        pr.total_hours_worked,
+        pr.calculated_salary,
+        pr.overtime_pay,
+        pr.philhealth_deduction,
+        pr.sss_deduction,
+        pr.pagibig_deduction,
+        pr.total_deductions,
+        pr.final_salary,
+        pi.hr_status,
+        pi.finance_status,
+        pi.payment_status
+    FROM payslip ps
+    LEFT JOIN users creator ON ps.created_by = creator.id
+    LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+    LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+    LEFT JOIN users e ON pr.employee_id = e.id
+    WHERE pi.finance_status = 'Approved by Finance'
+      AND pi.payment_status = 'Released' -- released but not yet fully paid
+    ORDER BY ps.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching payslips for release:", err);
+      return res.status(500).json({ error: "Failed to fetch payslips for release." });
+    }
+
+    // Group items by payslip
+    const grouped = {};
+    results.forEach(row => {
+      if (!grouped[row.payslip_id]) {
+        grouped[row.payslip_id] = {
+          payslip_id: row.payslip_id,
+          title: row.title,
+          period_start: row.period_start,
+          period_end: row.period_end,
+          payslip_created_at: row.payslip_created_at,
+          created_by_name: row.created_by_name,
+          items: []
+        };
+      }
+
+      grouped[row.payslip_id].items.push({
+        payslip_item_id: row.payslip_item_id,
+        payroll_id: row.payroll_id,
+        employee_name: row.employee_name,
+        total_hours_worked: row.total_hours_worked,
+        calculated_salary: row.calculated_salary,
+        overtime_pay: row.overtime_pay,
+        philhealth_deduction: row.philhealth_deduction,
+        sss_deduction: row.sss_deduction,
+        pagibig_deduction: row.pagibig_deduction,
+        total_deductions: row.total_deductions,
+        final_salary: row.final_salary,
+        hr_status: row.hr_status,
+        finance_status: row.finance_status,
+        payment_status: row.payment_status
+      });
+    });
+
+    res.json({
+      success: true,
+      message: "Payslips ready for release fetched successfully",
+      data: Object.values(grouped)
+    });
+  });
+};
+
+const getPaidPayslips = (req, res) => {
+  const query = `
+    SELECT 
+        ps.id AS payslip_id,
+        ps.title,
+        ps.period_start,
+        ps.period_end,
+        ps.created_at AS payslip_created_at,
+        creator.full_name AS created_by_name,
+        pi.id AS payslip_item_id,
+        pr.id AS payroll_id,
+        e.full_name AS employee_name,
+        pr.total_hours_worked,
+        pr.calculated_salary,
+        pr.overtime_pay,
+        pr.philhealth_deduction,
+        pr.sss_deduction,
+        pr.pagibig_deduction,
+        pr.total_deductions,
+        pr.final_salary,
+        pi.hr_status,
+        pi.finance_status,
+        pi.payment_status,
+        pi.paid_by,
+        payer.full_name AS paid_by_name,
+        pi.signature_url
+    FROM payslip ps
+    LEFT JOIN users creator ON ps.created_by = creator.id
+    LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
+    LEFT JOIN payroll pr ON pi.payroll_id = pr.id
+    LEFT JOIN users e ON pr.employee_id = e.id
+    LEFT JOIN users payer ON pi.paid_by = payer.id
+    WHERE pi.payment_status = 'Paid'
+    ORDER BY ps.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching paid payslips:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching paid payslips.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Paid payslips fetched successfully.",
+      data: results,
+    });
+  });
+};
+
+const getDeliveredPurchaseOrders = (req, res) => {
+  const query = `
+    SELECT 
+      po.id AS po_id,
+      po.project_id,
+      p.project_name,
+      s.supplier_name,
+      po.total_amount,
+      po.status,
+      po.payment_status,
+      po.received_at AS delivery_date
+    FROM purchase_orders po
+    JOIN engineer_projects p ON po.project_id = p.id
+    JOIN suppliers s ON po.supplier_id = s.id
+    WHERE po.status = 'Delivered' 
+      AND po.payment_status = 'Unpaid'
+    ORDER BY po.received_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching delivered purchase orders:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching delivered purchase orders.",
+        error: err,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Delivered and unpaid purchase orders fetched successfully.",
+      data: results,
+    });
+  });
+};
+ 
+// --- Setup Multer storage ---
+const financeStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let folder = "finance_attachments";
+    if (file.fieldname === "signature") {
+      folder = "finance_signatures";
+    }
+
+    const uploadPath = path.join(__dirname, `../../public/${folder}`);
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}_${uniqueSuffix}${ext}`);
+  },
+});
+
+const upload = multer({ storage: financeStorage });
+
+const processFinancePayment = (req, res) => {
+  const {
+    paymentType, // purchase_order, payslip, invoice, etc.
+    referenceId,
+    paymentMethod,
+    referenceNumber,
+    bankName,
+    accountNumber,
+    transactionDate,
+    amount,
+    notes,
+    userId,
+  } = req.body;
+
+  if (!paymentType || !referenceId || !paymentMethod || !amount || !userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields (paymentType, referenceId, paymentMethod, amount, userId).",
+    });
+  }
+
+  // Extract uploaded files
+  const signatureFile = req.files?.signature?.[0];
+  const attachmentFiles = req.files?.attachments || [];
+
+  const signaturePath = signatureFile
+    ? `/finance_signatures/${signatureFile.filename}`
+    : null;
+
+  const attachments = attachmentFiles.map((file) => ({
+    name: file.originalname,
+    path: `/finance_attachments/${file.filename}`,
+  }));
+
+  const insertQuery = `
+    INSERT INTO finance_payments (
+      payment_type,
+      reference_id,
+      payment_method,
+      reference_number,
+      bank_name,
+      account_number,
+      transaction_date,
+      amount,
+      notes,
+      attachments,
+      recipient_signature,
+      processed_by,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+  `;
+
+  db.query(
+    insertQuery,
+    [
+      paymentType,
+      referenceId,
+      paymentMethod,
+      referenceNumber || null,
+      bankName || null,
+      accountNumber || null,
+      transactionDate || null,
+      amount || 0,
+      notes || null,
+      JSON.stringify(attachments),
+      signaturePath,
+      userId,
+    ],
+    (err) => {
+      if (err) {
+        console.error("❌ Error inserting payment record:", err);
+        return res.status(500).json({ success: false, message: "Error saving payment record" });
+      }
+
+      // Update related record based on payment type
+      let updateQuery = "";
+      let queryParams = [];
+
+      switch (paymentType) {
+        case "purchase_order":
+          updateQuery = `
+            UPDATE purchase_orders
+            SET payment_status = 'Paid',
+                paid_at = NOW(),
+                paid_by = ?
+            WHERE id = ?
+          `;
+          queryParams = [userId, referenceId];
+          break;
+
+        case "payslip":
+          updateQuery = `
+            UPDATE payslip_items
+            SET payment_status = 'Paid',
+                paid_at = NOW()
+            WHERE id = ?
+          `;
+          queryParams = [referenceId];
+          break;
+
+        case "invoice":
+          updateQuery = `
+            UPDATE subcontractor_invoices
+            SET payment_status = 'Paid',
+                paid_at = NOW()
+            WHERE id = ?
+          `;
+          queryParams = [referenceId];
+          break;
+
+        default:
+          return res.status(200).json({
+            success: true,
+            message: "Payment recorded (unknown paymentType — no status update).",
+          });
+      }
+
+      db.query(updateQuery, queryParams, (err2) => {
+        if (err2) {
+          console.error("❌ Error updating related record:", err2);
+          return res.status(500).json({
+            success: false,
+            message: "Payment recorded, but failed to update related record.",
+          });
+        }
+
+        res.status(200).json({
+          success: true,
+          message: "✅ Payment processed and record marked as paid.",
+        });
+      });
+    }
+  );
+};
+
+const clientPaymentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    let folder = "finance_attachments";
+    if (file.fieldname === "client_signature") folder = "finance_signatures";
+
+    const uploadPath = path.join(__dirname, `../../public/${folder}`);
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `${file.fieldname}_${uniqueSuffix}${ext}`);
+  },
+});
+
+const clientPaymentUpload = multer({ storage: clientPaymentStorage }).fields([
+  { name: "proof_photo", maxCount: 1 },
+  { name: "client_signature", maxCount: 1 },
+]);
+
+const recordClientCashPayment = (req, res) => {
+  clientPaymentUpload(req, res, (err) => {
+    if (err) {
+      console.error("❌ Upload Error:", err);
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    const {
+      payment_schedule_id,
+      payment_date,
+      amount_paid,
+      payment_method,
+      reference_number,
+      notes,
+      processed_by
+    } = req.body;
+
+    if (!payment_schedule_id || !amount_paid || !payment_method) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields (payment_schedule_id, amount_paid, payment_method).",
+      });
+    }
+
+    const proofPhoto = req.files?.proof_photo?.[0];
+    const signature = req.files?.client_signature?.[0];
+
+    const proofPhotoPath = proofPhoto ? `/finance_attachments/${proofPhoto.filename}` : null;
+    const signaturePath = signature ? `/finance_signatures/${signature.filename}` : null;
+
+    const insertQuery = `
+      INSERT INTO finance_payments (
+        payment_type,
+        reference_id,
+        payment_method,
+        reference_number,
+        transaction_date,
+        amount,
+        notes,
+        attachments,
+        recipient_signature,
+        processed_by,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    `;
+
+    db.query(
+      insertQuery,
+      [
+        "client payment",
+        payment_schedule_id,
+        payment_method,
+        reference_number || null,
+        payment_date || new Date(),
+        amount_paid || 0,
+        notes || null,
+        proofPhotoPath
+          ? JSON.stringify([{ name: proofPhoto.originalname, path: proofPhotoPath }])
+          : null,
+        signaturePath,
+        processed_by,
+      ],
+      (err, result) => {
+        if (err) {
+          console.error("❌ Error inserting finance payment:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Database error saving payment record.",
+          });
+        }
+
+        const updateQuery = `
+          UPDATE payment_schedule
+          SET status = 'Paid', paid_date = ?
+          WHERE id = ?
+        `;
+
+        db.query(updateQuery, [payment_date || new Date(), payment_schedule_id], (err2) => {
+          if (err2) {
+            console.error("❌ Error updating payment_schedule:", err2);
+            return res.status(500).json({
+              success: false,
+              message: "Payment recorded but failed to update schedule status.",
+            });
+          }
+
+          return res.status(200).json({
+            success: true,
+            message: "✅ Client payment recorded and marked as paid.",
+          });
+        });
+      }
+    );
+  });
+};
+
+// ✅ Get Paid Purchase Orders
+const getPaidPurchaseOrders = (req, res) => {
+  const query = `
+    SELECT 
+	    fp.*, 
+      po.po_number,
+      po.total_amount AS po_total,
+      po.paid_at,
+      s.supplier_name,
+      p.project_name,
+      payer.full_name AS paid_by_name
+    FROM finance_payments fp
+    LEFT JOIN purchase_orders po ON fp.reference_id = po.id
+    LEFT JOIN suppliers s ON po.supplier_id = s.id
+    LEFT JOIN engineer_projects p ON po.project_id = p.id
+    LEFT JOIN users payer ON fp.processed_by = payer.id
+    WHERE fp.payment_type = 'purchase_order'
+    ORDER BY fp.transaction_date DESC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching paid purchase orders:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch paid purchase orders.",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Paid purchase orders fetched successfully.",
+      data: results,
+    });
+  });
+};
+
+const getProcurementApprovedMilestones = (req, res) => {
+  const query = `
+SELECT 
+  m.id AS milestone_id,
+  m.project_id,
+  m.title,
+  m.details,
+  m.status,
+  m.start_date,
+  m.due_date,
+  m.timestamp,
+
+  -- Supplier quote data
+  pq.id AS quote_id,
+  pq.supplier_id,
+  s.supplier_name,
+  pq.status AS quote_status,
+
+  pqi.id AS quote_item_id,
+  pqi.material_name,
+  pqi.unit AS quote_unit,
+  pqi.quantity AS quote_quantity,
+  pqi.unit_price AS quote_unit_price,
+
+  -- BOQ data
+  b.id AS boq_id,
+  b.item_no,
+  b.description AS boq_description,
+  b.unit AS boq_unit,
+  b.quantity AS boq_quantity,
+  b.unit_cost AS boq_unit_cost,
+  b.total_cost AS boq_total_cost
+
+FROM milestones m
+LEFT JOIN procurement_quotes pq 
+  ON pq.milestone_id = m.id 
+  AND pq.status = 'Selected'
+LEFT JOIN suppliers s 
+  ON pq.supplier_id = s.id
+LEFT JOIN procurement_quote_items pqi 
+  ON pq.id = pqi.quote_id
+LEFT JOIN milestone_boq mb 
+  ON m.id = mb.milestone_id
+LEFT JOIN boq b 
+  ON mb.boq_id = b.id
+
+WHERE pq.status = 'Selected'
+  AND m.status NOT IN ('Finance Approved', "Pending Delivery", "Delivered")
+
+ORDER BY m.due_date ASC, s.supplier_name ASC, pqi.material_name ASC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching procurement-approved milestones:", err);
+      return res.status(500).json({ message: "Failed to fetch milestones" });
+    }
+
+    const milestonesMap = new Map();
+
+    results.forEach((row) => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          milestone_id: row.milestone_id,
+          project_id: row.project_id,
+          title: row.title,
+          details: row.details,
+          status: row.status,
+          start_date: row.start_date,
+          due_date: row.due_date,
+          timestamp: row.timestamp,
+          approved_supplier: {
+            supplier_id: row.supplier_id,
+            supplier_name: row.supplier_name,
+            quote_id: row.quote_id,
+            items: [],
+            total_quote: 0,
+          },
+          boq_items: [],
+          boq_total: 0,
+          _boq_ids: new Set(), // 🧠 temporary tracker for deduplication
+        });
+      }
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      // ✅ Add supplier quote items
+      if (row.quote_item_id) {
+        const totalCost =
+          parseFloat(row.quote_quantity || 0) *
+          parseFloat(row.quote_unit_price || 0);
+
+        milestone.approved_supplier.items.push({
+          quote_item_id: row.quote_item_id,
+          material_name: row.material_name,
+          unit: row.quote_unit,
+          quantity: row.quote_quantity,
+          unit_price: row.quote_unit_price,
+          total_cost: totalCost,
+        });
+
+        milestone.approved_supplier.total_quote += totalCost;
+      }
+
+      // ✅ Add BOQ items only once per boq_id
+      if (row.boq_id && !milestone._boq_ids.has(row.boq_id)) {
+        milestone.boq_items.push({
+          boq_id: row.boq_id,
+          item_no: row.item_no,
+          description: row.boq_description,
+          unit: row.boq_unit,
+          quantity: row.boq_quantity,
+          unit_cost: row.boq_unit_cost,
+          total_cost: parseFloat(row.boq_total_cost) || 0,
+        });
+
+        milestone.boq_total += parseFloat(row.boq_total_cost) || 0;
+        milestone._boq_ids.add(row.boq_id); // 🧩 Mark as added
+      }
+    });
+
+    // 🧹 Remove temporary _boq_ids before sending response
+    const milestones = Array.from(milestonesMap.values()).map((m) => {
+      delete m._boq_ids;
+      return m;
+    });
+
+    res.json({ milestones });
+  });
+};
+
+const getApprovedLtoEto = (req, res) => {
+  const query = `
+    SELECT
+      m.id AS milestone_id,
+      m.project_id,
+      m.title AS milestone_title,
+      m.status AS milestone_status,
+
+      ml.id AS lto_id,
+      ml.description AS lto_description,
+      ml.allocated_budget AS lto_total_cost,
+      ml.remarks AS lto_remarks,
+
+      me.id AS eto_id,
+      me.equipment_name AS eto_equipment_name,
+      me.days AS eto_days,
+      me.daily_rate AS eto_daily_rate,
+      me.total_cost AS eto_total_cost
+
+    FROM milestones m
+    LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
+    LEFT JOIN milestone_lto ml ON mb.id = ml.milestone_boq_id
+    LEFT JOIN milestone_eto me ON mb.id = me.milestone_boq_id
+    WHERE 
+      m.status = 'Delivered'
+      AND (ml.id IS NOT NULL OR me.id IS NOT NULL)
+      AND m.id NOT IN (SELECT milestone_id FROM cash_handover)
+    ORDER BY m.project_id, m.id;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching approved LTO and ETO:", err);
+      return res.status(500).json({ error: "Failed to fetch approved LTO/ETO" });
+    }
+
+    const milestonesMap = new Map();
+
+    results.forEach((row) => {
+      if (!milestonesMap.has(row.milestone_id)) {
+        milestonesMap.set(row.milestone_id, {
+          milestone_id: row.milestone_id,
+          project_id: row.project_id,
+          title: row.milestone_title,
+          status: row.milestone_status,
+          lto_items: [],
+          eto_items: [],
+        });
+      }
+
+      const milestone = milestonesMap.get(row.milestone_id);
+
+      // LTO
+      if (row.lto_id) {
+        milestone.lto_items.push({
+          lto_id: row.lto_id,
+          description: row.lto_description,
+          total_cost: row.lto_total_cost,
+          remarks: row.lto_remarks,
+        });
+      }
+
+      // ETO
+      if (row.eto_id) {
+        milestone.eto_items.push({
+          eto_id: row.eto_id,
+          equipment_name: row.eto_equipment_name,
+          days: row.eto_days,
+          daily_rate: row.eto_daily_rate,
+          total_cost: row.eto_total_cost,
+        });
+      }
+    });
+
+    const milestones = Array.from(milestonesMap.values());
+    res.json({ milestones });
+  });
+};
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = "public/finance_signatures";
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `signature_${Date.now()}${ext}`);
+  },
+});
+
+const cashHandoverUpload = multer({ storage }).single("recipient_signature");
+
+const processCashHandover = (req, res) => {
+  cashHandoverUpload(req, res, (err) => {
+    if (err) {
+      console.error("Upload error:", err);
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    const {
+      milestone_id,
+      amount,
+      recipient_name,
+      handover_date,
+      notes,
+      processed_by,
+    } = req.body;
+
+    if (!milestone_id || !amount || !recipient_name || !handover_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+
+    const signaturePath = req.file ? `/finance_signatures/${req.file.filename}` : null;
+
+    const query = `
+      INSERT INTO cash_handover (
+        milestone_id,
+        amount,
+        recipient_name,
+        handover_date,
+        notes,
+        recipient_signature,
+        processed_by
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      milestone_id,
+      amount,
+      recipient_name,
+      handover_date,
+      notes || null,
+      signaturePath,
+      processed_by || null,
+    ];
+
+    db.query(query, values, (error, result) => {
+      if (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Database error",
+          error: error.message,
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Cash handover processed successfully",
+        data: { id: result.insertId },
+      });
+    });
+  });
+};
+
+const getCashHandovers = (req, res) => {
+  const query = `
+    SELECT
+      ch.id AS handover_id,
+      ch.milestone_id,
+      m.title AS milestone_title,
+      m.project_id,
+      ch.amount,
+      ch.recipient_name,
+      ch.handover_date,
+      ch.notes,
+      ch.recipient_signature,
+      ch.processed_by,
+      u.full_name AS processed_by_name,
+      ch.created_at
+    FROM cash_handover ch
+    JOIN milestones m ON ch.milestone_id = m.id
+    LEFT JOIN users u ON ch.processed_by = u.id
+    ORDER BY ch.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching cash handovers:", err);
+      return res.status(500).json({ error: "Failed to fetch cash handovers" });
+    }
+
+    return res.status(200).json({ data: results });
+  });
+};
 
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
-  createPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
+  clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
   getAllExpensesApprovedByEngineer, updateFinanceApprovalStatus, getContracts, 
-  approveContract, rejectContract, getPmApprovedMilestones
+  updateContractApprovalStatus, getPendingFinanceApprovalMilestones, uploadSalarySignature,
+  getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
+  getPaidPayslips, getPaidPurchaseOrders, getProcurementApprovedMilestones, updateFinanceQuoteApprovalStatus,
+  getApprovedLtoEto, processCashHandover, getCashHandovers
  };

@@ -71,7 +71,6 @@
 </head>
 <body>
     <div class="header">
-        <img src="https://placehold.co/300x80" alt="Construction company logo showing a modern building silhouette with the company name below in bold letters" class="company-logo">
         <h1>CONSTRUCTION CONTRACT AGREEMENT</h1>
         <p>This Agreement is made and entered into as of <span class="effective-date"><%= new Date().toLocaleDateString() %></span></p>
     </div>
@@ -79,7 +78,7 @@
     <div class="parties">
         <div class="party">
             <h2>CONTRACTOR</h2>
-            <p><strong>[YOUR COMPANY NAME]</strong></p>
+            <p><strong>DUV ENGINEERS</strong></p>
             <p>[Your Company Address]</p>
             <p>Phone: [Your Phone Number]</p>
             <p>Email: [Your Email]</p>
@@ -88,9 +87,9 @@
         <div class="party">
             <h2>CLIENT</h2>
             <p><strong><%= selectedLead.client_name %></strong></p>
-            <p>[Client Address]</p>
-            <p>Phone: [Client Phone]</p>
-            <p>Email: [Client Email]</p>
+            <p>Phone: <%= selectedLead.phone_number %></p>
+            <p>Email: <%= selectedLead.email %></p>
+            <p>Project Interest: <%= selectedLead.project_interest %></p>
         </div>
     </div>
 
@@ -107,12 +106,24 @@
 
     <h2>3. CONTRACT PRICE AND PAYMENT TERMS</h2>
     <p><strong>Total Contract Price:</strong> ₱<%= formData.budget_estimate %></p>
-    <p><strong>Payment Terms:</strong> <%= formData.payment_terms || '50% down payment, 30% upon completion of [milestone], 20% upon final completion and acceptance' %></p>
+    <p><strong>Payment Terms:</strong> <%= formData.payment_terms %></p>
 
     <h2>4. PROJECT TIMELINE</h2>
-    <p><strong>Estimated Start Date:</strong> [Start Date]</p>
-    <p><strong>Estimated Completion Date:</strong> [Completion Date]</p>
-    <p><strong>Project Duration:</strong> <%= formData.timeline_estimate %></p>
+    <p><strong>Estimated Start Date:</strong> <%= formData.start_date ? new Date(formData.start_date).toLocaleDateString() : 'N/A' %></p>
+    <p><strong>Estimated Completion Date:</strong> <%= formData.end_date ? new Date(formData.end_date).toLocaleDateString() : 'N/A' %></p>
+    <p><strong>Project Duration:</strong> 
+    <% if (formData.start_date && formData.end_date) { %>
+        <% 
+        const start = new Date(formData.start_date);
+        const end = new Date(formData.end_date);
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        %>
+        <%= diffDays %> days
+    <% } else { %>
+        N/A
+    <% } %>
+    </p>
 
     <h2>5. CHANGE ORDERS</h2>
     <p>Any changes to this Contract must be made in writing and signed by both parties. Additional work will be billed as a Change Order at the Contractor's then-current rates.</p>
@@ -134,7 +145,7 @@
 
     <div class="signature-block">
         <div>
-            <p><strong>[YOUR COMPANY NAME]</strong></p>
+            <p><strong>DUV ENGINEERS</strong></p>
             <div class="signature-line"></div>
             <p>Authorized Signature</p>
             <p>Date: _______________</p>

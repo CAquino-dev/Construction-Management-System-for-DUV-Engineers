@@ -60,13 +60,19 @@ const calculateEmployeeSalary = (req, res) => {
         e.full_name, 
         es.hourly_rate, 
         a.check_in, 
-        a.check_out
+        a.check_out,
+        a.status,
+        a.work_date
       FROM users e
-      JOIN employee_salary es ON e.id = es.employee_id
-      LEFT JOIN attendance a ON e.id = a.employee_id
-      WHERE a.status = 'Present'
-        AND a.check_in BETWEEN ? AND ?
-      ORDER BY e.id
+      JOIN employee_salary es 
+        ON e.id = es.employee_id
+      LEFT JOIN attendance a 
+        ON e.id = a.employee_id
+        AND a.work_date BETWEEN ? AND ?
+        AND a.status IN ('Present', 'Late')
+      WHERE a.check_in IS NOT NULL 
+        AND a.check_out IS NOT NULL
+      ORDER BY e.id, a.work_date;
     `;
 
     db.query(calculationQuery, [startDate, endDate], (calcErr, results) => {
@@ -494,6 +500,7 @@ const getPayslipById = (req, res) => {
             pi.id AS payslip_item_id,
             pr.id AS payroll_id,
             u.full_name AS employee_name,
+            u.id AS user_id,
             pr.total_hours_worked,
             pr.calculated_salary,
             pr.overtime_pay,
@@ -502,11 +509,16 @@ const getPayslipById = (req, res) => {
             pr.pagibig_deduction,
             pr.total_deductions,
             pr.final_salary,
-            pi.hr_status
+            pi.hr_status,
+            es.hourly_rate,
+            d.name AS department_name,
+            pr.id AS payroll_id
         FROM payslip ps
         LEFT JOIN payslip_items pi ON ps.id = pi.payslip_id
         LEFT JOIN payroll pr ON pi.payroll_id = pr.id
         LEFT JOIN users u ON pr.employee_id = u.id
+        LEFT JOIN employee_salary es ON es.employee_id = u.id
+		    LEFT JOIN departments d ON d.id = u.department_id
         WHERE ps.id = ?
     `;
 
@@ -528,6 +540,10 @@ const getPayslipById = (req, res) => {
             period_end: results[0].period_end,
             created_at: results[0].payslip_created_at,
             items: results.map(row => ({
+                user_id: row.user_id,
+                payroll_id: row.payroll_id,
+                hourly_rate: row.hourly_rate,
+                department_name: row.department_name,
                 payslip_item_id: row.payslip_item_id,
                 payroll_id: row.payroll_id,
                 employee_name: row.employee_name,
@@ -620,7 +636,303 @@ const updatePayslipStatus = (req, res) => {
   });
 };
 
+const getUserById = (req, res) => {
+  const { userId } = req.params;
+
+  const query = `
+    SELECT 
+      u.id AS user_id,
+      u.full_name,
+      u.email,
+      u.role_id,
+      u.emergency_name,
+      u.emergency_relationship,
+      u.emergency_contact,
+      u.employee_id,
+      u.job_title,
+      d.name AS department_name,
+      d.description AS department_description,
+      p.role_name,
+      a.id AS attendance_id,
+      a.check_in,
+      a.check_out,
+      a.status AS attendance_status,
+      a.work_date,
+      a.created_at AS attendance_created_at,
+      es.hourly_rate
+    FROM users u
+    JOIN departments d ON d.id = u.department_id
+    JOIN permissions p ON p.id = u.role_id
+    LEFT JOIN attendance a ON a.employee_id = u.id
+	  JOIN employee_salary es ON es.employee_id = u.id
+    WHERE u.id = ?;
+  `;
+
+  db.query(query, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching user:", err);
+      return res.status(500).json({ success: false, message: "Database error", error: err });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User details fetched successfully",
+      data: results,
+    });
+  });
+};
+
+const updateEmployee = (req, res) => {
+  const { employeeId } = req.params;
+  const edited_by = req.body.edited_by; // HR/Admin performing the edit (for logs only)
+
+  const {
+    full_name,
+    email,
+    job_title,
+    hourly_rate,
+    emergency_name,
+    emergency_relationship,
+    emergency_contact,
+  } = req.body;
+
+  if (!full_name || !email || !job_title || !hourly_rate) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields",
+    });
+  }
+
+  // Step 1: Get current employee data
+  const getOldQuery = `
+    SELECT 
+      u.full_name, 
+      u.email, 
+      u.job_title,
+      u.emergency_name, 
+      u.emergency_relationship, 
+      u.emergency_contact,
+      es.hourly_rate
+    FROM users u
+    LEFT JOIN employee_salary es ON es.employee_id = u.id
+    WHERE u.id = ?
+  `;
+
+  db.query(getOldQuery, [employeeId], (err, oldResults) => {
+    if (err) {
+      console.error("Error fetching old data:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching employee data",
+        error: err,
+      });
+    }
+
+    if (oldResults.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const oldData = oldResults[0];
+    const changes = {};
+
+    // Step 2: Detect changes
+    if (oldData.full_name !== full_name)
+      changes.full_name = { old: oldData.full_name, new: full_name };
+    if (oldData.email !== email)
+      changes.email = { old: oldData.email, new: email };
+    if (oldData.job_title !== job_title)
+      changes.job_title = { old: oldData.job_title, new: job_title };
+    if (parseFloat(oldData.hourly_rate) !== parseFloat(hourly_rate))
+      changes.hourly_rate = { old: oldData.hourly_rate, new: hourly_rate };
+    if (oldData.emergency_name !== emergency_name)
+      changes.emergency_name = { old: oldData.emergency_name, new: emergency_name };
+    if (oldData.emergency_relationship !== emergency_relationship)
+      changes.emergency_relationship = { old: oldData.emergency_relationship, new: emergency_relationship };
+    if (oldData.emergency_contact !== emergency_contact)
+      changes.emergency_contact = { old: oldData.emergency_contact, new: emergency_contact };
+
+    // Step 3: Begin transaction
+    db.beginTransaction((txErr) => {
+      if (txErr) {
+        console.error("Transaction start error:", txErr);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to start database transaction",
+        });
+      }
+
+      // ✅ No updated_at or edited_by here
+      const updateUserQuery = `
+        UPDATE users
+        SET full_name = ?, email = ?, job_title = ?,
+            emergency_name = ?, emergency_relationship = ?, emergency_contact = ?
+        WHERE id = ?
+      `;
+
+      db.query(
+        updateUserQuery,
+        [
+          full_name,
+          email,
+          job_title,
+          emergency_name,
+          emergency_relationship,
+          emergency_contact,
+          employeeId,
+        ],
+        (userErr) => {
+          if (userErr) {
+            return db.rollback(() => {
+              console.error("Error updating users table:", userErr);
+              res.status(500).json({
+                success: false,
+                message: "Failed to update user data",
+                error: userErr,
+              });
+            });
+          }
+
+          // Update or insert salary
+          const updateSalaryQuery = `
+            INSERT INTO employee_salary (employee_id, hourly_rate)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE hourly_rate = VALUES(hourly_rate)
+          `;
+
+          db.query(updateSalaryQuery, [employeeId, hourly_rate], (salErr) => {
+            if (salErr) {
+              return db.rollback(() => {
+                console.error("Error updating employee_salary:", salErr);
+                res.status(500).json({
+                  success: false,
+                  message: "Failed to update salary data",
+                  error: salErr,
+                });
+              });
+            }
+
+            // Step 4: Commit transaction
+            db.commit((commitErr) => {
+              if (commitErr) {
+                return db.rollback(() => {
+                  console.error("Transaction commit failed:", commitErr);
+                  res.status(500).json({
+                    success: false,
+                    message: "Failed to finalize employee update",
+                  });
+                });
+              }
+
+              // Step 5: Save log if any changes were made
+              if (Object.keys(changes).length > 0) {
+                const insertLog = `
+                  INSERT INTO user_edit_logs (user_id, edited_by, changes)
+                  VALUES (?, ?, ?)
+                `;
+                db.query(insertLog, [employeeId, edited_by, JSON.stringify(changes)], (logErr) => {
+                  if (logErr) console.error("Error logging edit:", logErr);
+                });
+              }
+
+              res.status(200).json({
+                success: true,
+                message: "Employee updated successfully",
+                changes,
+              });
+            });
+          });
+        }
+      );
+    });
+  });
+};
+
+const updateEmployeePayroll = (req, res) => {
+  const {
+    payrollId,
+    totalHoursWorked,
+    overtimePay,
+    philhealthDeduction,
+    sssDeduction,
+    pagibigDeduction,
+    finalSalary,
+  } = req.body;
+
+  if (!payrollId) {
+    return res.status(400).json({
+      success: false,
+      message: "payroll ID is required",
+    });
+  }
+
+  const totalDeductions =
+    (parseFloat(philhealthDeduction) || 0) +
+    (parseFloat(sssDeduction) || 0) +
+    (parseFloat(pagibigDeduction) || 0);
+
+  const query = `
+    UPDATE payroll
+    SET 
+      total_hours_worked = ?,
+      overtime_pay = ?,
+      philhealth_deduction = ?,
+      sss_deduction = ?,
+      pagibig_deduction = ?,
+      total_deductions = ?,
+      final_salary = ?,
+      status = 'Pending'
+    WHERE id = ?
+    ORDER BY id DESC
+    LIMIT 1
+  `;
+
+  // ✅ Corrected db.query call
+  db.query(
+    query,
+    [
+      totalHoursWorked,
+      overtimePay,
+      philhealthDeduction,
+      sssDeduction,
+      pagibigDeduction,
+      totalDeductions,
+      finalSalary,
+      payrollId,
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating payroll:", err);
+        return res.status(500).json({
+          success: false,
+          message: "Database error while updating payroll",
+          error: err,
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No payroll record found for this employee",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Employee payroll updated successfully",
+      });
+    }
+  );
+};
+
 module.exports = { getEmployeeSalary, getPresentEmployee, calculateEmployeeSalary, 
                 getEmployeeAttendance, getPayrollRecords, updatePayrollStatus, 
                 createPayslip, getPayslips, getPayslipById, updatePayslipItemStatus, 
-                updatePayslipStatus};
+                updatePayslipStatus, getUserById, updateEmployee,
+                updateEmployeePayroll };

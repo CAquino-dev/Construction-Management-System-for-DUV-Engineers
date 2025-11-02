@@ -1,57 +1,116 @@
 // components/adminComponents/HR/WorkerTable.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Eye } from "@phosphor-icons/react";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "../../ui/table";
+import PaginationComponent from "../Pagination";
 
-export const WorkerTable = ({ workers, setSelectedWorker }) => {
+export const WorkerTable = ({ workers = [], setSelectedUser }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const handleViewMore = (worker) => {
+    setSelectedUser(worker);
+  };
+
+  const totalPages = Math.ceil(workers.length / itemsPerPage);
+  const currentWorkers = workers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Format date helper
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   return (
-    <table className="min-w-full border border-gray-200 rounded-lg">
-      <thead className="bg-gray-100">
-        <tr>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">ID</th>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">Team</th>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">Name</th>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">Contact</th>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">Skill Type</th>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">Status</th>
-          <th className="px-4 py-2 text-left text-sm font-medium text-gray-600 border-b">Created At</th>
-        </tr>
-      </thead>
-      <tbody>
-        {workers.length > 0 ? (
-          workers.map((worker) => (
-            <tr
-              key={worker.id}
-              className="hover:bg-gray-50 cursor-pointer"
-              onClick={() => setSelectedWorker && setSelectedWorker(worker)}
-            >
-              <td className="px-4 py-2 border-b text-sm">{worker.id}</td>
-              <td className="px-4 py-2 border-b text-sm">{worker.team_name}</td>
-              <td className="px-4 py-2 border-b text-sm font-medium text-gray-700">{worker.name}</td>
-              <td className="px-4 py-2 border-b text-sm">{worker.contact}</td>
-              <td className="px-4 py-2 border-b text-sm">{worker.skill_type}</td>
-              <td className="px-4 py-2 border-b text-sm">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    worker.status === "active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {worker.status}
-                </span>
-              </td>
-              <td className="px-4 py-2 border-b text-sm">
-                {new Date(worker.created_at).toLocaleDateString()}
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="7" className="text-center text-gray-500 py-4">
-              No workers found
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
+    <div className="p-4">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-[#4c735c] text-white">
+              <TableHead className="p-2 text-left pl-4 text-white">
+                Name
+              </TableHead>
+              <TableHead className="p-2 text-center hidden md:table-cell text-white">
+                Contact
+              </TableHead>
+              <TableHead className="p-2 text-center hidden md:table-cell text-white">
+                Team
+              </TableHead>
+              <TableHead className="p-2 text-center hidden md:table-cell text-white">
+                Skill Type
+              </TableHead>
+              <TableHead className="p-2 text-center hidden md:table-cell text-white">
+                Status
+              </TableHead>
+              <TableHead className="p-2 text-center hidden md:table-cell text-white">
+                Created At
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentWorkers.map((worker, index) => (
+              <TableRow
+                key={worker.id}
+                className={index % 2 === 0 ? "bg-[#f4f6f5]" : "bg-white"}
+              >
+                <TableCell className="p-2 pl-4 font-medium text-gray-700">
+                  {worker.name || "-"}
+                </TableCell>
+                <TableCell className="p-2 text-center hidden md:table-cell">
+                  {worker.contact || "-"}
+                </TableCell>
+                <TableCell className="p-2 text-center hidden md:table-cell">
+                  {worker.team_name || "-"}
+                </TableCell>
+                <TableCell className="p-2 text-center hidden md:table-cell">
+                  {worker.skill_type || "-"}
+                </TableCell>
+                <TableCell className="p-2 text-center hidden md:table-cell">
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      worker.status === "active"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {worker.status || "inactive"}
+                  </span>
+                </TableCell>
+                <TableCell className="p-2 text-center hidden md:table-cell">
+                  {formatDate(worker.created_at)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {currentWorkers.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No workers found
+        </div>
+      )}
+
+      <PaginationComponent
+        currentPage={currentPage}
+        totalPages={totalPages}
+        setCurrentPage={setCurrentPage}
+      />
+    </div>
   );
 };

@@ -117,6 +117,69 @@ const ceoUpdatePayslipStatus = (req, res) => {
     });
 };
 
+const getFinanceProjection = (req, res) => {
+  const query = `
+    SELECT 
+      DATE_FORMAT(due_date, '%Y-%m') AS month,
+      CAST(SUM(amount) AS DECIMAL(15,2)) AS expected,
+      CAST(SUM(CASE WHEN status = 'Paid' THEN amount ELSE 0 END) AS DECIMAL(15,2)) AS paid,
+      CAST(SUM(CASE WHEN status = 'Pending' THEN amount ELSE 0 END) AS DECIMAL(15,2)) AS pending,
+      CAST(SUM(CASE WHEN status = 'Overdue' THEN amount ELSE 0 END) AS DECIMAL(15,2)) AS overdue
+    FROM payment_schedule
+    GROUP BY DATE_FORMAT(due_date, '%Y-%m')
+    ORDER BY month ASC;
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Finance projection error:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+      res.json(results);
+      // const summary = results.reduce(
+      //   (acc, row) => {
+      //     acc.expected += row.expected_total;
+      //     acc.paid += row.paid_total;
+      //     acc.pending += row.pending_total;
+      //     acc.overdue += row.overdue_total;
+      //     return acc;
+      //   },
+      //   { expected: 0, paid: 0, pending: 0, overdue: 0 }
+      // );
+
+      // // compute collection efficiency
+      // summary.collectionEfficiency =
+      //   summary.expected > 0
+      //     ? ((summary.paid / summary.expected) * 100).toFixed(2) + "%"
+      //     : "0%";
+
+      // // then send response
+      // res.json({
+      //   chartData: results.map(row => ({
+      //     month: row.month,
+      //     expected: row.expected_total,
+      //     paid: row.paid_total,
+      //     pending: row.pending_total,
+      //     overdue: row.overdue_total,
+      //   })),
+      //   summary,
+      //   insights: {
+      //     bestMonth: results.length
+      //       ? results.reduce((max, row) =>
+      //           row.expected_total > max.expected_total ? row : max
+      //         )
+      //       : null,
+      //     worstOverdue: results.length
+      //       ? results.reduce((max, row) =>
+      //           row.overdue_total > max.overdue_total ? row : max
+      //         )
+      //       : null,
+      //   },
+      // }); 
+  });
+};
 
 
-module.exports = {  getFinanceApprovedPayslips, ceoUpdatePayslipStatus };
+
+
+module.exports = {  getFinanceApprovedPayslips, ceoUpdatePayslipStatus, getFinanceProjection };

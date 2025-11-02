@@ -28,11 +28,18 @@ export const EmployeeTable = ({
     let filtered = employees.filter((emp) =>
       emp.full_name?.toLowerCase().includes(query.toLowerCase())
     );
-    if (department) {
+
+    // ✅ Only filter by department if not "all"
+    if (department && department !== "all") {
       filtered = filtered.filter((emp) => emp.department_name === department);
     }
+
     setFilteredEmployees(filtered);
     setCurrentPage(1);
+  };
+
+  const handleViewMore = (employee) => {
+    setSelectedUser(employee);
   };
 
   const totalPages = Math.ceil(filteredEmployees.length / 10);
@@ -66,14 +73,15 @@ export const EmployeeTable = ({
               <TableHead className="p-2 text-center hidden md:table-cell text-white">
                 Email
               </TableHead>
-              {/* <TableHead className="p-2 text-center hidden md:table-cell">Mobile No.</TableHead> */}
               <TableHead className="p-2 text-center hidden md:table-cell text-white">
                 Department
               </TableHead>
               <TableHead className="p-2 text-center hidden md:table-cell text-white">
                 Joining Date
               </TableHead>
-              {/* <TableHead className="p-2 text-center hidden md:table-cell">Status</TableHead> */}
+              <TableHead className="p-2 text-center text-white">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -82,36 +90,59 @@ export const EmployeeTable = ({
                 key={user.id}
                 className={index % 2 === 0 ? "bg-[#f4f6f5]" : "bg-white"}
               >
-                <TableCell className="p-2 flex items-center gap-2">
-                  <img
-                    src={user.profile_picture || "/default-profile.png"}
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
+                <TableCell className="p-2 pl-4">
                   {user.full_name || "(No Name)"}
                 </TableCell>
                 <TableCell className="p-2 text-center hidden md:table-cell">
                   {user.email || "-"}
                 </TableCell>
-                {/* <TableCell className="p-2 text-center hidden md:table-cell">{user.phone || "-"}</TableCell> */}
                 <TableCell className="p-2 text-center hidden md:table-cell">
                   {user.department_name || "-"}
                 </TableCell>
                 <TableCell className="p-2 text-center hidden md:table-cell">
                   {formatDate(user.date_hired)}
                 </TableCell>
-                {/* <TableCell
-                  className={`p-2 text-center hidden md:table-cell font-semibold ${
-                    user.employment_status === "Active" ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {user.employment_status || "Inactive"}
-                </TableCell> */}
+                <TableCell className="p-2 text-center">
+                  <div className="flex justify-center items-center gap-2">
+                    <button
+                      onClick={() => handleViewMore(user)}
+                      className="flex items-center gap-1 bg-[#4c735c] text-white px-3 py-1 rounded-md text-sm hover:bg-[#5A8366] transition-colors"
+                      title="View More"
+                    >
+                      <Eye size={16} />
+                      <span className="hidden sm:inline">View</span>
+                    </button>
+                    {handleEdit && (
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors"
+                        title="Edit"
+                      >
+                        <PencilSimple size={16} />
+                        <span className="hidden sm:inline">Edit</span>
+                      </button>
+                    )}
+                    {handleDelete && (
+                      <button
+                        onClick={() => handleDelete(user)}
+                        className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded-md text-sm hover:bg-red-700 transition-colors"
+                        title="Delete"
+                      >
+                        <Trash size={16} />
+                        <span className="hidden sm:inline">Delete</span>
+                      </button>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {currentEmployees.length === 0 && (
+        <div className="text-center py-8 text-gray-500">No employees found</div>
+      )}
 
       <PaginationComponent
         currentPage={currentPage}

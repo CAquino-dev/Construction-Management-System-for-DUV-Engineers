@@ -1,3 +1,4 @@
+import "leaflet/dist/leaflet.css";
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "./components/ui/sonner";
@@ -35,7 +36,7 @@ import { Attendance } from "./pages/admin/AttendanceMonitoring";
 import { SendFeedback } from "./pages/userPages/SendFeedback";
 import { LoadingSpinner } from "./components/userComponents/LoadingSpinner";
 import { FinanceBudgetSupplyRequest } from "./pages/admin/FinanceBudgetSupplyRequest";
-import { FinancePayment } from "./pages/admin/FinancePayment";
+import FinancePayment from './pages/admin/FinancePayment';
 import { AppointmentRequestPage } from "./pages/userPages/AppointmentRequestPage";
 import Appointment from "./pages/admin/Appointment";
 import { AddClient } from "./pages/admin/AddClient";
@@ -50,6 +51,15 @@ import { MyProjectTaskBreakdown } from "./pages/admin/MyProjectTaskBreakdown";
 import { AttendancePage } from "./pages/admin/AttendancePage";
 import EmployeeProfile from "./pages/admin/EmployeeProfile";
 import PaymentPage from "./pages/admin/PaymentPage";
+import RequestPage from "./pages/admin/RequestPage";
+import SalaryReleaseInPerson from "./pages/admin/SalaryReleaseInPerson";
+import SiteVisit from "./pages/admin/SiteVisit";
+import ProcurementPage from "./pages/admin/ProcurementPage";
+import SupplierManagement from "./pages/admin/SupplierManagement";
+import SupplierQuotePage from "./pages/userPages/SupplierQuotePage";
+import ProcurementReviewDashboard from "./pages/admin/ProcurementReviewDashboard";
+import PurchaseOrderList from "./pages/admin/PurchaseOrderList";
+import { ClientPayment } from "./pages/admin/ClientPayment";
 
 const App = () => {
   const [loading, setLoading] = useState(true);
@@ -83,8 +93,12 @@ const App = () => {
               element={<ProposalRespond />}
             />
             <Route
-              path="contract/respond/:proposalId"
+              path="contract/respond/:contractId"
               element={<ContractRespond />}
+            />
+            <Route
+              path="supplier/quote/:token"
+              element={<SupplierQuotePage />}
             />
           </Route>
 
@@ -108,6 +122,10 @@ const App = () => {
             <Route
               path="finance/approved-payroll-from-hr"
               element={<Finance />}
+            />
+            <Route
+              path="finance/salaryRelease"
+              element={<SalaryReleaseInPerson />}
             />
             <Route
               path="finance/view-contracts"
@@ -136,6 +154,7 @@ const App = () => {
             <Route path="ceo-dashboard" element={<CeoDashboard />} />
             <Route path="AttendanceMonitoring" element={<Attendance />} />
             <Route path="finance/financePayment" element={<FinancePayment />} />
+            <Route path="finance/clientPayment" element={<ClientPayment />} />
             <Route path="appointment" element={<Appointment />} />
             <Route path="site-manager/add-client" element={<AddClient />} />
             <Route path="sales/lead" element={<LeadManagement />} />
@@ -150,6 +169,10 @@ const App = () => {
               element={<CreateProjectPage />}
             />
             <Route
+              path="project/siteVisit"
+              element={<SiteVisit />}
+            />            
+            <Route
               path="project/:id/milestone/:milestoneId/tasks"
               element={<MyProjectTaskBreakdown />}
             />
@@ -157,7 +180,15 @@ const App = () => {
               path="/admin-dashboard/profile"
               element={<EmployeeProfile />}
             />
+            <Route
+              path="ItemRequest"
+              element={<RequestPage />}
+            />
             <Route path="payment/:paymentId" element={<PaymentPage />} />
+            <Route path="procurement/procurement-page" element={<ProcurementPage />} />
+            <Route path="procurement/supplier-management" element={<SupplierManagement />} />
+            <Route path="procurement/procurement-dashboard" element={<ProcurementReviewDashboard />} />
+            <Route path="procurement/purchase-orders" element={<PurchaseOrderList />} />
           </Route>
         </Routes>
       </Router>

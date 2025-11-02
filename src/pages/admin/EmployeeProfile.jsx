@@ -1,115 +1,330 @@
-import React from "react";
-import { EmployeeCalendar } from "../../components/ui/EmployeeCalendar";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Card, CardContent } from "../../components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "../../components/ui/table";
+import { Button } from "../../components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import PaginationComponent from "../../components/adminComponents/Pagination";
 
 const EmployeeProfile = () => {
-  const employee = {
-    name: "Juan Dela Cruz",
-    position: "Engineer",
-    department: "Engineer Department",
-    email: "juan.delacruz@example.com",
-    phone: "+63 912 345 6789",
-    hireDate: "2022-03-01",
-    avatar: "https://via.placeholder.com/150",
+  const [employee, setEmployee] = useState(null);
+  const [attendance, setAttendance] = useState([]);
+  const [salaries, setSalaries] = useState([]);
+  const [selectedSalary, setSelectedSalary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [attendancePage, setAttendancePage] = useState(1);
+  const [salaryPage, setSalaryPage] = useState(1);
+
+  const rowsPerPage = 10;
+
+  const attendanceStart = (attendancePage - 1) * rowsPerPage;
+  const attendanceEnd = attendanceStart + rowsPerPage;
+  const paginatedAttendance = attendance.slice(attendanceStart, attendanceEnd);
+
+  const salaryStart = (salaryPage - 1) * rowsPerPage;
+  const salaryEnd = salaryStart + rowsPerPage;
+  const paginatedSalaries = salaries.slice(salaryStart, salaryEnd);
+
+  const userId = localStorage.getItem("userId");
+  const API = import.meta.env.VITE_REACT_APP_API_URL;
+
+  const normalizeDate = (d) => new Date(d).toISOString().split("T")[0];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [infoRes, attendanceRes, salaryRes] = await Promise.all([
+          axios.get(`${API}/api/employees/getEmployeeInformation/${userId}`),
+          axios.get(`${API}/api/employees/getEmployeeAttendance/${userId}`),
+          axios.get(`${API}/api/employees/getEmployeeSalary/${userId}`),
+        ]);
+
+        setEmployee({
+          ...infoRes.data,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+            infoRes.data.full_name
+          )}&background=0D8ABC&color=fff`,
+        });
+
+        setAttendance(
+          attendanceRes.data.map((a) => ({
+            date: normalizeDate(a.date || a.work_date),
+            status: a.status === "Late" ? "Present" : a.status,
+            rawStatus: a.status,
+            check_in: a.check_in,
+            check_out: a.check_out,
+            hours_worked: a.hours_worked,
+          }))
+        );
+
+        setSalaries(salaryRes.data);
+      } catch (err) {
+        console.error("Error loading employee data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
+
+  if (loading) return <p className="p-4">Loading employee profile...</p>;
+  if (!employee) return <p className="p-4">No employee found.</p>;
+
+  const totalPresent = attendance.filter((a) => a.status === "Present").length;
+  const totalAbsent = attendance.filter((a) => a.status === "Absent").length;
+  const totalSalary = salaries
+    .filter((s) => s.status === "Approved")
+    .reduce((sum, s) => sum + s.final_salary, 0);
+
+  const getStatusBadge = (status) => {
+    let color = "bg-gray-300 text-gray-800";
+    if (status === "Present") color = "bg-green-200 text-green-800";
+    if (status === "Late") color = "bg-yellow-200 text-yellow-800";
+    if (status === "Absent") color = "bg-red-200 text-red-800";
+
+    return (
+      <span className={`px-2 py-1 rounded-full text-sm font-medium ${color}`}>
+        {status}
+      </span>
+    );
   };
 
-  const payslips = [
-    { id: 1, month: "August 2025", amount: "₱50,000", url: "#" },
-    { id: 2, month: "July 2025", amount: "₱50,000", url: "#" },
-    { id: 3, month: "June 2025", amount: "₱48,000", url: "#" },
-  ];
-
   return (
-    <div className="mx-auto p-4 sm:p-6 max-w-6xl">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Section */}
-        <div className="lg:col-span-4 bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex flex-col items-center border-b border-gray-200 pb-4">
-            <img
-              src={employee.avatar}
-              alt={employee.name}
-              className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover mb-4"
-            />
-            <h3 className="text-lg sm:text-xl font-semibold">
-              {employee.name}
-            </h3>
-            <p className="text-gray-600">{employee.position}</p>
-            <p className="text-sm text-gray-500">{employee.department}</p>
-          </div>
-
-          <div className="mt-4 sm:mt-6 space-y-2 text-sm">
-            <p>
-              <strong>Email:</strong> {employee.email}
+    <div className="p-6 space-y-6">
+      {/* Profile Header */}
+      <Card className="shadow-md rounded-2xl">
+        <CardContent className="p-6 flex flex-col md:flex-row items-center gap-6">
+          <img
+            src={employee.avatar}
+            alt={employee.full_name}
+            className="w-24 h-24 rounded-full shadow-md"
+          />
+          <div className="flex-1 space-y-1">
+            <h2 className="text-2xl font-bold">{employee.full_name}</h2>
+            <p className="text-gray-600">
+              {employee.position} • {employee.name}
             </p>
-            <p>
-              <strong>Phone:</strong> {employee.phone}
-            </p>
-            <p>
-              <strong>Hire Date:</strong>{" "}
-              {new Date(employee.hireDate).toLocaleDateString()}
+            <p className="text-gray-500">{employee.email}</p>
+            <p className="text-gray-400 text-sm">
+              Hire Date: {new Date(employee.hire_date).toLocaleDateString()}
             </p>
           </div>
-
-          {/* Calendar here */}
-          <p className="text-lg font-semibold mb-3 border-t border-gray-200 pb-2 text-center mt-6">
-            Attendace
-          </p>
-          <EmployeeCalendar />
-        </div>
-
-        {/* Right Section */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Profile Info */}
-          <div className="p-4 bg-white rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-3 border-b border-gray-200 pb-2">
-              Basic Information
-            </h3>
-            <div className="space-y-2 text-sm sm:text-base">
-              <p>
-                <strong>Full Name:</strong> {employee.name}
+          <div className="grid grid-cols-3 gap-6 text-center mt-4 md:mt-0">
+            <div>
+              <p className="text-lg font-bold">{totalPresent}</p>
+              <p className="text-gray-500 text-sm">Days Present</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold">{totalAbsent}</p>
+              <p className="text-gray-500 text-sm">Days Absent</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold">
+                ₱{totalSalary.toLocaleString()}
               </p>
-              <p>
-                <strong>Position:</strong> {employee.position}
-              </p>
-              <p>
-                <strong>Department:</strong> {employee.department}
-              </p>
-              <p>
-                <strong>Email:</strong> {employee.email}
-              </p>
-              <p>
-                <strong>Phone:</strong> {employee.phone}
-              </p>
-              <p>
-                <strong>Hire Date:</strong>{" "}
-                {new Date(employee.hireDate).toLocaleDateString()}
-              </p>
+              <p className="text-gray-500 text-sm">Total Salary Paid</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Payslips */}
-          <div className="p-4 bg-white rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold mb-3 border-b border-gray-200 pb-2">
-              Payslips
-            </h3>
-            {payslips.length === 0 ? (
-              <p className="text-gray-500">No payslips available.</p>
-            ) : (
-              <ul className="space-y-2">
-                {payslips.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border rounded-md bg-gray-50"
+      {/* Attendance Table */}
+      <Card className="shadow-md rounded-2xl">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Attendance Records</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Check In</TableHead>
+                <TableHead>Check Out</TableHead>
+                <TableHead>Hours</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attendance.length > 0 ? (
+                paginatedAttendance.map((a, idx) => (
+                  <TableRow
+                    key={idx}
+                    className="hover:bg-gray-50 transition-colors"
                   >
-                    <span className="mb-2 sm:mb-0">
-                      <strong>{p.month}</strong> – {p.amount}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+                    <TableCell>
+                      {new Date(a.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(a.rawStatus)}</TableCell>
+                    <TableCell>
+                      {a.check_in
+                        ? new Date(a.check_in).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {a.check_out
+                        ? new Date(a.check_out).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "-"}
+                    </TableCell>
+                    <TableCell>{a.hours_worked || "-"}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan="5" className="text-center">
+                    No records found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          {/* Pagination below table */}
+          <div className="flex justify-center mt-4">
+            <PaginationComponent
+              currentPage={attendancePage}
+              totalPages={Math.ceil(attendance.length / rowsPerPage)}
+              setCurrentPage={setAttendancePage}
+            />
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* Salary Table */}
+      <Card className="shadow-md rounded-2xl">
+        <CardContent className="p-6">
+          <h2 className="text-xl font-semibold mb-4">Salary History</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Period</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {salaries.length > 0 ? (
+                paginatedSalaries.map((sal, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell>
+                      {new Date(sal.period_start).toLocaleDateString()} -{" "}
+                      {new Date(sal.period_end).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>₱{sal.final_salary.toLocaleString()}</TableCell>
+                    <TableCell>{sal.status}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        onClick={() => setSelectedSalary(sal)}
+                        className="bg-[#4c735c] hover:bg-[#4c735c]/90 cursor-pointer"
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan="4" className="text-center">
+                    No salary records found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          {/* Pagination below table */}
+          <div className="flex justify-center mt-4">
+            <PaginationComponent
+              currentPage={salaryPage}
+              totalPages={Math.ceil(salaries.length / rowsPerPage)}
+              setCurrentPage={setSalaryPage}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Salary Details Modal */}
+      <Dialog
+        open={!!selectedSalary}
+        onOpenChange={() => setSelectedSalary(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Salary Details</DialogTitle>
+          </DialogHeader>
+          {selectedSalary && (
+            <div className="space-y-3">
+              <p>
+                <strong>Period:</strong>{" "}
+                {new Date(selectedSalary.period_start).toLocaleDateString()} -{" "}
+                {new Date(selectedSalary.period_end).toLocaleDateString()}
+              </p>
+              <p>
+                <strong>Status:</strong> {selectedSalary.status}
+              </p>
+              <p>
+                <strong>Total Hours Worked:</strong>{" "}
+                {selectedSalary.total_hours_worked}
+              </p>
+              <p>
+                <strong>Overtime Pay:</strong> ₱{selectedSalary.overtime_pay}
+              </p>
+              <p>
+                <strong>PhilHealth:</strong> ₱
+                {selectedSalary.philhealth_deduction}
+              </p>
+              <p>
+                <strong>SSS:</strong> ₱{selectedSalary.sss_deduction}
+              </p>
+              <p>
+                <strong>Pag-IBIG:</strong> ₱{selectedSalary.pagibig_deduction}
+              </p>
+              <p>
+                <strong>Total Deductions:</strong> ₱
+                {selectedSalary.total_deductions}
+              </p>
+              <p className="font-bold text-lg">
+                Final Salary: ₱{selectedSalary.final_salary.toLocaleString()}
+              </p>
+
+              {selectedSalary.signature_url ? (
+                <div className="mt-4">
+                  <strong>Employee Signature:</strong>
+                  <div className="border rounded-md mt-2 p-2 bg-gray-50">
+                    <img
+                      src={`${API}${selectedSalary.signature_url}`}
+                      alt="Employee Signature"
+                      className="max-h-32 object-contain"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-4 text-gray-500 italic">
+                  No signature recorded for this salary release.
+                </p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

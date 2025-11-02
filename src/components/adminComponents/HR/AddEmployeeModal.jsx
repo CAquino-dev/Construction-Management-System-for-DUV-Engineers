@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "@phosphor-icons/react";
+import { toast } from "sonner";
 
 export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
     department_id: "",
     password: "",
     hourly_rate: "",
-    permissions: {} // store selected permissions here
+    permissions: {}, // store selected permissions here
   });
 
   const employmentStatuses = ["Active", "On Leave", "Resigned"];
@@ -33,7 +34,9 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
     const fetchInitialData = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/getPermissions`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/employees/getPermissions`
         );
         const data = await response.json();
 
@@ -55,7 +58,9 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
     const fetchDepartments = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/getDepartments`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/employees/getDepartments`
         );
         const data = await response.json();
         setDepartments(data || []);
@@ -98,43 +103,42 @@ export const AddEmployeeModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  // Convert permissions object → array
-  const permissionsArray = Object.entries(formData.permissions).map(
-    ([key, value]) => ({ permission_key: key, value })
-  );
+    // Convert permissions object → array
+    const permissionsArray = Object.entries(formData.permissions).map(
+      ([key, value]) => ({ permission_key: key, value })
+    );
 
-  const payload = { ...formData, permissions: permissionsArray };
+    const payload = { ...formData, permissions: permissionsArray };
 
-  console.log("Submitting employee:", payload);
-  onSubmit(payload);
+    console.log("Submitting employee:", payload);
+    onSubmit(payload);
 
-  // try {
-  //   const response = await fetch(
-  //     `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/addEmployee`,
-  //     {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify(payload),
-  //     }
-  //   );
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/employees/addEmployee`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-  //   const data = await response.json();
+      const data = await response.json();
 
-  //   if (response.ok) {
-  //     alert(data.message);
-  //     onClose();
-  //   } else {
-  //     alert(data.error);
-  //   }
-  // } catch (error) {
-  //   console.error("Error submitting form:", error);
-  //   alert("An error occurred while adding the employee.");
-  // }
-};
-
+      if (response.ok) {
+        toast.success(data.message);
+        onClose();
+      } else {
+        toast.error(data.error);
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("An error occurred while adding the employee.");
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -356,7 +360,7 @@ const handleSubmit = async (e) => {
             </div>
 
             {/* Customized Access */}
-            <div className="p-4 bg-gray-100 rounded-md mt-4">
+            {/* <div className="p-4 bg-gray-100 rounded-md mt-4">
               <div className="flex justify-between items-center mb-2">
                 <h4 className="text-sm font-semibold text-gray-700">
                   Customized Access
@@ -371,10 +375,7 @@ const handleSubmit = async (e) => {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {permissions.map((perm) => (
-                  <label
-                    key={perm.key}
-                    className="flex items-center space-x-2"
-                  >
+                  <label key={perm.key} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       checked={formData.permissions[perm.key] === "Y"}
@@ -384,7 +385,7 @@ const handleSubmit = async (e) => {
                   </label>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Submit Button */}

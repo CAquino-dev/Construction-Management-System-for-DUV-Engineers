@@ -35,67 +35,295 @@ const uploadReportsPDF = multer({
 
 
 const calculateEstimate = async (data) => {
-  const { projectType, materialType, sizeInSqm, location, budget } = data;  // Get projectType, materialType, area in sqm, location, and budget
+  const {
+    projectType,
+    materialType,
+    sizeInSqm,
+    location,
+    budget,
+    designComplexity,
+    numFloors,
+    foundationType,
+    roofType,
+    laborQuality,
+    timelineUrgency,
+    includePlumbing,
+    includeElectrical,
+    includeHVAC,
+    siteAccessibility,
+  } = data;
 
   try {
-    // Query to get the base cost from project_types based on the project type
-    const [projectTypeRows] = await db.promise().query(
-      'SELECT base_cost FROM project_types WHERE project_type = ?', [projectType]
-    );
+    // ----------------------------
+    // 1. BASE COST BASED ON IMAGE TIERS
+    // ----------------------------
+    const costTiers = {
+      'BARE': 23000,
+      'STANDARD': 32000,
+      'LUXURY': 44000,
+      'ICONIC': 65000
+    };
 
-    // Query to get the cost factor from materials based on the material type
-    const [materialRows] = await db.promise().query(
-      'SELECT cost_factor FROM materials WHERE material_type = ?', [materialType]
-    );
+    // Map user selections to cost tiers based on the image specifications
+    const getCostTier = (materialType, designComplexity) => {
+      // Based on the image: Concrete = Bare, Tiles = Standard/Luxury, Natural Stone = Iconic
+      if (materialType === 'Concrete') return 'BARE';
+      if (materialType === 'Steel') return 'STANDARD';
+      if (materialType === 'Wood') return 'LUXURY';
+      
+      // Fallback based on complexity
+      if (designComplexity === 'Simple') return 'BARE';
+      if (designComplexity === 'Moderate') return 'STANDARD';
+      if (designComplexity === 'Complex') return 'LUXURY';
+      
+      return 'STANDARD';
+    };
 
-    // Query to get the cost factor from locations based on the selected location
-    const [locationRows] = await db.promise().query(
-      'SELECT cost_factor FROM locations WHERE location = ?', [location]
-    );
+    const costTier = getCostTier(materialType, designComplexity);
+    const baseCost = costTiers[costTier];
 
-    // Query to get the cost per square meter from the sizes table based on the project type
-    const [sizeRows] = await db.promise().query(
-      'SELECT cost_per_sqm FROM sizes WHERE project_type = ?', [projectType]
-    );
+    // ----------------------------
+    // 2. COST FACTORS
+    // ----------------------------
+    const materialCostFactor = {
+      Concrete: 1.0,
+      Steel: 1.1,
+      Wood: 1.2,
+    }[materialType] || 1.0;
 
-    // If any of the rows are not found, return an error
-    if (projectTypeRows.length === 0 || materialRows.length === 0 || locationRows.length === 0 || sizeRows.length === 0) {
-      throw new Error('Invalid input data');
+    const locationCostFactor = {
+      Dasmarinas: 1.0,
+      Tagaytay: 1.15,
+      Silang: 1.08,
+    }[location] || 1.0;
+
+    const complexityFactor = {
+      Simple: 0.9,
+      Moderate: 1.0,
+      Complex: 1.2,
+    }[designComplexity] || 1.0;
+
+    const foundationFactor = {
+      Slab: 1.0,
+      Footing: 1.15,
+      Pile: 1.3,
+    }[foundationType] || 1.0;
+
+    const roofFactor = {
+      Gable: 1.0,
+      Flat: 1.1,
+      Metal: 1.05,
+    }[roofType] || 1.0;
+
+    const laborFactor = {
+      Standard: 1.0,
+      Skilled: 1.15,
+      Premium: 1.3,
+    }[laborQuality] || 1.0;
+
+    const timelineFactor = {
+      Normal: 1.0,
+      Rush: 1.2,
+      "Very Urgent": 1.4,
+    }[timelineUrgency] || 1.0;
+
+    const accessibilityFactor = {
+      Easy: 1.0,
+      Moderate: 1.08,
+      Difficult: 1.15,
+    }[siteAccessibility] || 1.0;
+
+    // ----------------------------
+    // 3. ADDITIONAL UTILITIES (Based on image specifications)
+    // ----------------------------
+    let utilityBreakdown = {};
+    let utilityCost = 0;
+
+    // Plumbing & Electrical are typically included in base construction
+    if (includePlumbing) {
+      utilityBreakdown.plumbing = 1500 * sizeInSqm;
+      utilityCost += utilityBreakdown.plumbing;
+    }
+    if (includeElectrical) {
+      utilityBreakdown.electrical = 1800 * sizeInSqm;
+      utilityCost += utilityBreakdown.electrical;
+    }
+    // HVAC is typically extra for luxury/iconic tiers
+    if (includeHVAC) {
+      utilityBreakdown.hvac = 2500 * sizeInSqm;
+      utilityCost += utilityBreakdown.hvac;
     }
 
-    // Retrieve the individual cost factors and convert them to numbers
-    const baseCost = parseFloat(projectTypeRows[0].base_cost);
-    const materialCostFactor = parseFloat(materialRows[0].cost_factor);
-    const locationCostFactor = parseFloat(locationRows[0].cost_factor);
-    const sizeCostPerSqm = parseFloat(sizeRows[0].cost_per_sqm);
+    // ----------------------------
+    // 4. BASE CALCULATIONS
+    // ----------------------------
+    const area = sizeInSqm * numFloors;
 
-    // Calculate the total cost by multiplying area (sizeInSqm) with the cost per square meter for the project type
-    const totalCost = (baseCost + materialCostFactor + locationCostFactor + sizeCostPerSqm) * sizeInSqm;
+    // Main structural cost based on image tiers
+    const structuralCost = baseCost * area;
+    
+    // Finishing costs vary by tier (higher tiers include better finishes)
+    const finishingMultiplier = {
+      'BARE': 0.15,
+      'STANDARD': 0.25,
+      'LUXURY': 0.35,
+      'ICONIC': 0.5
+    }[costTier];
+    
+    const finishingCost = area * baseCost * finishingMultiplier;
+    const foundationCost = area * baseCost * (foundationFactor - 1) * 0.1;
+    const roofingCost = area * baseCost * (roofFactor - 1) * 0.08;
+    const laborCost = area * baseCost * (laborFactor - 1) * 0.2;
 
-    // Check if the total cost exceeds the user's budget
+    // ----------------------------
+    // 5. SUMMATION WITH ADJUSTMENTS
+    // ----------------------------
+    let subtotal =
+      structuralCost +
+      finishingCost +
+      foundationCost +
+      roofingCost +
+      laborCost +
+      utilityCost;
+
+    const adjustmentFactor =
+      materialCostFactor *
+      locationCostFactor *
+      complexityFactor *
+      timelineFactor *
+      accessibilityFactor;
+
+    const adjustedTotal = subtotal * adjustmentFactor;
+
+    // ----------------------------
+    // 6. FORMATTING
+    // ----------------------------
+    const formatPeso = (val) => "₱" + Math.round(val).toLocaleString("en-PH");
+
+    // Breakdown summary
+    const breakdown = {
+      "Base Construction": structuralCost,
+      "Finishing Works": finishingCost,
+      "Foundation": foundationCost,
+      "Roofing": roofingCost,
+      "Labor": laborCost,
+      "Utilities": utilityCost,
+      "Location & Complexity Adjustments": adjustedTotal - subtotal,
+    };
+
+    const totalCost = adjustedTotal;
+    const costPerSqm = totalCost / area;
+
+    // ----------------------------
+    // 7. MESSAGE COMPOSITION - REFERENCING THE IMAGE
+    // ----------------------------
+    let message = `
+🏗️ **Construction Cost Estimate**
+*Based on 2024 Philippine Construction Cost Standards*
+
+📊 **Cost Tier Applied: ${costTier}**
+📍 **Reference:** ACDC 2024 Construction Cost Chart
+💵 **Base Rate:** ${formatPeso(costTiers[costTier])}/sqm
+
+------------------------------------------
+**Project Details:**
+- **Type:** ${projectType}
+- **Material:** ${materialType}
+- **Complexity:** ${designComplexity}
+- **Floors:** ${numFloors}
+- **Foundation:** ${foundationType}
+- **Roof:** ${roofType}
+- **Labor:** ${laborQuality}
+- **Timeline:** ${timelineUrgency}
+- **Location:** ${location}
+
+📐 **Total Floor Area:** ${area.toLocaleString()} sqm
+💰 **Estimated Total Cost:** ${formatPeso(totalCost)}
+📏 **Cost per sqm:** ${formatPeso(costPerSqm)}
+
+### 💸 Detailed Cost Breakdown:
+- Base Construction (${costTier} tier): ${formatPeso(structuralCost)}
+- Finishing Works: ${formatPeso(finishingCost)}
+- Foundation System: ${formatPeso(foundationCost)}
+- Roofing Structure: ${formatPeso(roofingCost)}
+- Labor Costs: ${formatPeso(laborCost)}
+- Utility Systems: ${formatPeso(utilityCost)}
+- Location & Complexity Adjustments: ${formatPeso(breakdown["Location & Complexity Adjustments"])}
+
+---
+
+**📈 Applied Adjustment Factors:**
+- Material (${materialType}): ${materialCostFactor}x
+- Location (${location}): ${locationCostFactor}x
+- Design Complexity: ${complexityFactor}x
+- Timeline: ${timelineFactor}x
+- Site Accessibility: ${accessibilityFactor}x
+- **Total Multiplier:** ${adjustmentFactor.toFixed(2)}x
+
+`;
+
+    // Budget comparison
     if (totalCost > budget) {
-      return { totalCost, message: 'The estimated cost exceeds your budget.' };
+      const shortfall = totalCost - budget;
+      message += `⚠️ **Budget Alert:** The estimated cost exceeds your budget of ${formatPeso(budget)} by ${formatPeso(shortfall)}.`;
+      message += `\n💡 **Suggestions:** Consider a ${getLowerTier(costTier)} finish, reduce area, or adjust specifications.`;
     } else {
-      return { totalCost, message: 'The estimated cost is within your budget.' };
+      const surplus = budget - totalCost;
+      message += `✅ **Budget Status:** Your budget of ${formatPeso(budget)} is sufficient with ${formatPeso(surplus)} remaining.`;
+      message += `\n💡 **Opportunity:** You could upgrade to ${getHigherTier(costTier)} or add features.`;
     }
 
+    // Reference to the image and disclaimers
+    message += `\n\n---
+**📋 Important Notes:**
+*This estimate is based on the ACDC 2024 Construction Cost Chart for Philippine residential construction.*
+*Rates are rules of thumb only and serve as a starting point for preliminary budgeting.*
+*Consult a licensed contractor for detailed costing based on your specific requirements.*
+
+**Factors that may impact final costs:**
+• Soil conditions & site preparation
+• Market fluctuations in material prices
+• Labor availability & skill levels
+• Design modifications & customizations
+• Permit fees & regulatory requirements
+
+*Ultra luxury houses can exceed beyond the costs included in the reference chart.*`;
+
+    return { 
+      totalCost: Math.round(totalCost), 
+      breakdown, 
+      message,
+      costTier,
+      baseCostPerSqm: costTiers[costTier],
+      reference: "ACDC 2024 Construction Cost Chart"
+    };
   } catch (error) {
     throw new Error(`Error calculating estimate: ${error.message}`);
   }
 };
 
+// Helper functions for tier suggestions
+function getLowerTier(currentTier) {
+  const tiers = ['BARE', 'STANDARD', 'LUXURY', 'ICONIC'];
+  const currentIndex = tiers.indexOf(currentTier);
+  return currentIndex > 0 ? tiers[currentIndex - 1] : 'BARE';
+}
+
+function getHigherTier(currentTier) {
+  const tiers = ['BARE', 'STANDARD', 'LUXURY', 'ICONIC'];
+  const currentIndex = tiers.indexOf(currentTier);
+  return currentIndex < tiers.length - 1 ? tiers[currentIndex + 1] : 'ICONIC';
+}
+
+
+
+// API Endpoint
 const getEstimate = async (req, res) => {
-  const { projectType, materialType, sizeInSqm, location, budget } = req.body; // Include budget in the request
   try {
-    // Call the calculateEstimate function and get the estimated cost
-    const { totalCost, message } = await calculateEstimate({ projectType, materialType, sizeInSqm, location, budget });
-
-    // Send the estimate and message as the response
+    const { totalCost, message } = await calculateEstimate(req.body);
     res.json({ totalCost, message });
-
   } catch (error) {
-    // Handle any errors that occur during the estimate calculation
-    res.status(500).json({ message: 'Error calculating estimate', error: error.message });
+    res.status(500).json({ message: "Error calculating estimate", error: error.message });
   }
 };
 
@@ -114,6 +342,8 @@ const getMilestones = (req, res) => {
       m.status,
       m.start_date,
       m.due_date,
+      m.finance_rejection_stage,
+      m.finance_remarks,
 
       mb.id AS milestone_boq_id,
       b.id AS boq_id,
@@ -124,6 +354,7 @@ const getMilestones = (req, res) => {
       b.unit_cost AS boq_unit_cost,
       b.total_cost AS boq_total_cost,
 
+      -- MTO
       mm.id AS mto_id,
       mm.description AS mto_description,
       mm.unit AS mto_unit,
@@ -131,13 +362,29 @@ const getMilestones = (req, res) => {
       mm.unit_cost AS mto_unit_cost,
       mm.total_cost AS mto_total_cost,
 
-      -- add task progress info
+      -- LTO
+      ml.id AS lto_id,
+      ml.description AS lto_description,
+      ml.allocated_budget AS lto_total_cost,
+      ml.remarks AS lto_remarks,
+
+      -- ETO
+      me.id AS eto_id,
+      me.equipment_name AS eto_equipment_name,
+      me.days AS eto_days,
+      me.daily_rate AS eto_daily_rate,
+      me.total_cost AS eto_total_cost,
+
+      -- milestone progress
       (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id) AS total_tasks,
       (SELECT COUNT(*) FROM milestone_tasks t WHERE t.milestone_id = m.id AND t.status = 'Completed') AS completed_tasks
+
     FROM milestones m
     LEFT JOIN milestone_boq mb ON m.id = mb.milestone_id
     LEFT JOIN boq b ON mb.boq_id = b.id
     LEFT JOIN milestone_mto mm ON mb.id = mm.milestone_boq_id
+    LEFT JOIN milestone_lto ml ON mb.id = ml.milestone_boq_id
+    LEFT JOIN milestone_eto me ON mb.id = me.milestone_boq_id
     WHERE m.project_id = ?
     ORDER BY m.timestamp DESC, m.id, mb.id, mm.id
   `;
@@ -150,9 +397,9 @@ const getMilestones = (req, res) => {
 
     const milestonesMap = new Map();
 
-    results.forEach(row => {
+    results.forEach((row) => {
+      // Create milestone if not yet added
       if (!milestonesMap.has(row.milestone_id)) {
-        // calculate milestone progress
         let progress = 0;
         if (row.total_tasks > 0) {
           progress = Math.round((row.completed_tasks / row.total_tasks) * 100);
@@ -167,15 +414,20 @@ const getMilestones = (req, res) => {
           status: row.status,
           start_date: row.start_date,
           due_date: row.due_date,
-          progress,   // ✅ milestone progress %
-          boq_items: []
+          progress,
+          finance_rejection_stage: row.finance_rejection_stage,
+          finance_remarks: row.finance_remarks,
+          boq_items: [],
         });
       }
 
       const milestone = milestonesMap.get(row.milestone_id);
 
       if (row.milestone_boq_id) {
-        let boqItem = milestone.boq_items.find(b => b.milestone_boq_id === row.milestone_boq_id);
+        // Find or create the BOQ item
+        let boqItem = milestone.boq_items.find(
+          (b) => b.milestone_boq_id === row.milestone_boq_id
+        );
 
         if (!boqItem) {
           boqItem = {
@@ -187,19 +439,43 @@ const getMilestones = (req, res) => {
             quantity: row.boq_quantity,
             unit_cost: row.boq_unit_cost,
             total_cost: row.boq_total_cost,
-            mto_items: []
+            mto_items: [],
+            lto: null,
+            eto_items: [], // ✅ changed from single eto to array
           };
           milestone.boq_items.push(boqItem);
         }
 
-        if (row.mto_id) {
+        // ✅ MTO — prevent duplicates
+        if (row.mto_id && !boqItem.mto_items.some((m) => m.mto_id === row.mto_id)) {
           boqItem.mto_items.push({
             mto_id: row.mto_id,
             description: row.mto_description,
             unit: row.mto_unit,
             quantity: row.mto_quantity,
             unit_cost: row.mto_unit_cost,
-            total_cost: row.mto_total_cost
+            total_cost: row.mto_total_cost,
+          });
+        }
+
+        // ✅ LTO — single per BOQ
+        if (row.lto_id) {
+          boqItem.lto = {
+            lto_id: row.lto_id,
+            description: row.lto_description,
+            total_cost: row.lto_total_cost,
+            remarks: row.lto_remarks,
+          };
+        }
+
+        // ✅ ETO — multiple equipment items, prevent duplicates
+        if (row.eto_id && !boqItem.eto_items.some((e) => e.eto_id === row.eto_id)) {
+          boqItem.eto_items.push({
+            eto_id: row.eto_id,
+            equipment_name: row.eto_equipment_name,
+            days: row.eto_days,
+            daily_rate: row.eto_daily_rate,
+            total_cost: row.eto_total_cost,
           });
         }
       }
@@ -209,10 +485,6 @@ const getMilestones = (req, res) => {
     res.json({ milestones });
   });
 };
-
-
-
-
 
 const createExpense = (req, res) => {
   const {
@@ -559,9 +831,6 @@ const createProjectWithClient = (req, res) => {
 };
 
 
-
-
-
 const getContractById = (req, res) => {
   const contractId = req.params.contractId;
 
@@ -570,10 +839,13 @@ const getContractById = (req, res) => {
       c.*, 
       p.title AS proposal_title, 
       p.budget_estimate, 
-      p.timeline_estimate,
+      p.start_date AS proposal_start_date,
+      p.end_date AS proposal_end_date,
       l.client_name AS client_name,
       l.email AS client_email,
-      l.phone_number AS client_phone
+      l.phone_number AS client_phone,
+      l.site_location,
+      l.site_visit_notes AS notes
     FROM contracts c
     JOIN proposals p ON c.proposal_id = p.id
     JOIN leads l ON p.lead_id = l.id
@@ -593,6 +865,7 @@ const getContractById = (req, res) => {
     res.json(results[0]);
   });
 };
+
 
 const createMilestone = (req, res) => {
     const { project_id, title, details, start_date, due_date, items } = req.body;
@@ -839,22 +1112,22 @@ const submitReport = (req, res) => {
     }
 
     const { projectId } = req.params;
-    const { title, summary, created_by } = req.body;
+    const { title, summary, milestoneId, created_by, } = req.body;
 
-    if (!projectId || !title || !created_by) {
+    if (!projectId || !title || !created_by || !milestoneId) {
       return res.status(400).json({ error: "projectId, title, and created_by are required" });
     }
 
     const fileUrl = req.file ? `/uploads/reports/${req.file.filename}` : null;
 
     const query = `
-      INSERT INTO reports (project_id, title, summary, file_url, created_by, created_at)
-      VALUES (?, ?, ?, ?, ?, NOW())
+      INSERT INTO reports (project_id, title, summary, file_url, milestone_id, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
 
     db.query(
       query,
-      [projectId, title, summary || null, fileUrl, created_by],
+      [projectId, title, summary || null, fileUrl, milestoneId, created_by],
       (err, result) => {
         if (err) {
           console.error("Error inserting report:", err);
@@ -869,6 +1142,7 @@ const submitReport = (req, res) => {
             title,
             summary,
             file_url: fileUrl,
+            milestoneId,
             created_by,
             created_at: new Date(),
           },
@@ -906,9 +1180,284 @@ const getMilestoneTaskReports = (req, res) => {
   })
 };
 
+// Get Payment Schedule by Project ID
+const getPaymentScheduleByProject = (req, res) => {
+  const { projectId } = req.params;
+
+  const sql = `
+    SELECT 
+      ps.id AS schedule_id,
+      ps.milestone_name,
+      ps.due_date,
+      ps.amount,
+      ps.status,
+      ps.paid_date,
+      ps.created_at,
+      ep.project_name,
+      ep.client_id,
+      ep.contract_id
+    FROM payment_schedule ps
+    JOIN engineer_projects ep ON ps.contract_id = ep.contract_id
+    WHERE ep.id = ?
+    ORDER BY ps.due_date ASC
+  `;
+
+  db.query(sql, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching payment schedule:", err);
+      return res.status(500).json({ error: "Failed to fetch payment schedule" });
+    }
+
+    res.json({
+      results
+    });
+  });
+};
+
+const getLegals = (req, res) => { 
+  const { projectId } = req.params;
+
+  const query = `
+    SELECT 
+      c.id AS contract_id,
+      c.contract_file_url,
+      c.contract_signed_at
+    FROM engineer_projects ep
+    JOIN contracts c ON c.id = ep.contract_id
+    WHERE ep.id = ?
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching legal documents:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error while fetching legals",
+        error: err,
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No legal documents found for this project",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Legal documents fetched successfully",
+      data: results[0],
+    });
+  });
+};
+
+const getProjectDetails = (req, res) => {
+  const { projectId } = req.params;
+
+  if (!projectId) {
+    return res.status(400).json({ error: "Project ID is required" });
+  }
+
+  const query = `
+    SELECT 
+      p.id AS project_id,
+      p.contract_id,
+      p.project_name,
+      p.location,
+      p.status,
+      p.start_date,
+      p.end_date,
+      p.created_at,
+      c.start_date AS contract_start_date,
+      c.end_date AS contract_end_date,
+      pr.id AS proposal_id,
+      pr.title AS proposal_title,
+      pr.description AS proposal_description,
+      pr.scope_of_work,
+      l.client_name,
+      l.site_location,
+      l.latitude,
+      l.longitude,
+      l.site_visit_notes
+    FROM engineer_projects p
+    LEFT JOIN contracts c ON p.contract_id = c.id
+    LEFT JOIN proposals pr ON c.proposal_id = pr.id
+    LEFT JOIN leads l ON l.id = c.lead_id
+    WHERE p.id = ?;
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error fetching project details:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    res.status(200).json({ project: results[0] });
+  });
+};
+
+const completeProject = (req, res) => {
+  const { projectId } = req.params;
+
+  // Step 1: Check only milestones that actually have tasks
+  const checkMilestonesQuery = `
+    SELECT 
+      COUNT(DISTINCT m.id) AS total_milestones_with_tasks,
+      SUM(
+        CASE 
+          WHEN (
+            SELECT COUNT(*) 
+            FROM milestone_tasks t 
+            WHERE t.milestone_id = m.id
+          ) = (
+            SELECT COUNT(*) 
+            FROM milestone_tasks t 
+            WHERE t.milestone_id = m.id AND t.status = 'Completed'
+          )
+          THEN 1 ELSE 0 
+        END
+      ) AS fully_completed_milestones
+    FROM milestones m
+    WHERE m.project_id = ?
+      AND EXISTS (
+        SELECT 1 FROM milestone_tasks t WHERE t.milestone_id = m.id
+      )
+  `;
+
+  db.query(checkMilestonesQuery, [projectId], (err, results) => {
+    if (err) {
+      console.error("Error checking milestones:", err);
+      return res.status(500).json({ error: "Failed to verify project milestones" });
+    }
+
+    const { total_milestones_with_tasks, fully_completed_milestones } = results[0];
+
+    if (total_milestones_with_tasks === 0) {
+      return res.status(400).json({ error: "This project has no milestones with tasks yet." });
+    }
+
+    if (fully_completed_milestones !== total_milestones_with_tasks) {
+      return res.status(400).json({ error: "Not all milestone tasks are completed yet." });
+    }
+
+    // Step 2: Mark project as completed
+    const updateQuery = `
+      UPDATE projects
+      SET status = 'Completed', completion_date = NOW()
+      WHERE id = ?
+    `;
+
+    db.query(updateQuery, [projectId], (updateErr, updateResult) => {
+      if (updateErr) {
+        console.error("Error completing project:", updateErr);
+        return res.status(500).json({ error: "Failed to mark project as completed" });
+      }
+
+      res.json({
+        message: "Project marked as completed successfully.",
+        projectId,
+      });
+    });
+  });
+};
+
+const documentUploadDir = path.join(__dirname, "../public/project_documents");
+if (!fs.existsSync(documentUploadDir)) {
+  fs.mkdirSync(documentUploadDir, { recursive: true });
+}
+
+const documentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, documentUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+// ✅ This must be 'storage', not 'documentStorage'
+const upload = multer({ storage: documentStorage });
+
+const uploadDocument = (req, res) => {
+  upload.single("document_file")(req, res, (err) => {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.status(400).json({ error: "File upload failed" });
+    }
+
+    const { projectId } = req.params;
+    const { title, category, remarks, uploaded_by } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const file_url = `/project_documents/${req.file.filename}`;
+
+    const query = `
+      INSERT INTO project_documents
+      (project_id, title, category, file_url, uploaded_by, remarks)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const values = [projectId, title, category, file_url, uploaded_by, remarks];
+
+    db.query(query, values, (error, result) => {
+      if (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({ error: "Failed to save document" });
+      }
+
+      res.status(201).json({
+        message: "Document uploaded successfully",
+        file_url,
+      });
+    });
+  });
+};
+
+const getDocuments = (req, res) => {
+  const { projectId } = req.params;
+
+  const query = `
+    SELECT 
+      id,
+      project_id,
+      title,
+      category,
+      file_url,
+      remarks,
+      uploaded_by,
+      uploaded_at
+    FROM project_documents
+    WHERE project_id = ?
+    ORDER BY uploaded_at DESC
+  `;
+
+  db.query(query, [projectId], (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch documents" });
+    }
+
+    res.status(200).json({
+      message: "Documents fetched successfully",
+      data: results,
+    });
+  });
+};
+
+
 module.exports = { getEstimate, getMilestones, createExpense, 
   getExpenses, getPendingExpenses, updateEngineerApproval, 
   updateMilestoneStatus, createProjectWithClient, getContractById,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
-  deleteTask, getReports, submitReport, getMilestoneTaskReports
+  deleteTask, getReports, submitReport, getMilestoneTaskReports, 
+  getPaymentScheduleByProject, getLegals, getProjectDetails, completeProject, 
+  uploadDocument, getDocuments
 };

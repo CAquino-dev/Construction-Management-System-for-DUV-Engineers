@@ -12,7 +12,14 @@ const {
   getApprovedContracts,
   sendContractToClient,
   clientRejectContract,
-  getPaymentTerms
+  getPaymentTerms,
+  createSiteVisit,
+  getScheduledSiteVisits,
+  getForProcurement,
+  signInPerson,
+  uploadSignInPersonContract,
+  regenerateContract,
+  modifyProposal
 } = require('../controller/projectManagerController');
 
 router.post('/contract/send-to-client/:id', sendContractToClient);
@@ -25,6 +32,13 @@ router.get('/getProposalResponse', getProposalResponse);
 router.post('/contracts/:id/reject', clientRejectContract);
 router.get('/contract/:proposalId', getContract);       
 router.post('/generateContract/:proposalId', generateContract); 
+router.put('/regenerateContract/:contractId', regenerateContract); 
 router.post('/signature', uploadClientSignature);
+router.post('/createSiteVisit', createSiteVisit);
+router.get('/getSiteVisits', getScheduledSiteVisits);
+router.get('/getForProcurement', getForProcurement);
+router.put('/signInPerson/:contractId', signInPerson);
+router.post('/uploadSignInPerson/:contractId', uploadSignInPersonContract);
+router.put('/modifyProposal/:proposal_id', modifyProposal)
 
 module.exports = router;

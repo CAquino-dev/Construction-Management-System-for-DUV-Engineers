@@ -119,34 +119,115 @@ const handlePayMongoWebhook = (req, res) => {
 
   const eventType = event.data?.attributes?.type;
   const paymentData = event.data?.attributes?.data;
-  const paymentId = paymentData?.id; // pay_xxx
+  const paymentId = paymentData?.id;
   const metadata = paymentData?.attributes?.metadata;
   const invoiceId = metadata?.invoice_id;
+  const paymentScheduleId = metadata?.payment_schedule_id;
 
-  console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}`);
+  console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}, Schedule ID: ${paymentScheduleId}`);
 
-  if (eventType === "payment.paid" && invoiceId) {
-    const updateInvoiceQuery = `
-      UPDATE invoices
+  if (eventType === "payment.paid") {
+
+    // ✅ Update invoice if it exists
+    if (invoiceId) {
+      const updateInvoiceQuery = `
+        UPDATE invoices
+        SET status = 'Paid',
+            paymongo_payment_id = ?,
+            paid_at = NOW(),
+            updated_at = NOW()
+        WHERE id = ?
+      `;
+      db.query(updateInvoiceQuery, [paymentId, invoiceId], (err) => {
+        if (err) {
+          console.error("❌ Failed to update invoice:", err);
+          return res.sendStatus(500);
+        }
+        console.log(`✅ Invoice ${invoiceId} marked as Paid`);
+      });
+    }
+
+    // ✅ Always update payment schedule if metadata exists
+    if (paymentScheduleId) {
+      const updateScheduleQuery = `
+        UPDATE payment_schedule
+        SET status = 'Paid',
+            paid_date = NOW(),
+            updated_at = NOW()
+        WHERE id = ?
+      `;
+      db.query(updateScheduleQuery, [paymentScheduleId], (err) => {
+        if (err) {
+          console.error("❌ Failed to update payment schedule:", err);
+          return res.sendStatus(500);
+        }
+        console.log(`✅ Payment Schedule ${paymentScheduleId} marked as Paid`);
+        return res.sendStatus(200);
+      });
+    } else {
+      return res.sendStatus(200); // no schedule to update
+    }
+
+  } else {
+    res.sendStatus(200); // ignore other events
+  }
+};
+
+const handlePayMongoFeasibilityWebhook = (req, res) => {
+  const event = req.body;
+
+  console.log("===== Received PayMongo Feasibility Webhook =====");
+  console.log("Event payload:", JSON.stringify(event, null, 2));
+  console.log("===============================================");
+
+  const eventType = event.data?.attributes?.type;
+  const paymentData = event.data?.attributes?.data;
+  const paymentId = paymentData?.id; // pay_xxx
+  const metadata = paymentData?.attributes?.metadata;
+  const feasibilityId = metadata?.feasibility_id; // 💡 this is the key difference
+
+  console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Feasibility ID: ${feasibilityId}`);
+
+  if (eventType === "payment.paid" && feasibilityId) {
+    const updateFeasibilityQuery = `
+      UPDATE feasibility_study_payments
       SET status = 'Paid',
           paymongo_payment_id = ?,
           paid_at = NOW(),
           updated_at = NOW()
       WHERE id = ?
     `;
-    db.query(updateInvoiceQuery, [paymentId, invoiceId], (err) => {
+
+    db.query(updateFeasibilityQuery, [paymentId, feasibilityId], (err) => {
       if (err) {
-        console.error("❌ Failed to update invoice:", err);
+        console.error("❌ Failed to update feasibility payment:", err);
         return res.sendStatus(500);
       }
 
-      console.log(`✅ Invoice ${invoiceId} marked as Paid`);
+      console.log(`✅ Feasibility payment ${feasibilityId} marked as Paid`);
+      return res.sendStatus(200);
+    });
+  } else if (eventType === "payment.failed" && feasibilityId) {
+    const failQuery = `
+      UPDATE feasibility_study_payments
+      SET status = 'Failed',
+          updated_at = NOW()
+      WHERE id = ?
+    `;
+    db.query(failQuery, [feasibilityId], (err) => {
+      if (err) {
+        console.error("❌ Failed to mark feasibility as failed:", err);
+        return res.sendStatus(500);
+      }
+
+      console.log(`❌ Feasibility payment ${feasibilityId} marked as Failed`);
       return res.sendStatus(200);
     });
   } else {
     res.sendStatus(200); // ignore other events
   }
 };
+
 
 
 

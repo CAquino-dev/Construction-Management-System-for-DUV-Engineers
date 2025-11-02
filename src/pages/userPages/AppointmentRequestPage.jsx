@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "sonner";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 export const AppointmentRequestPage = () => {
   const [formData, setFormData] = useState({
@@ -15,19 +17,24 @@ export const AppointmentRequestPage = () => {
   const [preferredDate, setPreferredDate] = useState(null);
   const [bookedDates, setBookedDates] = useState([]);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [actionType, setActionType] = useState("Submit Request");
 
   const MAX_APPOINTMENTS_PER_DAY = 1;
 
   useEffect(() => {
     const fetchBookedDates = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`);
+        const response = await fetch(
+          `${import.meta.env.VITE_REACT_APP_API_URL}/api/booked`
+        );
         if (!response.ok) throw new Error("Failed to fetch booked dates.");
         const data = await response.json();
 
         const fullyBookedDates = data
-          .filter(d => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
-          .map(d => new Date(d.preferred_date)); // Convert to Date objects
+          .filter((d) => Number(d.count) >= MAX_APPOINTMENTS_PER_DAY)
+          .map((d) => new Date(d.preferred_date));
 
         setBookedDates(fullyBookedDates);
       } catch (error) {
@@ -39,14 +46,14 @@ export const AppointmentRequestPage = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    setIsSubmitting(true);
 
     const selectedDateStr = preferredDate?.toISOString().split("T")[0];
 
@@ -57,7 +64,12 @@ export const AppointmentRequestPage = () => {
       !formData.preferredTime ||
       !formData.purpose
     ) {
-      setSubmitStatus({ success: false, message: "Please fill all required fields." });
+      setSubmitStatus({
+        success: false,
+        message: "Please fill all required fields.",
+      });
+      toast.error("Please fill all required fields.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -67,14 +79,21 @@ export const AppointmentRequestPage = () => {
     };
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submissionData),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/appointments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(submissionData),
+        }
+      );
 
       if (response.ok) {
-        setSubmitStatus({ success: true, message: "Appointment request submitted successfully!" });
+        setSubmitStatus({
+          success: true,
+          message: "Appointment request submitted successfully!",
+        });
+        toast.success("Appointment request submitted successfully!");
         setFormData({
           clientName: "",
           clientEmail: "",
@@ -86,125 +105,250 @@ export const AppointmentRequestPage = () => {
         setPreferredDate(null);
       } else {
         const errorData = await response.json();
-        setSubmitStatus({ success: false, message: errorData.message || "Submission failed." });
+        toast.error(errorData.message || "Submission failed.");
+        setSubmitStatus({
+          success: false,
+          message: errorData.message || "Submission failed.",
+        });
       }
     } catch (error) {
-      setSubmitStatus({ success: false, message: "An error occurred. Please try again." });
+      setSubmitStatus({
+        success: false,
+        message: "An error occurred. Please try again.",
+      });
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // Custom date styling for booked dates
+  const dayClassName = (date) => {
+    const isBooked = bookedDates.some(
+      (bookedDate) => bookedDate.toDateString() === date.toDateString()
+    );
+    return isBooked ? "bg-red-100 text-red-500 line-through" : "";
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 mt-30">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">Request an Appointment</h1>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block font-semibold mb-1">
-              Full Name <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="text"
-              name="clientName"
-              value={formData.clientName}
-              onChange={handleChange}
-              placeholder="Your full name"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">
-              Email Address <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="email"
-              name="clientEmail"
-              value={formData.clientEmail}
-              onChange={handleChange}
-              placeholder="you@example.com"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">Phone Number</label>
-            <input
-              type="tel"
-              name="clientPhone"
-              value={formData.clientPhone}
-              onChange={handleChange}
-              placeholder="Your phone number"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">
-              Preferred Date <span className="text-red-600">*</span>
-            </label>
-            <DatePicker
-              selected={preferredDate}
-              onChange={(date) => setPreferredDate(date)}
-              minDate={new Date()}
-              excludeDates={bookedDates} // disables fully booked dates
-              placeholderText="Select a date"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">
-              Preferred Time <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="time"
-              name="preferredTime"
-              value={formData.preferredTime}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">Purpose</label>
-            <textarea
-              name="purpose"
-              value={formData.purpose}
-              onChange={handleChange}
-              rows={3}
-              placeholder="The purpose of your appointment"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">Additional Notes</label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Any questions or details you'd like to add"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
-
-          {submitStatus && (
-            <p className={`text-center font-medium ${submitStatus.success ? "text-green-600" : "text-red-600"}`}>
-              {submitStatus.message}
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-8 px-4 sm:px-6 lg:px-8 pt-20">
+      <div className="max-w-lg mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+            <div className="w-16 h-16 bg-[#4c735c] rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-2xl text-white">📅</span>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Request an Appointment
+            </h1>
+            <p className="text-gray-600">
+              Fill out the form below to schedule your appointment. We'll get
+              back to you shortly.
             </p>
-          )}
+          </div>
 
-          <button type="submit" className="w-full bg-[#4c735c] text-white py-3 rounded">
-            Submit Request
-          </button>
-        </form>
+          {/* Availability Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="flex items-start space-x-3">
+              <span className="text-blue-600 text-lg">💡</span>
+              <div className="text-sm text-blue-800">
+                <p className="font-semibold">Availability Notice</p>
+                <p>
+                  Fully booked dates are automatically disabled. Please select
+                  an available date.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setActionType("Submit Request");
+              setIsModalOpen(true); // open confirmation modal instead of submitting now
+            }}
+          >
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center">
+                Personal Information
+              </h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="clientName"
+                  value={formData.clientName}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="clientEmail"
+                    value={formData.clientEmail}
+                    onChange={handleChange}
+                    placeholder="your@email.com"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="clientPhone"
+                    value={formData.clientPhone}
+                    onChange={handleChange}
+                    placeholder="(123) 456-7890"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Appointment Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center">
+                Appointment Details
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Preferred Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    selected={preferredDate}
+                    onChange={(date) => setPreferredDate(date)}
+                    minDate={new Date()}
+                    excludeDates={bookedDates}
+                    placeholderText="Select date"
+                    dayClassName={dayClassName}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors"
+                    calendarClassName="rounded-xl shadow-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Preferred Time <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    name="preferredTime"
+                    value={formData.preferredTime}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Purpose of Visit <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="purpose"
+                  value={formData.purpose}
+                  onChange={handleChange}
+                  rows={3}
+                  placeholder="Please describe the purpose of your appointment..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors resize-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Notes
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows={2}
+                  placeholder="Any additional information or special requests..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#4c735c] focus:border-transparent transition-colors resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 ${
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#4c735c] hover:bg-[#3a5a4a] active:bg-[#2d473a] shadow-lg hover:shadow-xl"
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <span>📨</span>
+                  <span>Submit Request</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Required Fields Note */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              <span className="text-red-500">*</span> indicates required fields
+            </p>
+          </div>
+        </div>
+
+        {/* Contact Information */}
+        <div className="mt-8 bg-white rounded-2xl shadow-sm p-6 text-center">
+          <h3 className="font-semibold text-gray-900 mb-2">
+            Need Immediate Assistance?
+          </h3>
+          <p className="text-gray-600 text-sm mb-3">
+            Contact us directly if you need to reschedule or have urgent
+            questions.
+          </p>
+          <div className="flex justify-center space-x-4 text-sm">
+            <span className="text-gray-700">📞 (555) 123-4567</span>
+            <span className="text-gray-700">✉️ contact@company.com</span>
+          </div>
+        </div>
+        <ConfirmationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          actionType={actionType}
+          setRemark={() => {}} // not needed here but keep empty
+          onConfirm={() => {
+            setIsModalOpen(false);
+            handleSubmit(); // <-- your actual submit function
+          }}
+        />
       </div>
     </div>
   );
