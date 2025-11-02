@@ -6,7 +6,7 @@ getInventoryItems, updateInventoryItem, addInventoryItem,
 inventoryRequest, getInventoryRequests, updateRequestStatus, 
 getUserRequest, claimItem, getMaterialCatalog, createTransaction,
 getProjectInventory, getPendingDeliveries, updateDeliveredQuantity,
-markAsDelivered
+markAsDelivered, getTransactionHistory
 } = require('../controller/inventoryController');
 
 router.get('/getInventoryItems', getInventoryItems);
@@ -23,5 +23,6 @@ router.post('/request/:userId', inventoryRequest);
 router.post('/transaction', createTransaction);
 router.post('/updateDeliveredQuantity', updateDeliveredQuantity);
 router.put("/purchaseOrders/markDelivered/:po_id", markAsDelivered);
+router.get('/getTransactionHistory/:projectId', getTransactionHistory);
 
 module.exports = router;
