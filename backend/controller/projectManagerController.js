@@ -371,12 +371,14 @@ const generateContract = (req, res) => {
           console.error("EJS render error:", err);
           return res.status(500).json({ error: "Template rendering failed" });
         }
-
+        const isHeroku = process.env.DYNO !== undefined;
         try {
           const browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome',
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+            executablePath: isHeroku
+              ? process.env.PUPPETEER_EXECUTABLE_PATH
+              : require('puppeteer').executablePath(),
           });
           const page = await browser.newPage();
           await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });
