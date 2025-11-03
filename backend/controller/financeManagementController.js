@@ -1420,13 +1420,22 @@ const processFinancePayment = (req, res) => {
   );
 };
 
+// ✅ Always base uploads inside your backend's /public folder
+const financeBaseDir = path.join(__dirname, "../public");
+
+// ✅ Configure multer storage
 const clientPaymentStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     let folder = "finance_attachments";
     if (file.fieldname === "client_signature") folder = "finance_signatures";
 
-    const uploadPath = path.join(__dirname, `../../public/${folder}`);
-    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
+    const uploadPath = path.join(financeBaseDir, folder);
+
+    // Ensure folder exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -1436,11 +1445,13 @@ const clientPaymentStorage = multer.diskStorage({
   },
 });
 
+// ✅ Multer middleware
 const clientPaymentUpload = multer({ storage: clientPaymentStorage }).fields([
   { name: "proof_photo", maxCount: 1 },
   { name: "client_signature", maxCount: 1 },
 ]);
 
+// ✅ Controller
 const recordClientCashPayment = (req, res) => {
   clientPaymentUpload(req, res, (err) => {
     if (err) {
@@ -1455,7 +1466,7 @@ const recordClientCashPayment = (req, res) => {
       payment_method,
       reference_number,
       notes,
-      processed_by
+      processed_by,
     } = req.body;
 
     if (!payment_schedule_id || !amount_paid || !payment_method) {
@@ -1515,11 +1526,11 @@ const recordClientCashPayment = (req, res) => {
 
         const updateQuery = `
           UPDATE payment_schedule
-          SET status = 'Paid', paid_date = ?
+          SET status = 'Paid', paid_date = NOW()
           WHERE id = ?
         `;
 
-        db.query(updateQuery, [payment_date || new Date(), payment_schedule_id], (err2) => {
+        db.query(updateQuery, [payment_schedule_id], (err2) => {
           if (err2) {
             console.error("❌ Error updating payment_schedule:", err2);
             return res.status(500).json({
@@ -1537,6 +1548,7 @@ const recordClientCashPayment = (req, res) => {
     );
   });
 };
+
 
 // ✅ Get Paid Purchase Orders
 const getPaidPurchaseOrders = (req, res) => {
@@ -1897,6 +1909,57 @@ const getCashHandovers = (req, res) => {
   });
 };
 
+const getClientPayments = (req, res) => {
+  const query = `
+    SELECT 
+      fp.id AS payment_id,
+      fp.payment_type,
+      fp.reference_id AS payment_schedule_id,
+      fp.payment_method,
+      fp.reference_number,
+      fp.bank_name,
+      fp.account_number,
+      fp.transaction_date,
+      fp.amount,
+      fp.notes,
+      fp.attachments,
+      fp.recipient_signature,
+      fp.processed_by,
+      fp.created_at,
+      fp.attachments,
+      fp.recipient_signature,
+
+      ps.id AS schedule_id,
+      ps.contract_id,
+      ps.milestone_name,
+
+      ep.id AS project_id,
+      ep.project_name
+    FROM finance_payments fp
+    LEFT JOIN payment_schedule ps ON fp.reference_id = ps.id
+    LEFT JOIN engineer_projects ep ON ps.contract_id = ep.contract_id
+    WHERE fp.payment_type = 'client payment'
+    ORDER BY fp.created_at DESC
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("❌ Error fetching client payments:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching client payments",
+        error: err.message,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: results,
+    });
+  });
+};
+
+
 module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   financeUpdatePayslipStatus, financeProcessPayslipPayment, getCeoApprovedPayslips,
   clientPayment, getProjectsWithPendingPayments, getMilestonesForPaymentByProject,
@@ -1904,5 +1967,5 @@ module.exports = { getFinance, updatePayrollStatus, getApprovedPayslips,
   updateContractApprovalStatus, getPendingFinanceApprovalMilestones, uploadSalarySignature,
   getReleasedPayslips, getDeliveredPurchaseOrders, processFinancePayment, recordClientCashPayment,
   getPaidPayslips, getPaidPurchaseOrders, getProcurementApprovedMilestones, updateFinanceQuoteApprovalStatus,
-  getApprovedLtoEto, processCashHandover, getCashHandovers
+  getApprovedLtoEto, processCashHandover, getCashHandovers, getClientPayments
  };
