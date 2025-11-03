@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const ejs = require('ejs');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const { PDFDocument } = require('pdf-lib');
 const nodemailer = require("nodemailer");
 const qrcode = require("qrcode");
@@ -371,12 +371,14 @@ const generateContract = (req, res) => {
           console.error("EJS render error:", err);
           return res.status(500).json({ error: "Template rendering failed" });
         }
-
+        const isHeroku = process.env.DYNO !== undefined;
         try {
           const browser = await puppeteer.launch({
             headless: true,
             args: ["--no-sandbox", "--disable-setuid-sandbox"],
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+            executablePath: isHeroku
+              ? process.env.PUPPETEER_EXECUTABLE_PATH
+              : require('puppeteer').executablePath(),
           });
           const page = await browser.newPage();
           await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });

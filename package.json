@@ -38,6 +38,8 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.3",
     "openai": "^5.10.2",
+    "puppeteer": "^24.27.0",
+    "puppeteer-core": "^24.27.0",
     "react": "^19.0.0",
     "react-calendar": "^5.1.0",
     "react-datepicker": "^8.4.0",

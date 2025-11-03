@@ -30,31 +30,39 @@ const CreateProjectPage = () => {
   const [remark, setRemark] = useState("");
 
   // Common units for construction BOQ
-  const unitOptions = [
-    "pc",
-    "pcs",
-    "set",
-    "lot",
-    "kg",
-    "ton",
-    "m",
-    "m²",
-    "m³",
-    "lm",
-    "cu.m",
-    "sq.m",
-    "day",
-    "hr",
-    "month",
-    "lump sum",
-    "unit",
-    "pair",
-    "roll",
-    "box",
-    "bag",
-    "gallon",
-    "liter",
-  ];
+const unitOptions = [
+  // General measurement
+  "m",        // meter (length)
+  "m²",       // square meter (area)
+  "m³",       // cubic meter (volume)
+  "mm",       // millimeter (for precision dimensions)
+  "cm",       // centimeter
+  "lm",       // linear meter
+
+  // Weight
+  "kg",       // kilogram
+  "ton",      // metric ton
+
+  // Time-based
+  "day",
+  "hr",
+  "month",
+
+  // Quantity-based
+  "pc",       // piece
+  "set",
+  "pair",
+  "unit",
+  "lot",      // lump sum or group of items
+  "roll",
+  "box",
+  "bag",
+  "gallon",
+  "liter",
+
+  // Financial / lump items
+  "lump sum"
+];
 
   // Calculate 70% of budget
   const maxBoqBudget = contract ? contract.budget_estimate * 0.7 : 0;
