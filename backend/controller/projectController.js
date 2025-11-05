@@ -698,7 +698,7 @@ const createProjectWithClient = (req, res) => {
     payment_schedule,
     project_type,
     assigned_users, // array of { user_id, role_in_project }
-    boq_items,      // array of { item_name, description, unit, quantity, unit_price }
+    boq_items,      // array of { item_no, description, unit, quantity, unit_cost }
     contractId      // ✅ new
   } = req.body;
 
@@ -747,7 +747,7 @@ const createProjectWithClient = (req, res) => {
             location,
             payment_schedule,
             project_type,
-            contractId || null // ✅ added here
+            contractId || null
           ],
           (err, projectResult) => {
             if (err) {
@@ -787,6 +787,7 @@ const createProjectWithClient = (req, res) => {
               if (Array.isArray(boq_items) && boq_items.length > 0) {
                 console.log("📦 Received BOQ Items:", boq_items);
 
+                // Removed total_cost from values
                 const boqValues = boq_items.map(item => [
                   projectId,
                   item.item_no,
@@ -794,12 +795,12 @@ const createProjectWithClient = (req, res) => {
                   item.unit,
                   item.quantity,
                   item.unit_cost,
-                  item.quantity * item.unit_cost,
                   new Date()
                 ]);
 
+                // ✅ Removed total_cost from query
                 const boqQuery = `
-                  INSERT INTO boq (project_id, item_no, description, unit, quantity, unit_cost, total_cost, created_at)
+                  INSERT INTO boq (project_id, item_no, description, unit, quantity, unit_cost, created_at)
                   VALUES ?
                 `;
 
@@ -829,6 +830,7 @@ const createProjectWithClient = (req, res) => {
     );
   });
 };
+
 
 
 const getContractById = (req, res) => {

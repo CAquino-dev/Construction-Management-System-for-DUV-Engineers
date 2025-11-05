@@ -83,7 +83,7 @@ const getProjectMessages = (req, res) => {
             pc.created_at
         FROM project_chats pc
         JOIN users u ON pc.sender_id = u.id
-        WHERE pc.project_id = 36
+        WHERE pc.project_id = ?
         ORDER BY pc.created_at ASC;
     `;
 

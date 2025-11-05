@@ -27,70 +27,38 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   const [confirmAction, setConfirmAction] = useState(null);
 
   // Common units for materials dropdown
-  const commonUnits = [
-    // 🔹 Quantity / Counting Units
-    "pc",
-    "unit",
-    "set",
-    "lot",
-    "pair",
-    "dozen",
+const commonUnits = [
+  // 🔹 Quantity / Counting Units
+  "pc", "unit", "set", "lot", "pair", "dozen",
 
-    // 🔹 Weight Units
-    "g",
-    "gram",
-    "kg",
-    "kilogram",
-    "ton",
-    "mt",
+  // 🔹 Weight Units
+  "g", "gram", "kg", "kilogram", "ton", "mt",
 
-    // 🔹 Length Units
-    "mm",
-    "millimeter",
-    "cm",
-    "centimeter",
-    "m",
-    "meter",
-    "km",
-    "kilometer",
+  // 🔹 Length Units
+  "mm", "millimeter",
+  "cm", "centimeter",
+  "m", "meter",
+  "km", "kilometer",
 
-    // 🔹 Area Units
-    "sqmm",
-    "square millimeter",
-    "sqcm",
-    "square centimeter",
-    "sqm",
-    "square meter",
+  // 🔹 Area Units
+  "sqmm", "square millimeter",
+  "sqcm", "square centimeter",
+  "sqm", "square meter",
 
-    // 🔹 Volume Units
-    "cu.mm",
-    "cubic millimeter",
-    "cu.cm",
-    "cubic centimeter",
-    "cu.m",
-    "cubic meter",
-    "l",
-    "liter",
-    "ml",
-    "milliliter",
-    "gallon",
-    "barrel",
+  // 🔹 Volume Units
+  "cu.mm", "cubic millimeter",
+  "cu.cm", "cubic centimeter",
+  "cu.m", "cubic meter",
+  "l", "liter",
+  "ml", "milliliter",
+  "gallon",
+  "barrel",
 
-    // 🔹 Packaging Units
-    "box",
-    "carton",
-    "pack",
-    "bundle",
-    "roll",
-    "sheet",
-    "plate",
-    "bag",
-    "sack",
-    "drum",
-    "can",
-    "tube",
-    "bottle",
-  ];
+  // 🔹 Packaging Units
+  "box", "carton", "pack", "bundle", "roll", "sheet", "plate",
+  "bag", "sack", "drum", "can", "tube", "bottle",
+];
+
 
   // Check if milestone is editable
   const isEditable = () => {
