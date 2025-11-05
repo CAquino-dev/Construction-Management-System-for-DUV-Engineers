@@ -181,9 +181,8 @@ export const UserSideNav = ({ children }) => {
 
       <ConfirmationModal
         isOpen={isLogoutModalOpen}
-        title="Logout Confirmation"
-        message="Are you sure you want to log out?"
-        onCancel={() => setIsLogoutModalOpen(false)}
+        actionType="Logout"
+        onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
     </div>
