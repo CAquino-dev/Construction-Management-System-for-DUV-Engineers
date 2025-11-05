@@ -120,58 +120,108 @@ const handlePayMongoWebhook = (req, res) => {
   const eventType = event.data?.attributes?.type;
   const paymentData = event.data?.attributes?.data;
   const paymentId = paymentData?.id;
-  const metadata = paymentData?.attributes?.metadata;
-  const invoiceId = metadata?.invoice_id;
-  const paymentScheduleId = metadata?.payment_schedule_id;
+  const attributes = paymentData?.attributes;
+  const metadata = attributes?.metadata || {};
 
-  console.log(`🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}, Schedule ID: ${paymentScheduleId}`);
+  const invoiceId = metadata.invoice_id;
+  const paymentScheduleId = metadata.payment_schedule_id;
 
+  // Convert amount (PayMongo sends in cents)
+  const amount = attributes?.amount ? attributes.amount / 100 : 0;
+  const channel = attributes?.channel || "online";
+  const referenceNumber = attributes?.source?.reference_number || null;
+  const bankName = attributes?.source?.bank || null;
+  const accountNumber = null; // PayMongo doesn't provide this
+  const transactionDate = attributes?.paid_at
+    ? new Date(attributes.paid_at)
+    : new Date();
+
+  console.log(
+    `🔔 Event: ${eventType}, Payment ID: ${paymentId}, Invoice ID: ${invoiceId}, Schedule ID: ${paymentScheduleId}, Channel: ${channel}, Amount: ${amount}`
+  );
+
+  // Only handle successful payments
   if (eventType === "payment.paid") {
-
-    // ✅ Update invoice if it exists
+    // ✅ 1. Update invoice if it exists
     if (invoiceId) {
       const updateInvoiceQuery = `
         UPDATE invoices
         SET status = 'Paid',
             paymongo_payment_id = ?,
-            paid_at = NOW(),
-            updated_at = NOW()
+            paid_at = NOW()
         WHERE id = ?
       `;
       db.query(updateInvoiceQuery, [paymentId, invoiceId], (err) => {
         if (err) {
           console.error("❌ Failed to update invoice:", err);
-          return res.sendStatus(500);
+        } else {
+          console.log(`✅ Invoice ${invoiceId} marked as Paid`);
         }
-        console.log(`✅ Invoice ${invoiceId} marked as Paid`);
       });
     }
 
-    // ✅ Always update payment schedule if metadata exists
+    // ✅ 2. Update payment schedule if it exists
     if (paymentScheduleId) {
       const updateScheduleQuery = `
         UPDATE payment_schedule
         SET status = 'Paid',
-            paid_date = NOW(),
-            updated_at = NOW()
+            paid_date = NOW()
         WHERE id = ?
       `;
       db.query(updateScheduleQuery, [paymentScheduleId], (err) => {
         if (err) {
           console.error("❌ Failed to update payment schedule:", err);
-          return res.sendStatus(500);
+        } else {
+          console.log(`✅ Payment Schedule ${paymentScheduleId} marked as Paid`);
         }
-        console.log(`✅ Payment Schedule ${paymentScheduleId} marked as Paid`);
-        return res.sendStatus(200);
       });
-    } else {
-      return res.sendStatus(200); // no schedule to update
     }
 
+    // ✅ 3. Insert into finance_payments
+    const insertFinancePaymentQuery = `
+      INSERT INTO finance_payments
+        (payment_type, reference_id, payment_method, reference_number, bank_name, account_number, transaction_date, amount, notes, processed_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const paymentType = invoiceId
+      ? "invoice"
+      : paymentScheduleId
+      ? "client payment"
+      : "other";
+    const referenceId = invoiceId || paymentScheduleId || null;
+    const notes = `PayMongo payment ID: ${paymentId}, Channel: ${channel}`;
+
+    db.query(
+      insertFinancePaymentQuery,
+      [
+        paymentType,
+        referenceId,
+        "Online", // ✅ always "Online" since it's PayMongo
+        referenceNumber,
+        bankName,
+        accountNumber,
+        transactionDate,
+        amount,
+        notes,
+        null, // processed_by (null = automated system)
+      ],
+      (err) => {
+        if (err) {
+          console.error("❌ Failed to insert into finance_payments:", err);
+          return res.sendStatus(500);
+        }
+        console.log("✅ Finance payment recorded successfully");
+        return res.sendStatus(200);
+      }
+    );
   } else {
-    res.sendStatus(200); // ignore other events
+    console.log("ℹ️ Non-payment event received, ignoring...");
+    res.sendStatus(200);
   }
 };
+
+
 
 const handlePayMongoFeasibilityWebhook = (req, res) => {
   const event = req.body;
@@ -193,8 +243,7 @@ const handlePayMongoFeasibilityWebhook = (req, res) => {
       UPDATE feasibility_study_payments
       SET status = 'Paid',
           paymongo_payment_id = ?,
-          paid_at = NOW(),
-          updated_at = NOW()
+          paid_at = NOW()
       WHERE id = ?
     `;
 

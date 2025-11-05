@@ -31,7 +31,8 @@ const {
   updateFinanceQuoteApprovalStatus,
   getApprovedLtoEto,
   processCashHandover,
-  getCashHandovers
+  getCashHandovers,
+  getClientPayments
 } = require("../controller/financeManagementController");
 
 const financeBaseDir = path.join(__dirname, "../public");
@@ -87,6 +88,7 @@ router.get('/getPaidPurchaseOrders', getPaidPurchaseOrders);
 router.get('/getApprovedLtoEto', getApprovedLtoEto);
 router.post("/processCashHandover", processCashHandover);
 router.get("/cash-handovers", getCashHandovers);
+router.get("/clientPayments", getClientPayments);
 
 // ✅ Finance payment upload route (attachments + signature)
 router.post(

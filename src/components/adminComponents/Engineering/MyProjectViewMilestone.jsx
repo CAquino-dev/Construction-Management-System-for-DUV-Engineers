@@ -26,6 +26,72 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
 
+  // Common units for materials dropdown
+  const commonUnits = [
+    // 🔹 Quantity / Counting Units
+    "pc",
+    "unit",
+    "set",
+    "lot",
+    "pair",
+    "dozen",
+
+    // 🔹 Weight Units
+    "g",
+    "gram",
+    "kg",
+    "kilogram",
+    "ton",
+    "mt",
+
+    // 🔹 Length Units
+    "mm",
+    "millimeter",
+    "cm",
+    "centimeter",
+    "m",
+    "meter",
+    "km",
+    "kilometer",
+
+    // 🔹 Area Units
+    "sqmm",
+    "square millimeter",
+    "sqcm",
+    "square centimeter",
+    "sqm",
+    "square meter",
+
+    // 🔹 Volume Units
+    "cu.mm",
+    "cubic millimeter",
+    "cu.cm",
+    "cubic centimeter",
+    "cu.m",
+    "cubic meter",
+    "l",
+    "liter",
+    "ml",
+    "milliliter",
+    "gallon",
+    "barrel",
+
+    // 🔹 Packaging Units
+    "box",
+    "carton",
+    "pack",
+    "bundle",
+    "roll",
+    "sheet",
+    "plate",
+    "bag",
+    "sack",
+    "drum",
+    "can",
+    "tube",
+    "bottle",
+  ];
+
   // Check if milestone is editable
   const isEditable = () => {
     // Can edit if:
@@ -184,7 +250,7 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
     if (!isEditable()) return;
     const newItem = {
       description: "",
-      unit: "",
+      unit: "pc", // Default unit
       quantity: 0,
       unit_cost: 0,
       total_cost: 0,
@@ -1084,8 +1150,8 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                               </td>
                               <td className="px-4 py-3">
                                 {canModifyMto && isEditable() ? (
-                                  <input
-                                    className="w-20 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                  <select
+                                    className="w-24 border border-gray-300 rounded-md px-2 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                     value={mto.unit}
                                     onChange={(e) =>
                                       handleMtoChange(
@@ -1094,8 +1160,14 @@ export const MyProjectViewMilestone = ({ milestone, onClose }) => {
                                         e.target.value
                                       )
                                     }
-                                    placeholder="Unit"
-                                  />
+                                  >
+                                    <option value="">Select unit</option>
+                                    {commonUnits.map((unit) => (
+                                      <option key={unit} value={unit}>
+                                        {unit}
+                                      </option>
+                                    ))}
+                                  </select>
                                 ) : (
                                   <span className="text-sm text-gray-600">
                                     {mto.unit}

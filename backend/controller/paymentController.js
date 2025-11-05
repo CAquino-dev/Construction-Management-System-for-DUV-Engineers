@@ -292,93 +292,76 @@ function createInitialPayment(req, res) {
 const generatePaymentSchedule = (req, res) => {
   const { contractId } = req.params;
 
-  // 1. Get contract (with start and end date)
   db.query(
     "SELECT id, total_amount, contract_signed_at, payment_term_id, start_date, end_date FROM contracts WHERE id = ? AND status = 'signed'",
     [contractId],
     (err, contractRows) => {
-      if (err) {
-        console.error("DB Error (contract):", err);
-        return res.status(500).json({ message: "Database error" });
-      }
-
-      if (contractRows.length === 0) {
+      if (err) return res.status(500).json({ message: "Database error" });
+      if (contractRows.length === 0)
         return res.status(404).json({ message: "Contract not found or not signed" });
-      }
 
       const contract = contractRows[0];
 
-      // Validate dates
-      if (!contract.start_date || !contract.end_date) {
-        return res.status(400).json({
-          message: "Contract does not have valid start or end date",
-        });
-      }
+      if (!contract.start_date || !contract.end_date)
+        return res.status(400).json({ message: "Contract missing start/end date" });
 
-      // 2. Get payment term rules
       db.query(
         "SELECT * FROM payment_term_rules WHERE payment_term_id = ? ORDER BY sequence ASC",
         [contract.payment_term_id],
         (err, rules) => {
-          if (err) {
-            console.error("DB Error (rules):", err);
-            return res.status(500).json({ message: "Database error" });
-          }
+          if (err) return res.status(500).json({ message: "Database error" });
+          if (rules.length === 0)
+            return res.status(400).json({ message: "No payment rules found" });
 
-          if (rules.length === 0) {
-            return res.status(400).json({ message: "No payment rules defined for this contract" });
-          }
+          let scheduleRows = [];
 
-          // ✅ Validate total percentage = 100
-          const totalPercentage = rules.reduce((sum, r) => sum + parseFloat(r.percentage), 0);
-          if (Math.abs(totalPercentage - 100) > 0.01) { // allow floating-point tolerance
-            return res.status(400).json({
-              message: `Invalid payment rules: total percentage = ${totalPercentage}%. It must equal 100%.`,
-            });
-          }
+          for (const rule of rules) {
+            if (rule.milestone_name.toLowerCase().includes("monthly")) {
+              // 🔹 Calculate number of months
+              const start = new Date(contract.start_date);
+              const end = new Date(contract.end_date);
+              const months =
+                (end.getFullYear() - start.getFullYear()) * 12 +
+                (end.getMonth() - start.getMonth()) +
+                1;
 
-          // 3. Generate schedule rows
-          const scheduleRows = rules.map((rule, index) => {
-            let dueDate = null;
+              const percentPerMonth = 100 / months;
+              const amountPerMonth = (contract.total_amount / months);
 
-            if (index === rules.length - 1) {
-              // ✅ Last milestone always at contract end date
-              dueDate = contract.end_date;
-            } else if (rule.trigger_event === "signing") {
-              dueDate = contract.contract_signed_at;
-            } else if (rule.trigger_event === "start") {
-              dueDate = contract.start_date;
-            } else if (rule.trigger_event === "completion") {
-              dueDate = contract.end_date;
-            } else if (rule.trigger_event === "monthly") {
-              const d = new Date(contract.start_date);
-              d.setMonth(d.getMonth() + (rule.sequence - 1));
-              dueDate = d.toISOString().slice(0, 10);
+              for (let i = 0; i < months; i++) {
+                const dueDate = new Date(start);
+                dueDate.setMonth(start.getMonth() + i);
+
+                scheduleRows.push([
+                  contract.id,
+                  rule.id,
+                  `Month ${i + 1} Payment`,
+                  dueDate.toISOString().slice(0, 10),
+                  amountPerMonth,
+                ]);
+              }
+            } else {
+              // fallback for non-monthly
+              const amount = (contract.total_amount * rule.percentage) / 100;
+              scheduleRows.push([
+                contract.id,
+                rule.id,
+                rule.milestone_name,
+                contract.end_date,
+                amount,
+              ]);
             }
+          }
 
-            const amount = (contract.total_amount * rule.percentage) / 100;
-
-            return [
-              contract.id,
-              rule.id,
-              rule.milestone_name,
-              dueDate,
-              amount,
-            ];
-          });
-
-          // 4. Insert schedule into DB
+          // ✅ Insert into DB
           db.query(
             "INSERT INTO payment_schedule (contract_id, rule_id, milestone_name, due_date, amount) VALUES ?",
             [scheduleRows],
             (err) => {
-              if (err) {
-                console.error("DB Error (insert schedule):", err);
-                return res.status(500).json({ message: "Database error" });
-              }
+              if (err) return res.status(500).json({ message: "Database error" });
 
-              return res.json({
-                message: "Payment schedule generated",
+              res.json({
+                message: "Payment schedule generated (time-based)",
                 contractId: contract.id,
                 schedule: scheduleRows,
               });

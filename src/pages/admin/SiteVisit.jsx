@@ -52,6 +52,47 @@ const SiteVisit = () => {
   
   const userId = localStorage.getItem('userId');
 
+  // Dropdown options
+  const terrainOptions = [
+    { value: "flat", label: "Flat" },
+    { value: "hilly", label: "Hilly" },
+    { value: "rocky", label: "Rocky" },
+    { value: "mountainous", label: "Mountainous" },
+    { value: "sloping", label: "Sloping" },
+    { value: "uneven", label: "Uneven" },
+    { value: "other", label: "Other" },
+  ];
+
+  const accessibilityOptions = [
+    { value: "road", label: "By Road" },
+    { value: "footpath", label: "Footpath Only" },
+    { value: "rough-road", label: "Rough Road" },
+    { value: "water-access", label: "Water Access" },
+    { value: "limited-access", label: "Limited Access" },
+    { value: "easy-access", label: "Easy Access" },
+    { value: "other", label: "Other" },
+  ];
+
+  const waterSourceOptions = [
+    { value: "municipal", label: "Municipal Water Line" },
+    { value: "well", label: "Well" },
+    { value: "borehole", label: "Borehole" },
+    { value: "river", label: "River/Stream" },
+    { value: "rainwater", label: "Rainwater Harvesting" },
+    { value: "none", label: "No Water Source" },
+    { value: "other", label: "Other" },
+  ];
+
+  const powerSourceOptions = [
+    { value: "grid", label: "Grid Connection" },
+    { value: "solar", label: "Solar Power" },
+    { value: "generator", label: "Generator" },
+    { value: "wind", label: "Wind Power" },
+    { value: "hybrid", label: "Hybrid System" },
+    { value: "none", label: "No Power Source" },
+    { value: "other", label: "Other" },
+  ];
+
   const handleOpenConfirm = () => {
     if (!selectedLead) {
       toast.warning("⚠️ Please select a lead first.");
@@ -104,6 +145,13 @@ const SiteVisit = () => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleSelectChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
     }));
   };
 
@@ -304,11 +352,16 @@ const SiteVisit = () => {
               {hasValidCoordinates(leadDetails) && (
                 <div>
                   <Label className="block mb-2">📍 Site Location Map</Label>
-                  <div className="h-64 w-full rounded-lg overflow-hidden relative border">
+                  <div className="h-64 w-full rounded-lg overflow-hidden relative border z-0">
                     <MapContainer
                       center={getMapCenter()}
                       zoom={15}
-                      style={{ height: "100%", width: "100%" }}
+                      style={{ 
+                        height: "100%", 
+                        width: "100%",
+                        position: "relative",
+                        zIndex: 0
+                      }}
                       zoomControl={true}
                       dragging={false}
                       scrollWheelZoom={false}
@@ -357,42 +410,87 @@ const SiteVisit = () => {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Terrain Type Dropdown */}
                 <div>
                   <Label>Terrain Type</Label>
-                  <Input
-                    name="terrainType"
+                  <Select
                     value={formData.terrainType}
-                    onChange={handleChange}
-                    placeholder="e.g., flat, hilly, rocky"
-                  />
+                    onValueChange={(value) => handleSelectChange("terrainType", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select terrain type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {terrainOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Accessibility Dropdown */}
                 <div>
                   <Label>Accessibility</Label>
-                  <Input
-                    name="accessibility"
+                  <Select
                     value={formData.accessibility}
-                    onChange={handleChange}
-                    placeholder="e.g., by road, footpath only"
-                  />
+                    onValueChange={(value) => handleSelectChange("accessibility", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select accessibility" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accessibilityOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Water Source Dropdown */}
                 <div>
                   <Label>Water Source</Label>
-                  <Input
-                    name="waterSource"
+                  <Select
                     value={formData.waterSource}
-                    onChange={handleChange}
-                    placeholder="e.g., nearby well, water line"
-                  />
+                    onValueChange={(value) => handleSelectChange("waterSource", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select water source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {waterSourceOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Power Source Dropdown */}
                 <div>
                   <Label>Power Source</Label>
-                  <Input
-                    name="powerSource"
+                  <Select
                     value={formData.powerSource}
-                    onChange={handleChange}
-                    placeholder="e.g., electric line, solar"
-                  />
+                    onValueChange={(value) => handleSelectChange("powerSource", value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select power source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {powerSourceOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Area Measurement (remains as input) */}
                 <div>
                   <Label>Area Measurement (sqm)</Label>
                   <Input
