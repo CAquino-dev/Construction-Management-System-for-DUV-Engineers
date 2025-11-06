@@ -63,18 +63,20 @@ const scheduleQuery = `
           const invoiceId = result.insertId;
 
           // 4. Create PayMongo Checkout Session with both invoice_id and payment_schedule_id in metadata
+          const amountInCents = Math.round(Number(schedule.amount) * 100);
+
           axios.post(
             "https://api.paymongo.com/v1/checkout_sessions",
             {
               data: {
                 attributes: {
-                  amount: schedule.amount * 100,
+                  amount: amountInCents,
                   currency: "PHP",
                   description: `Invoice ${invoiceNumber} for Contract #${contractId}`,
                   line_items: [
                     {
                       name: `Contract #${contractId} - ${invoiceNumber}`,
-                      amount: schedule.amount * 100,
+                      amount: amountInCents,
                       currency: "PHP",
                       quantity: 1,
                     },
@@ -83,8 +85,8 @@ const scheduleQuery = `
                   success_url: `${process.env.FRONTEND_URL}/login`,
                   cancel_url: `${process.env.FRONTEND_URL}/login`,
                   metadata: {
-                    invoice_id: invoiceId,            // used in webhook
-                    payment_schedule_id: schedule.schedule_id,  // ✅ added
+                    invoice_id: invoiceId,
+                    payment_schedule_id: schedule.schedule_id,
                     contract_id: contractId,
                   },
                 },

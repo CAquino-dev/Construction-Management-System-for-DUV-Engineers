@@ -1,8 +1,16 @@
 FROM node:20-alpine
 
+# Install necessary system dependencies for Chromium
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
 WORKDIR /app
 
-# Copy only backend folder
 COPY backend/package*.json ./
 RUN npm install --production
 
