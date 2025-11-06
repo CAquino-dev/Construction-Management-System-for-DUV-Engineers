@@ -9,6 +9,8 @@ export const EngineerReports = ({ selectedProject }) => {
 
   const userId = localStorage.getItem("userId");
 
+  console.log(userId)
+
   useEffect(() => {
     getReports();
   }, [selectedProject.id]);
@@ -16,11 +18,15 @@ export const EngineerReports = ({ selectedProject }) => {
   // Fetch reports
   const getReports = async () => {
     try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getReports/${
+      const res = await axios.post(
+        `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getEngineerReports/${
           selectedProject.id
-        }`
+        }`,
+        {
+          userId
+        }
       );
+      console.log(res.data);
       setReports(res.data);
     } catch (error) {
       console.error("Error fetching reports:", error);

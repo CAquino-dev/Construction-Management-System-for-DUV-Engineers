@@ -102,6 +102,14 @@ const EmployeeProfile = () => {
     );
   };
 
+  // Function to get salary status display
+  const getSalaryStatus = (salary) => {
+    if (salary.hr_status === "Rejected by HR") {
+      return <span className="text-red-600 font-medium">Rejected</span>;
+    }
+    return salary.status;
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Profile Header */}
@@ -228,7 +236,7 @@ const EmployeeProfile = () => {
                       {new Date(sal.period_end).toLocaleDateString()}
                     </TableCell>
                     <TableCell>₱{sal.final_salary.toLocaleString()}</TableCell>
-                    <TableCell>{sal.status}</TableCell>
+                    <TableCell>{getSalaryStatus(sal)}</TableCell>
                     <TableCell>
                       <Button
                         size="sm"
@@ -278,7 +286,7 @@ const EmployeeProfile = () => {
                 {new Date(selectedSalary.period_end).toLocaleDateString()}
               </p>
               <p>
-                <strong>Status:</strong> {selectedSalary.status}
+                <strong>Status:</strong> {getSalaryStatus(selectedSalary)}
               </p>
               <p>
                 <strong>Total Hours Worked:</strong>{" "}
@@ -304,6 +312,14 @@ const EmployeeProfile = () => {
               <p className="font-bold text-lg">
                 Final Salary: ₱{selectedSalary.final_salary.toLocaleString()}
               </p>
+
+              {/* Conditionally render remarks if not null */}
+              {selectedSalary.remarks && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <strong className="text-yellow-800">Remarks:</strong>
+                  <p className="text-yellow-700 mt-1">{selectedSalary.remarks}</p>
+                </div>
+              )}
 
               {selectedSalary.signature_url ? (
                 <div className="mt-4">
