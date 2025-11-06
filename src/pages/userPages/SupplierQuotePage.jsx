@@ -4,18 +4,22 @@ import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Card, CardHeader, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const SupplierQuotePage = () => {
   const { token } = useParams();
   const [quoteData, setQuoteData] = useState(null);
   const [formData, setFormData] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/procurement/getQuoteByToken/${token}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/procurement/getQuoteByToken/${token}`
         );
         setQuoteData(res.data.quote);
       } catch (err) {
@@ -42,7 +46,9 @@ const SupplierQuotePage = () => {
 
     try {
       await axios.post(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/api/procurement/submitSupplierQuote/${token}`,
+        `${
+          import.meta.env.VITE_REACT_APP_API_URL
+        }/api/procurement/submitSupplierQuote/${token}`,
         {
           items: formattedData,
         }
@@ -87,7 +93,8 @@ const SupplierQuotePage = () => {
             Quotation Submission – {quoteData.supplier_name}
           </h1>
           <p className="text-center text-gray-500">
-            Please input your offered unit prices. Totals will be calculated automatically.
+            Please input your offered unit prices. Totals will be calculated
+            automatically.
           </p>
         </CardHeader>
 
@@ -96,7 +103,9 @@ const SupplierQuotePage = () => {
             <h2 className="text-lg font-semibold capitalize">
               {quoteData.milestone_title}
             </h2>
-            <p className="text-sm text-gray-600">{quoteData.milestone_details}</p>
+            <p className="text-sm text-gray-600">
+              {quoteData.milestone_details}
+            </p>
           </div>
 
           <table className="w-full border-collapse text-sm">
@@ -153,13 +162,22 @@ const SupplierQuotePage = () => {
           <div className="flex justify-end pt-4">
             <Button
               disabled={submitting}
-              onClick={handleSubmit}
+              onClick={() => setIsSubmitModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {submitting ? "Submitting..." : "Submit Quotation"}
             </Button>
           </div>
         </CardContent>
+        <ConfirmationModal
+          isOpen={isSubmitModalOpen}
+          onClose={() => setIsSubmitModalOpen(false)}
+          onConfirm={() => {
+            handleSubmit();
+            setIsSubmitModalOpen(false);
+          }}
+          actionType="Submit Quotation"
+        />
       </Card>
     </div>
   );

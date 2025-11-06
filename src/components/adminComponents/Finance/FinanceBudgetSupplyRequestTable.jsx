@@ -10,6 +10,7 @@ import {
 import { Eye } from "@phosphor-icons/react";
 import { FinanceBudgetSupplyRequestView } from "./FinanceBudgetSupplyRequestView";
 import { FinanceReviewModal } from "./FinanceReviewModal";
+import ConfirmationModal from "../../adminComponents/ConfirmationModal";
 
 export const FinanceBudgetSupplyRequestTable = () => {
   const [activeTab, setActiveTab] = useState("milestone-budget");
@@ -18,20 +19,23 @@ export const FinanceBudgetSupplyRequestTable = () => {
   const [selectedMilestone, setSelectedMilestone] = useState(null);
   const [loading, setLoading] = useState({
     milestoneBudget: true,
-    mtoQuotes: true
+    mtoQuotes: true,
   });
 
   // Fetch procurement-approved milestones (Milestone Budget tab)
   useEffect(() => {
     const fetchMilestoneBudget = async () => {
       try {
-        setLoading(prev => ({ ...prev, milestoneBudget: true }));
+        setLoading((prev) => ({ ...prev, milestoneBudget: true }));
         const response = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/procurementApproved`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/finance/procurementApproved`
         );
-        
-        if (!response.ok) throw new Error("Failed to fetch procurement-approved milestones");
-        
+
+        if (!response.ok)
+          throw new Error("Failed to fetch procurement-approved milestones");
+
         const data = await response.json();
         const transformedData = data.milestones.map((m) => {
           const totalQuote = m.approved_supplier?.items?.reduce(
@@ -67,7 +71,7 @@ export const FinanceBudgetSupplyRequestTable = () => {
       } catch (err) {
         console.error("Error loading procurement-approved milestones:", err);
       } finally {
-        setLoading(prev => ({ ...prev, milestoneBudget: false }));
+        setLoading((prev) => ({ ...prev, milestoneBudget: false }));
       }
     };
 
@@ -78,58 +82,67 @@ export const FinanceBudgetSupplyRequestTable = () => {
   useEffect(() => {
     const fetchMtoQuotes = async () => {
       try {
-        setLoading(prev => ({ ...prev, mtoQuotes: true }));
+        setLoading((prev) => ({ ...prev, mtoQuotes: true }));
         const response = await fetch(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/pendingApproval`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/finance/pendingApproval`
         );
-        
-        if (!response.ok) throw new Error("Failed to fetch pending approval milestones");
-        
+
+        if (!response.ok)
+          throw new Error("Failed to fetch pending approval milestones");
+
         const data = await response.json();
         console.log("MTO Quotes API Response:", data);
 
-        const transformedData = data.milestones?.map(milestone => {
-          const totalBoqCost = milestone.boq_items?.reduce((sum, item) => {
-            return sum + (parseFloat(item.total_cost) || 0);
-          }, 0) || 0;
+        const transformedData =
+          data.milestones?.map((milestone) => {
+            const totalBoqCost =
+              milestone.boq_items?.reduce((sum, item) => {
+                return sum + (parseFloat(item.total_cost) || 0);
+              }, 0) || 0;
 
-          const totalMtoCost = milestone.boq_items?.reduce((sum, boqItem) => {
-            const mtoTotal = boqItem.mto_items?.reduce((mtoSum, mto) => {
-              return mtoSum + (parseFloat(mto.total_cost) || 0);
-            }, 0) || 0;
-            return sum + mtoTotal;
-          }, 0) || 0;
+            const totalMtoCost =
+              milestone.boq_items?.reduce((sum, boqItem) => {
+                const mtoTotal =
+                  boqItem.mto_items?.reduce((mtoSum, mto) => {
+                    return mtoSum + (parseFloat(mto.total_cost) || 0);
+                  }, 0) || 0;
+                return sum + mtoTotal;
+              }, 0) || 0;
 
-          const ltoCost = parseFloat(milestone.boq_items?.[0]?.lto?.total_cost) || 0;
-          const etoCost = parseFloat(milestone.boq_items?.[0]?.eto?.total_cost) || 0;
+            const ltoCost =
+              parseFloat(milestone.boq_items?.[0]?.lto?.total_cost) || 0;
+            const etoCost =
+              parseFloat(milestone.boq_items?.[0]?.eto?.total_cost) || 0;
 
-          const totalBudget = totalMtoCost + ltoCost + etoCost;
+            const totalBudget = totalMtoCost + ltoCost + etoCost;
 
-          return {
-            id: milestone.id,
-            milestone_id: milestone.id,
-            title: milestone.title,
-            project_id: milestone.project_id,
-            start_date: milestone.start_date,
-            due_date: milestone.due_date,
-            status: milestone.status,
-            progress: milestone.progress,
-            total_boq_cost: totalBoqCost,
-            total_budget: totalBudget,
-            boq_items: milestone.boq_items || [],
-            item_count: milestone.boq_items?.length || 0,
-            // Include MTO, LTO, ETO data for the modal
-            mto_items: milestone.boq_items?.[0]?.mto_items || [],
-            lto: milestone.boq_items?.[0]?.lto,
-            eto: milestone.boq_items?.[0]?.eto
-          };
-        }) || [];
+            return {
+              id: milestone.id,
+              milestone_id: milestone.id,
+              title: milestone.title,
+              project_id: milestone.project_id,
+              start_date: milestone.start_date,
+              due_date: milestone.due_date,
+              status: milestone.status,
+              progress: milestone.progress,
+              total_boq_cost: totalBoqCost,
+              total_budget: totalBudget,
+              boq_items: milestone.boq_items || [],
+              item_count: milestone.boq_items?.length || 0,
+              // Include MTO, LTO, ETO data for the modal
+              mto_items: milestone.boq_items?.[0]?.mto_items || [],
+              lto: milestone.boq_items?.[0]?.lto,
+              eto: milestone.boq_items?.[0]?.eto,
+            };
+          }) || [];
 
         setMtoQuotesData(transformedData);
       } catch (error) {
         console.error("Error loading pending approval milestones:", error);
       } finally {
-        setLoading(prev => ({ ...prev, mtoQuotes: false }));
+        setLoading((prev) => ({ ...prev, mtoQuotes: false }));
       }
     };
 
@@ -149,27 +162,27 @@ export const FinanceBudgetSupplyRequestTable = () => {
       const response = await fetch(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/approve`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             milestone_id: milestoneId,
             remarks: remarks,
-            approved_by: 'finance_user' // You might want to get this from auth context
+            approved_by: "finance_user", // You might want to get this from auth context
           }),
         }
       );
 
-      if (!response.ok) throw new Error('Approval failed');
-      
+      if (!response.ok) throw new Error("Approval failed");
+
       // Refresh the data to reflect the changes
-      console.log('Milestone approved successfully');
-      
+      console.log("Milestone approved successfully");
+
       // Optionally refresh the MTO Quotes data
       // fetchMtoQuotes();
     } catch (error) {
-      console.error('Approval error:', error);
+      console.error("Approval error:", error);
       throw error;
     }
   };
@@ -179,27 +192,27 @@ export const FinanceBudgetSupplyRequestTable = () => {
       const response = await fetch(
         `${import.meta.env.VITE_REACT_APP_API_URL}/api/finance/reject`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             milestone_id: milestoneId,
             remarks: remarks,
-            rejected_by: 'finance_user' // You might want to get this from auth context
+            rejected_by: "finance_user", // You might want to get this from auth context
           }),
         }
       );
 
-      if (!response.ok) throw new Error('Rejection failed');
-      
+      if (!response.ok) throw new Error("Rejection failed");
+
       // Refresh the data to reflect the changes
-      console.log('Milestone rejected successfully');
-      
+      console.log("Milestone rejected successfully");
+
       // Optionally refresh the MTO Quotes data
       // fetchMtoQuotes();
     } catch (error) {
-      console.error('Rejection error:', error);
+      console.error("Rejection error:", error);
       throw error;
     }
   };
@@ -208,7 +221,9 @@ export const FinanceBudgetSupplyRequestTable = () => {
     if (loading.milestoneBudget) {
       return (
         <div className="flex justify-center items-center py-8">
-          <div className="text-gray-600">Loading procurement-approved milestones...</div>
+          <div className="text-gray-600">
+            Loading procurement-approved milestones...
+          </div>
         </div>
       );
     }
@@ -219,7 +234,9 @@ export const FinanceBudgetSupplyRequestTable = () => {
           <TableHeader>
             <TableRow className="bg-[#4c735c] text-white hover:bg-[#4c735c]">
               <TableHead className="text-center text-white">Title</TableHead>
-              <TableHead className="text-center text-white">Start Date</TableHead>
+              <TableHead className="text-center text-white">
+                Start Date
+              </TableHead>
               <TableHead className="text-center text-white">End Date</TableHead>
               <TableHead className="text-center text-white">
                 Supplier Quote
@@ -235,7 +252,10 @@ export const FinanceBudgetSupplyRequestTable = () => {
           <TableBody>
             {milestoneBudgetData.length === 0 && (
               <TableRow>
-                <TableCell colSpan="7" className="text-center text-gray-600 py-8">
+                <TableCell
+                  colSpan="7"
+                  className="text-center text-gray-600 py-8"
+                >
                   No procurement-approved milestones found.
                 </TableCell>
               </TableRow>
@@ -286,7 +306,9 @@ export const FinanceBudgetSupplyRequestTable = () => {
     if (loading.mtoQuotes) {
       return (
         <div className="flex justify-center items-center py-8">
-          <div className="text-gray-600">Loading pending approval milestones...</div>
+          <div className="text-gray-600">
+            Loading pending approval milestones...
+          </div>
         </div>
       );
     }
@@ -296,25 +318,47 @@ export const FinanceBudgetSupplyRequestTable = () => {
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 hover:bg-gray-50">
-              <TableHead className="font-semibold text-gray-700">Milestone</TableHead>
-              <TableHead className="font-semibold text-gray-700">Project ID</TableHead>
-              <TableHead className="font-semibold text-gray-700">Start Date</TableHead>
-              <TableHead className="font-semibold text-gray-700">Due Date</TableHead>
-              <TableHead className="font-semibold text-gray-700">BOQ Items</TableHead>
-              <TableHead className="font-semibold text-gray-700 text-right">Total Budget</TableHead>
-              <TableHead className="font-semibold text-gray-700">Status</TableHead>
-              <TableHead className="font-semibold text-gray-700 text-center">Action</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Milestone
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Project ID
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Start Date
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Due Date
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                BOQ Items
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700 text-right">
+                Total Budget
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Status
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700 text-center">
+                Action
+              </TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {mtoQuotesData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan="8" className="text-center text-gray-500 py-8">
+                <TableCell
+                  colSpan="8"
+                  className="text-center text-gray-500 py-8"
+                >
                   <div className="flex flex-col items-center justify-center">
-                    <div className="text-gray-400 text-lg mb-2">No milestones found</div>
+                    <div className="text-gray-400 text-lg mb-2">
+                      No milestones found
+                    </div>
                     <div className="text-gray-400 text-sm">
-                      There are no milestones pending finance approval at this time.
+                      There are no milestones pending finance approval at this
+                      time.
                     </div>
                   </div>
                 </TableCell>
@@ -329,30 +373,38 @@ export const FinanceBudgetSupplyRequestTable = () => {
                     PRJ-{milestone.project_id}
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {milestone.start_date ? new Date(milestone.start_date).toLocaleDateString() : "N/A"}
+                    {milestone.start_date
+                      ? new Date(milestone.start_date).toLocaleDateString()
+                      : "N/A"}
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : "N/A"}
+                    {milestone.due_date
+                      ? new Date(milestone.due_date).toLocaleDateString()
+                      : "N/A"}
                   </TableCell>
                   <TableCell className="text-gray-600">
-                    {milestone.item_count} item{milestone.item_count !== 1 ? 's' : ''}
+                    {milestone.item_count} item
+                    {milestone.item_count !== 1 ? "s" : ""}
                   </TableCell>
                   <TableCell className="text-right font-semibold text-green-600">
-                    ₱{milestone.total_budget.toLocaleString(undefined, {
+                    ₱
+                    {milestone.total_budget.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
+                      maximumFractionDigits: 2,
                     })}
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      milestone.status === "Pending Finance Approval" 
-                        ? "bg-yellow-100 text-yellow-800"
-                        : milestone.status === "Finance Approved"
-                        ? "bg-green-100 text-green-800"
-                        : milestone.status === "Finance Rejected"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-gray-100 text-gray-800"
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        milestone.status === "Pending Finance Approval"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : milestone.status === "Finance Approved"
+                          ? "bg-green-100 text-green-800"
+                          : milestone.status === "Finance Rejected"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {milestone.status}
                     </span>
                   </TableCell>
