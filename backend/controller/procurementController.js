@@ -193,7 +193,7 @@ const sendQuotationRequests = (req, res) => {
         from: `"DUV Engineers Procurement" <${process.env.SMTP_EMAIL}>`,
         to: supplier.email,
         subject: "Quotation Request – DUV Engineers",
-        text: `Hello ${supplier.name},
+        text: `Hello,
 
 We are inviting you to submit a quotation for materials required in our current project milestone.
 
