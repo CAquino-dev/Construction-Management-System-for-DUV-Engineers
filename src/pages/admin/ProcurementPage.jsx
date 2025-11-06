@@ -12,12 +12,15 @@ import {
   TableCell,
 } from "../../components/ui/table";
 import { toast } from "sonner";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const ProcurementPage = () => {
   const [milestones, setMilestones] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState({});
   const [loading, setLoading] = useState(true);
+  const [isRFQModalOpen, setIsRFQModalOpen] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState(null);
 
   const API_URL = import.meta.env.VITE_REACT_APP_API_URL;
 
@@ -286,7 +289,10 @@ const ProcurementPage = () => {
                         {suppliers.length} suppliers selected
                       </div>
                       <Button
-                        onClick={() => handleSendRFQ(m)}
+                        onClick={() => {
+                          setSelectedMilestone(m);
+                          setIsRFQModalOpen(true);
+                        }}
                         className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white px-6 py-2 rounded-lg font-semibold transition-colors"
                       >
                         Send RFQ
@@ -299,6 +305,17 @@ const ProcurementPage = () => {
           </div>
         )}
       </div>
+      <ConfirmationModal
+        isOpen={isRFQModalOpen}
+        onClose={() => setIsRFQModalOpen(false)}
+        onConfirm={() => {
+          if (selectedMilestone) {
+            handleSendRFQ(selectedMilestone);
+            setIsRFQModalOpen(false);
+          }
+        }}
+        actionType="Send RFQ"
+      />
     </div>
   );
 };
