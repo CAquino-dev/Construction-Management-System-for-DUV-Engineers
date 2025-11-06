@@ -22,18 +22,19 @@ const sendInvoiceForNextSchedule = (req, res) => {
   const { contractId } = req.body;
 
   // 1. Get next unpaid schedule
-  const scheduleQuery = `
-    SELECT ps.id AS schedule_id, ps.amount, ps.due_date, ps.status,
-           c.total_amount, l.email, l.client_name,
-           ptr.sequence
-    FROM payment_schedule ps
-    JOIN contracts c ON ps.contract_id = c.id
-    JOIN leads l ON c.lead_id = l.id
-    JOIN payment_term_rules ptr ON ps.rule_id = ptr.id
-    WHERE ps.contract_id = ? AND ps.status = 'Pending'
-    ORDER BY ptr.sequence ASC
-    LIMIT 1
-  `;
+const scheduleQuery = `
+  SELECT ps.id AS schedule_id, ps.amount, ps.due_date, ps.status,
+         c.total_amount, l.email, l.client_name,
+         ptr.sequence
+  FROM payment_schedule ps
+  JOIN contracts c ON ps.contract_id = c.id
+  JOIN leads l ON c.lead_id = l.id
+  JOIN payment_term_rules ptr ON ps.rule_id = ptr.id
+  WHERE ps.contract_id = ? AND ps.status = 'Pending'
+  ORDER BY ptr.sequence ASC, ps.due_date ASC
+  LIMIT 1
+`;
+
 
   db.query(scheduleQuery, [contractId], (err, schedules) => {
     if (err) return res.status(500).json({ error: "DB error fetching schedule" });
@@ -79,8 +80,8 @@ const sendInvoiceForNextSchedule = (req, res) => {
                     },
                   ],
                   payment_method_types: ["gcash", "paymaya", "card"],
-                  success_url: `${process.env.FRONTEND_URL}/payment/success`,
-                  cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
+                  success_url: `${process.env.FRONTEND_URL}/login`,
+                  cancel_url: `${process.env.FRONTEND_URL}/login`,
                   metadata: {
                     invoice_id: invoiceId,            // used in webhook
                     payment_schedule_id: schedule.schedule_id,  // ✅ added

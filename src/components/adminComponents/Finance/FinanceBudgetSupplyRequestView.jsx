@@ -22,20 +22,22 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { toast } from "sonner";
+import ConfirmationModal from "../../adminComponents/ConfirmationModal";
 
 export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   const userId = localStorage.getItem("userId");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [remarks, setRemarks] = useState("");
   const [expandedBoqItems, setExpandedBoqItems] = useState({});
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
 
   console.log("Finance review data:", data);
 
   // Toggle BOQ item expansion
   const toggleBoqItem = (boqId) => {
-    setExpandedBoqItems(prev => ({
+    setExpandedBoqItems((prev) => ({
       ...prev,
-      [boqId]: !prev[boqId]
+      [boqId]: !prev[boqId],
     }));
   };
 
@@ -45,9 +47,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
     let totalLto = 0;
     let totalEto = 0;
 
-    data.boq_items?.forEach(boqItem => {
+    data.boq_items?.forEach((boqItem) => {
       // MTO items
-      boqItem.mto_items?.forEach(mto => {
+      boqItem.mto_items?.forEach((mto) => {
         totalMto += parseFloat(mto.total_cost) || 0;
       });
 
@@ -57,7 +59,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
       // ETO - handle both single eto object and eto_items array
       if (boqItem.eto_items && Array.isArray(boqItem.eto_items)) {
         // New format: eto_items array
-        boqItem.eto_items.forEach(eto => {
+        boqItem.eto_items.forEach((eto) => {
           totalEto += parseFloat(eto.total_cost) || 0;
         });
       } else if (boqItem.eto) {
@@ -74,10 +76,10 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
       totalEto,
       totalBudget,
       chartData: [
-        { name: 'Materials (MTO)', value: totalMto, color: '#4CAF50' },
-        { name: 'Labor (LTO)', value: totalLto, color: '#2196F3' },
-        { name: 'Equipment (ETO)', value: totalEto, color: '#FF9800' }
-      ]
+        { name: "Materials (MTO)", value: totalMto, color: "#4CAF50" },
+        { name: "Labor (LTO)", value: totalLto, color: "#2196F3" },
+        { name: "Equipment (ETO)", value: totalEto, color: "#FF9800" },
+      ],
     };
   };
 
@@ -86,7 +88,10 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   // Calculate total equipment cost for a BOQ item
   const calculateEquipmentTotal = (boqItem) => {
     if (boqItem.eto_items && Array.isArray(boqItem.eto_items)) {
-      return boqItem.eto_items.reduce((sum, eto) => sum + (parseFloat(eto.total_cost) || 0), 0);
+      return boqItem.eto_items.reduce(
+        (sum, eto) => sum + (parseFloat(eto.total_cost) || 0),
+        0
+      );
     } else if (boqItem.eto) {
       return parseFloat(boqItem.eto.total_cost) || 0;
     }
@@ -171,7 +176,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
   const formatCurrency = (amount) => {
     return `₱${parseFloat(amount || 0).toLocaleString(undefined, {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     })}`;
   };
 
@@ -182,9 +187,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {data.title}
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-900">{data.title}</h2>
               <p className="text-gray-600 mt-1">Milestone Budget Review</p>
             </div>
             <button
@@ -200,25 +203,33 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Total Budget</div>
+                <div className="text-sm font-medium text-gray-500">
+                  Total Budget
+                </div>
                 <div className="text-2xl font-bold text-green-600 mt-1">
                   {formatCurrency(budgetData.totalBudget)}
                 </div>
               </div>
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Materials (MTO)</div>
+                <div className="text-sm font-medium text-gray-500">
+                  Materials (MTO)
+                </div>
                 <div className="text-xl font-semibold text-gray-900 mt-1">
                   {formatCurrency(budgetData.totalMto)}
                 </div>
               </div>
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Labor (LTO)</div>
+                <div className="text-sm font-medium text-gray-500">
+                  Labor (LTO)
+                </div>
                 <div className="text-xl font-semibold text-gray-900 mt-1">
                   {formatCurrency(budgetData.totalLto)}
                 </div>
               </div>
               <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                <div className="text-sm font-medium text-gray-500">Equipment (ETO)</div>
+                <div className="text-sm font-medium text-gray-500">
+                  Equipment (ETO)
+                </div>
                 <div className="text-xl font-semibold text-gray-900 mt-1">
                   {formatCurrency(budgetData.totalEto)}
                 </div>
@@ -228,7 +239,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
             {/* Project Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Project Information</h3>
+                <h3 className="font-semibold text-gray-800 mb-3">
+                  Project Information
+                </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Project ID:</span>
@@ -237,13 +250,17 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Start Date:</span>
                     <span className="font-medium">
-                      {data.start_date ? new Date(data.start_date).toLocaleDateString() : "N/A"}
+                      {data.start_date
+                        ? new Date(data.start_date).toLocaleDateString()
+                        : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Due Date:</span>
                     <span className="font-medium">
-                      {data.due_date ? new Date(data.due_date).toLocaleDateString() : "N/A"}
+                      {data.due_date
+                        ? new Date(data.due_date).toLocaleDateString()
+                        : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -255,7 +272,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
 
               {/* Budget Distribution Chart */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 mb-3">Budget Distribution</h3>
+                <h3 className="font-semibold text-gray-800 mb-3">
+                  Budget Distribution
+                </h3>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -272,7 +291,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => [formatCurrency(value), 'Amount']} />
+                      <Tooltip
+                        formatter={(value) => [formatCurrency(value), "Amount"]}
+                      />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
@@ -285,11 +306,14 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 Bill of Quantities (BOQ) Items
               </h3>
-              
+
               {data.boq_items?.map((boqItem, index) => (
-                <div key={boqItem.milestone_boq_id} className="border border-gray-200 rounded-lg mb-4 overflow-hidden">
+                <div
+                  key={boqItem.milestone_boq_id}
+                  className="border border-gray-200 rounded-lg mb-4 overflow-hidden"
+                >
                   {/* BOQ Item Header */}
-                  <div 
+                  <div
                     className="bg-gray-50 p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
                     onClick={() => toggleBoqItem(boqItem.milestone_boq_id)}
                   >
@@ -304,7 +328,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                           Item {boqItem.item_no}: {boqItem.description}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {boqItem.quantity} {boqItem.unit} × {formatCurrency(boqItem.unit_cost)} = {formatCurrency(boqItem.total_cost)}
+                          {boqItem.quantity} {boqItem.unit} ×{" "}
+                          {formatCurrency(boqItem.unit_cost)} ={" "}
+                          {formatCurrency(boqItem.total_cost)}
                         </div>
                       </div>
                     </div>
@@ -329,16 +355,22 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                                 <TableHead>Unit</TableHead>
                                 <TableHead>Quantity</TableHead>
                                 <TableHead>Unit Cost</TableHead>
-                                <TableHead className="text-right">Total Cost</TableHead>
+                                <TableHead className="text-right">
+                                  Total Cost
+                                </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {boqItem.mto_items.map((mto) => (
                                 <TableRow key={mto.mto_id}>
-                                  <TableCell className="font-medium">{mto.description}</TableCell>
+                                  <TableCell className="font-medium">
+                                    {mto.description}
+                                  </TableCell>
                                   <TableCell>{mto.unit}</TableCell>
                                   <TableCell>{mto.quantity}</TableCell>
-                                  <TableCell>{formatCurrency(mto.unit_cost)}</TableCell>
+                                  <TableCell>
+                                    {formatCurrency(mto.unit_cost)}
+                                  </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     {formatCurrency(mto.total_cost)}
                                   </TableCell>
@@ -358,9 +390,13 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                           <div className="bg-blue-50 rounded-lg p-4">
                             <div className="flex justify-between items-center">
                               <div>
-                                <div className="font-medium">{boqItem.lto.description}</div>
+                                <div className="font-medium">
+                                  {boqItem.lto.description}
+                                </div>
                                 {boqItem.lto.remarks && (
-                                  <div className="text-sm text-gray-600 mt-1">{boqItem.lto.remarks}</div>
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {boqItem.lto.remarks}
+                                  </div>
                                 )}
                               </div>
                               <div className="text-lg font-bold text-blue-600">
@@ -372,7 +408,8 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                       )}
 
                       {/* ETO - Fixed to handle multiple equipment items */}
-                      {(boqItem.eto_items && boqItem.eto_items.length > 0) || boqItem.eto ? (
+                      {(boqItem.eto_items && boqItem.eto_items.length > 0) ||
+                      boqItem.eto ? (
                         <div>
                           <h4 className="font-semibold text-gray-800 mb-3 text-orange-700">
                             Equipment (ETO)
@@ -384,29 +421,40 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                                   <TableHead>Equipment Name</TableHead>
                                   <TableHead>Days</TableHead>
                                   <TableHead>Daily Rate</TableHead>
-                                  <TableHead className="text-right">Total Cost</TableHead>
+                                  <TableHead className="text-right">
+                                    Total Cost
+                                  </TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {getEquipmentItems(boqItem).map((eto, etoIndex) => (
-                                  <TableRow key={eto.eto_id || etoIndex}>
-                                    <TableCell className="font-medium">{eto.equipment_name}</TableCell>
-                                    <TableCell>{eto.days}</TableCell>
-                                    <TableCell>{formatCurrency(eto.daily_rate)}</TableCell>
-                                    <TableCell className="text-right font-semibold">
-                                      {formatCurrency(eto.total_cost)}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
+                                {getEquipmentItems(boqItem).map(
+                                  (eto, etoIndex) => (
+                                    <TableRow key={eto.eto_id || etoIndex}>
+                                      <TableCell className="font-medium">
+                                        {eto.equipment_name}
+                                      </TableCell>
+                                      <TableCell>{eto.days}</TableCell>
+                                      <TableCell>
+                                        {formatCurrency(eto.daily_rate)}
+                                      </TableCell>
+                                      <TableCell className="text-right font-semibold">
+                                        {formatCurrency(eto.total_cost)}
+                                      </TableCell>
+                                    </TableRow>
+                                  )
+                                )}
                               </TableBody>
                             </Table>
                           ) : (
                             <div className="bg-orange-50 rounded-lg p-4">
                               <div className="flex justify-between items-center">
                                 <div>
-                                  <div className="font-medium">{boqItem.eto.equipment_name}</div>
+                                  <div className="font-medium">
+                                    {boqItem.eto.equipment_name}
+                                  </div>
                                   <div className="text-sm text-gray-600 mt-1">
-                                    {boqItem.eto.days} days × {formatCurrency(boqItem.eto.daily_rate)}/day
+                                    {boqItem.eto.days} days ×{" "}
+                                    {formatCurrency(boqItem.eto.daily_rate)}/day
                                   </div>
                                 </div>
                                 <div className="text-lg font-bold text-orange-600">
@@ -415,13 +463,17 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                               </div>
                             </div>
                           )}
-                          
+
                           {/* Show total equipment cost */}
                           <div className="mt-3 p-3 bg-orange-100 rounded border border-orange-200">
                             <div className="flex justify-between items-center font-semibold">
-                              <span className="text-orange-800">Total Equipment Cost:</span>
+                              <span className="text-orange-800">
+                                Total Equipment Cost:
+                              </span>
                               <span className="text-orange-600 text-lg">
-                                {formatCurrency(calculateEquipmentTotal(boqItem))}
+                                {formatCurrency(
+                                  calculateEquipmentTotal(boqItem)
+                                )}
                               </span>
                             </div>
                           </div>
@@ -448,7 +500,7 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
                   Reject
                 </button>
                 <button
-                  onClick={handleApprove}
+                  onClick={() => setIsApproveModalOpen(true)}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                 >
                   Approve Budget
@@ -464,7 +516,9 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
         <div className="fixed inset-0 bg-gray-900/70 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-lg font-bold text-gray-900">Rejection Remarks</h3>
+              <h3 className="text-lg font-bold text-gray-900">
+                Rejection Remarks
+              </h3>
               <button
                 onClick={closeRejectModal}
                 className="text-gray-500 hover:text-gray-700 p-1 rounded"
@@ -508,6 +562,15 @@ export const FinanceBudgetSupplyRequestView = ({ data, onClose }) => {
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={isApproveModalOpen}
+        onClose={() => setIsApproveModalOpen(false)}
+        onConfirm={() => {
+          handleApprove();
+          setIsApproveModalOpen(false);
+        }}
+        actionType="Approve Budget"
+      />
     </>
   );
 };
