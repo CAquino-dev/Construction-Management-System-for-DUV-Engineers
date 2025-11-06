@@ -1,11 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Calendar, Users, MapPin, DollarSign, FileText, Clock, Building, CheckCircle, XCircle, Clock as ClockIcon, MessageSquare } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  MapPin,
+  DollarSign,
+  FileText,
+  Clock,
+  Building,
+  CheckCircle,
+  XCircle,
+  Clock as ClockIcon,
+  MessageSquare,
+} from "lucide-react";
 import AddTeamModal from "./AddTeamModal";
 import AddWorkerModal from "./AddWorkerModal";
 import Gantt from "frappe-gantt";
 import { useRef } from "react";
 import { WorkerIDCard } from "./WorkerIDCard";
 import axios from "axios";
+import { Toaster } from "sonner";
+import { toast } from "sonner";
+import ConfirmationModal from "../../adminComponents/ConfirmationModal";
 
 // Map components
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
@@ -51,6 +67,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   const ganttRef = useRef(null);
   const userId = localStorage.getItem("userId");
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [actionType, setActionType] = useState("");
+
   // ⬇️ holds unsaved team selections per taskId
   const [draftTeamByTask, setDraftTeamByTask] = useState({});
 
@@ -62,14 +81,27 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     file: null,
   });
 
+  const handleOpenConfirm = (e) => {
+    e.preventDefault();
+    setActionType("Submit Report");
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    await handleSubmitReport(); // actually send to backend
+    setShowConfirmModal(false);
+  };
+
   useEffect(() => {
     const fetchProjectDetails = async () => {
       if (!selectedProject?.id) return;
-      
+
       setIsLoading(true);
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_REACT_APP_API_URL}/api/project/getProjectDetails/${selectedProject.id}`
+          `${
+            import.meta.env.VITE_REACT_APP_API_URL
+          }/api/project/getProjectDetails/${selectedProject.id}`
         );
         if (res.data.project) {
           const project = res.data.project;
@@ -85,11 +117,11 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
             latitude: project.latitude,
             longitude: project.longitude,
             site_visit_notes: project.site_visit_notes || "",
-            budget: project.budget || selectedProject?.budget
+            budget: project.budget || selectedProject?.budget,
           });
         }
       } catch (error) {
-        console.error('Error fetching project details:', error);
+        console.error("Error fetching project details:", error);
       } finally {
         setIsLoading(false);
       }
@@ -191,40 +223,40 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
   // Helper function to get status color
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'in progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'delayed':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case "completed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "in progress":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "delayed":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   // Helper function to get review status color and icon
   const getReviewStatusInfo = (reviewStatus) => {
     switch (reviewStatus?.toLowerCase()) {
-      case 'accepted':
+      case "accepted":
         return {
-          color: 'bg-green-100 text-green-800 border-green-200',
+          color: "bg-green-100 text-green-800 border-green-200",
           icon: <CheckCircle size={16} />,
-          label: 'Accepted'
+          label: "Accepted",
         };
-      case 'rejected':
+      case "rejected":
         return {
-          color: 'bg-red-100 text-red-800 border-red-200',
+          color: "bg-red-100 text-red-800 border-red-200",
           icon: <XCircle size={16} />,
-          label: 'Rejected'
+          label: "Rejected",
         };
-      case 'pending':
+      case "pending":
       default:
         return {
-          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
           icon: <ClockIcon size={16} />,
-          label: 'Pending Review'
+          label: "Pending Review",
         };
     }
   };
@@ -255,11 +287,18 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           prevMilestones.map((ms) => ({
             ...ms,
             tasks: ms.tasks.map((t) =>
-              t.task_id === taskId 
-                ? { 
-                    ...t, 
-                    assigned_teams: [{ team_id: toSave, team_name: teams.find(team => team.id === toSave)?.team_name || "Unknown Team" }]
-                  } 
+              t.task_id === taskId
+                ? {
+                    ...t,
+                    assigned_teams: [
+                      {
+                        team_id: toSave,
+                        team_name:
+                          teams.find((team) => team.id === toSave)?.team_name ||
+                          "Unknown Team",
+                      },
+                    ],
+                  }
                 : t
             ),
           }))
@@ -277,9 +316,7 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
     }
   };
 
-  const handleSubmitReport = async (e) => {
-    e.preventDefault();
-
+  const handleSubmitReport = async () => {
     try {
       const formData = new FormData();
       formData.append("title", report.title);
@@ -312,12 +349,15 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
         if (reportsRes.ok) {
           const data = await reportsRes.json();
           setMyReports(data.reports || []);
+          toast.success("Report submitted successfully!");
         }
       } else {
         console.error("Failed to submit report");
+        toast.error("Failed to submit report. Please try again.");
       }
     } catch (error) {
       console.error("Error submitting report:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -349,9 +389,15 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2 text-gray-600">
               <MapPin size={18} />
-              <span>{projectDetails?.location || selectedProject?.location}</span>
+              <span>
+                {projectDetails?.location || selectedProject?.location}
+              </span>
             </div>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(projectDetails?.status)}`}>
+            <div
+              className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
+                projectDetails?.status
+              )}`}
+            >
               {projectDetails?.status || selectedProject?.status}
             </div>
           </div>
@@ -391,9 +437,14 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                     <Calendar className="text-blue-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-sm text-blue-600 font-medium">Start Date</p>
+                    <p className="text-sm text-blue-600 font-medium">
+                      Start Date
+                    </p>
                     <p className="text-lg font-bold text-gray-900">
-                      {new Date(projectDetails?.start_date || selectedProject?.start_date).toLocaleDateString()}
+                      {new Date(
+                        projectDetails?.start_date ||
+                          selectedProject?.start_date
+                      ).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -405,9 +456,13 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                     <Clock className="text-green-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-sm text-green-600 font-medium">Deadline</p>
+                    <p className="text-sm text-green-600 font-medium">
+                      Deadline
+                    </p>
                     <p className="text-lg font-bold text-gray-900">
-                      {new Date(projectDetails?.end_date || selectedProject?.end_date).toLocaleDateString()}
+                      {new Date(
+                        projectDetails?.end_date || selectedProject?.end_date
+                      ).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -419,9 +474,13 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                     <DollarSign className="text-purple-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-sm text-purple-600 font-medium">Budget</p>
+                    <p className="text-sm text-purple-600 font-medium">
+                      Budget
+                    </p>
                     <p className="text-lg font-bold text-gray-900">
-                      {projectDetails?.budget ? `₱${projectDetails.budget.toLocaleString()}` : "Not Set"}
+                      {projectDetails?.budget
+                        ? `₱${projectDetails.budget.toLocaleString()}`
+                        : "Not Set"}
                     </p>
                   </div>
                 </div>
@@ -433,9 +492,13 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                     <Building className="text-orange-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-sm text-orange-600 font-medium">Client</p>
+                    <p className="text-sm text-orange-600 font-medium">
+                      Client
+                    </p>
                     <p className="text-lg font-bold text-gray-900">
-                      {projectDetails?.client_name || selectedProject?.client || "N/A"}
+                      {projectDetails?.client_name ||
+                        selectedProject?.client ||
+                        "N/A"}
                     </p>
                   </div>
                 </div>
@@ -453,7 +516,10 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                 {projectDetails?.latitude && projectDetails?.longitude ? (
                   <div className="h-80 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                     <MapContainer
-                      center={[projectDetails.latitude, projectDetails.longitude]}
+                      center={[
+                        projectDetails.latitude,
+                        projectDetails.longitude,
+                      ]}
                       zoom={15}
                       style={{ height: "100%", width: "100%" }}
                       scrollWheelZoom={false}
@@ -462,15 +528,22 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       />
-                      <Marker 
-                        position={[projectDetails.latitude, projectDetails.longitude]}
+                      <Marker
+                        position={[
+                          projectDetails.latitude,
+                          projectDetails.longitude,
+                        ]}
                         icon={constructionIcon}
                       >
                         <Popup>
                           <div className="text-center">
-                            <strong className="text-[#4c735c]">{projectDetails.project_name}</strong>
+                            <strong className="text-[#4c735c]">
+                              {projectDetails.project_name}
+                            </strong>
                             <br />
-                            <span className="text-sm text-gray-600">{projectDetails.site_location}</span>
+                            <span className="text-sm text-gray-600">
+                              {projectDetails.site_location}
+                            </span>
                           </div>
                         </Popup>
                       </Marker>
@@ -479,8 +552,13 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                 ) : (
                   <div className="h-80 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center">
                     <div className="text-center">
-                      <MapPin className="text-gray-400 mx-auto mb-2" size={48} />
-                      <p className="text-gray-500">No location data available</p>
+                      <MapPin
+                        className="text-gray-400 mx-auto mb-2"
+                        size={48}
+                      />
+                      <p className="text-gray-500">
+                        No location data available
+                      </p>
                     </div>
                   </div>
                 )}
@@ -496,8 +574,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <p className="text-gray-700">
-                      {projectDetails?.scope_of_work && projectDetails.scope_of_work !== "[]" 
-                        ? projectDetails.scope_of_work 
+                      {projectDetails?.scope_of_work &&
+                      projectDetails.scope_of_work !== "[]"
+                        ? projectDetails.scope_of_work
                         : "No scope of work defined for this project."}
                     </p>
                   </div>
@@ -505,10 +584,14 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
                 {/* Site Notes & Safety */}
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Site Notes & Safety</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    Site Notes & Safety
+                  </h3>
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                     <p className="text-gray-700">
-                      {projectDetails?.site_visit_notes || selectedProject?.notes || "No specific safety notes or instructions provided for this project."}
+                      {projectDetails?.site_visit_notes ||
+                        selectedProject?.notes ||
+                        "No specific safety notes or instructions provided for this project."}
                     </p>
                   </div>
                 </div>
@@ -517,12 +600,19 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
                     <Users className="text-[#4c735c] mx-auto mb-2" size={24} />
-                    <p className="text-2xl font-bold text-gray-900">{teams.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {teams.length}
+                    </p>
                     <p className="text-sm text-gray-600">Teams</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-                    <FileText className="text-[#4c735c] mx-auto mb-2" size={24} />
-                    <p className="text-2xl font-bold text-gray-900">{myReports.length}</p>
+                    <FileText
+                      className="text-[#4c735c] mx-auto mb-2"
+                      size={24}
+                    />
+                    <p className="text-2xl font-bold text-gray-900">
+                      {myReports.length}
+                    </p>
                     <p className="text-sm text-gray-600">Reports</p>
                   </div>
                 </div>
@@ -531,29 +621,48 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
             {/* Upcoming Tasks Preview */}
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Upcoming Tasks</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                Upcoming Tasks
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {milestones.slice(0, 4).flatMap(ms => 
-                  ms.tasks.slice(0, 2).map(task => (
-                    <div key={task.task_id} className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                {milestones.slice(0, 4).flatMap((ms) =>
+                  ms.tasks.slice(0, 2).map((task) => (
+                    <div
+                      key={task.task_id}
+                      className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                    >
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-semibold text-gray-900">{task.title}</h4>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          task.priority === "High" ? "bg-red-100 text-red-600" :
-                          task.priority === "Medium" ? "bg-yellow-100 text-yellow-600" :
-                          "bg-green-100 text-green-600"
-                        }`}>
+                        <h4 className="font-semibold text-gray-900">
+                          {task.title}
+                        </h4>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            task.priority === "High"
+                              ? "bg-red-100 text-red-600"
+                              : task.priority === "Medium"
+                              ? "bg-yellow-100 text-yellow-600"
+                              : "bg-green-100 text-green-600"
+                          }`}
+                        >
                           {task.priority}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.details}</p>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {task.details}
+                      </p>
                       <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                        <span className={`px-2 py-1 rounded-full ${
-                          task.status === "Completed" ? "bg-green-100 text-green-700" :
-                          task.status === "For Review" ? "bg-blue-100 text-blue-700" :
-                          "bg-gray-100 text-gray-600"
-                        }`}>
+                        <span>
+                          Due: {new Date(task.due_date).toLocaleDateString()}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full ${
+                            task.status === "Completed"
+                              ? "bg-green-100 text-green-700"
+                              : task.status === "For Review"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
                           {task.status}
                         </span>
                       </div>
@@ -912,7 +1021,8 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
 
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={handleOpenConfirm}
+                    className="bg-[#4c735c] text-white px-4 py-2 rounded-lg hover:bg-green-700"
                   >
                     Submit Report
                   </button>
@@ -953,58 +1063,69 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {myReports.map((r) => {
-                            const reviewStatusInfo = getReviewStatusInfo(r.review_status);
+                            const reviewStatusInfo = getReviewStatusInfo(
+                              r.review_status
+                            );
                             return (
                               <tr
                                 key={r.id}
                                 className="hover:bg-gray-50 transition-colors"
                               >
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                <div className="font-medium">{r.title}</div>
-                                {r.review_comment && (
-                                  <div className={`mt-2 p-3 rounded-lg border ${
-                                    r.review_status === "Rejected" 
-                                      ? "bg-red-50 border-red-200" 
-                                      : r.review_status === "Accepted" 
-                                      ? "bg-green-50 border-green-200"
-                                      : "bg-blue-50 border-blue-200"
-                                  }`}>
-                                    <div className="flex items-start gap-2">
-                                      <MessageSquare className={`mt-0.5 flex-shrink-0 ${
-                                        r.review_status === "Rejected" 
-                                          ? "text-red-500" 
-                                          : r.review_status === "Accepted" 
-                                          ? "text-green-500"
-                                          : "text-blue-500"
-                                      }`} size={16} />
-                                      <div>
-                                        <p className={`text-sm font-medium ${
-                                          r.review_status === "Rejected" 
-                                            ? "text-red-800" 
-                                            : r.review_status === "Accepted" 
-                                            ? "text-green-800"
-                                            : "text-blue-800"
-                                        }`}>
-                                          {r.review_status === "Rejected" 
-                                            ? "Review Comment:" 
-                                            : r.review_status === "Accepted" 
-                                            ? "Feedback:"
-                                            : "Comment:"}
-                                        </p>
-                                        <p className={`text-sm mt-1 ${
-                                          r.review_status === "Rejected" 
-                                            ? "text-red-700" 
-                                            : r.review_status === "Accepted" 
-                                            ? "text-green-700"
-                                            : "text-blue-700"
-                                        }`}>
-                                          {r.review_comment}
-                                        </p>
+                                <td className="px-4 py-3 text-sm text-gray-900">
+                                  <div className="font-medium">{r.title}</div>
+                                  {r.review_comment && (
+                                    <div
+                                      className={`mt-2 p-3 rounded-lg border ${
+                                        r.review_status === "Rejected"
+                                          ? "bg-red-50 border-red-200"
+                                          : r.review_status === "Accepted"
+                                          ? "bg-green-50 border-green-200"
+                                          : "bg-blue-50 border-blue-200"
+                                      }`}
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        <MessageSquare
+                                          className={`mt-0.5 flex-shrink-0 ${
+                                            r.review_status === "Rejected"
+                                              ? "text-red-500"
+                                              : r.review_status === "Accepted"
+                                              ? "text-green-500"
+                                              : "text-blue-500"
+                                          }`}
+                                          size={16}
+                                        />
+                                        <div>
+                                          <p
+                                            className={`text-sm font-medium ${
+                                              r.review_status === "Rejected"
+                                                ? "text-red-800"
+                                                : r.review_status === "Accepted"
+                                                ? "text-green-800"
+                                                : "text-blue-800"
+                                            }`}
+                                          >
+                                            {r.review_status === "Rejected"
+                                              ? "Review Comment:"
+                                              : r.review_status === "Accepted"
+                                              ? "Feedback:"
+                                              : "Comment:"}
+                                          </p>
+                                          <p
+                                            className={`text-sm mt-1 ${
+                                              r.review_status === "Rejected"
+                                                ? "text-red-700"
+                                                : r.review_status === "Accepted"
+                                                ? "text-green-700"
+                                                : "text-blue-700"
+                                            }`}
+                                          >
+                                            {r.review_comment}
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                )}
-                              </td>
+                                  )}
+                                </td>
                                 <td className="px-4 py-3 text-sm text-gray-900">
                                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     {r.report_type}
@@ -1012,14 +1133,20 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                                 </td>
                                 <td className="px-4 py-3 text-sm text-gray-900">
                                   <div>
-                                    <div className="font-medium">{r.task_title}</div>
-                                    <div className="text-xs text-gray-500">{r.milestone_title}</div>
+                                    <div className="font-medium">
+                                      {r.task_title}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {r.milestone_title}
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 text-sm">
                                   <div className="flex items-center gap-2">
                                     {reviewStatusInfo.icon}
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${reviewStatusInfo.color}`}>
+                                    <span
+                                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${reviewStatusInfo.color}`}
+                                    >
                                       {reviewStatusInfo.label}
                                     </span>
                                   </div>
@@ -1030,7 +1157,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                                 <td className="px-4 py-3 text-sm">
                                   {r.file_url ? (
                                     <a
-                                      href={r.file_url}
+                                      href={`${
+                                        import.meta.env.VITE_REACT_APP_API_URL
+                                      }${r.file_url}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
@@ -1066,7 +1195,9 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                     {/* Mobile Cards */}
                     <div className="md:hidden space-y-4 p-4">
                       {myReports.map((r) => {
-                        const reviewStatusInfo = getReviewStatusInfo(r.review_status);
+                        const reviewStatusInfo = getReviewStatusInfo(
+                          r.review_status
+                        );
                         return (
                           <div
                             key={r.id}
@@ -1088,53 +1219,68 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
                                   <p className="text-sm font-medium text-gray-900">
                                     {r.task_title}
                                   </p>
-                                  <p className="text-xs text-gray-500">{r.milestone_title}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {r.milestone_title}
+                                  </p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-500">Review Status</p>
+                                  <p className="text-sm text-gray-500">
+                                    Review Status
+                                  </p>
                                   <div className="flex items-center gap-2">
                                     {reviewStatusInfo.icon}
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${reviewStatusInfo.color}`}>
+                                    <span
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${reviewStatusInfo.color}`}
+                                    >
                                       {reviewStatusInfo.label}
                                     </span>
                                   </div>
                                   {r.review_comment && (
-                                    <div className={`mt-2 p-3 rounded-lg border ${
-                                      r.review_status === "Rejected" 
-                                        ? "bg-red-50 border-red-200" 
-                                        : r.review_status === "Accepted" 
-                                        ? "bg-green-50 border-green-200"
-                                        : "bg-blue-50 border-blue-200"
-                                    }`}>
+                                    <div
+                                      className={`mt-2 p-3 rounded-lg border ${
+                                        r.review_status === "Rejected"
+                                          ? "bg-red-50 border-red-200"
+                                          : r.review_status === "Accepted"
+                                          ? "bg-green-50 border-green-200"
+                                          : "bg-blue-50 border-blue-200"
+                                      }`}
+                                    >
                                       <div className="flex items-start gap-2">
-                                        <MessageSquare className={`mt-0.5 flex-shrink-0 ${
-                                          r.review_status === "Rejected" 
-                                            ? "text-red-500" 
-                                            : r.review_status === "Accepted" 
-                                            ? "text-green-500"
-                                            : "text-blue-500"
-                                        }`} size={16} />
+                                        <MessageSquare
+                                          className={`mt-0.5 flex-shrink-0 ${
+                                            r.review_status === "Rejected"
+                                              ? "text-red-500"
+                                              : r.review_status === "Accepted"
+                                              ? "text-green-500"
+                                              : "text-blue-500"
+                                          }`}
+                                          size={16}
+                                        />
                                         <div>
-                                          <p className={`text-sm font-medium ${
-                                            r.review_status === "Rejected" 
-                                              ? "text-red-800" 
-                                              : r.review_status === "Accepted" 
-                                              ? "text-green-800"
-                                              : "text-blue-800"
-                                          }`}>
-                                            {r.review_status === "Rejected" 
-                                              ? "Review Comment:" 
-                                              : r.review_status === "Accepted" 
+                                          <p
+                                            className={`text-sm font-medium ${
+                                              r.review_status === "Rejected"
+                                                ? "text-red-800"
+                                                : r.review_status === "Accepted"
+                                                ? "text-green-800"
+                                                : "text-blue-800"
+                                            }`}
+                                          >
+                                            {r.review_status === "Rejected"
+                                              ? "Review Comment:"
+                                              : r.review_status === "Accepted"
                                               ? "Feedback:"
                                               : "Comment:"}
                                           </p>
-                                          <p className={`text-sm mt-1 ${
-                                            r.review_status === "Rejected" 
-                                              ? "text-red-700" 
-                                              : r.review_status === "Accepted" 
-                                              ? "text-green-700"
-                                              : "text-blue-700"
-                                          }`}>
+                                          <p
+                                            className={`text-sm mt-1 ${
+                                              r.review_status === "Rejected"
+                                                ? "text-red-700"
+                                                : r.review_status === "Accepted"
+                                                ? "text-green-700"
+                                                : "text-blue-700"
+                                            }`}
+                                          >
                                             {r.review_comment}
                                           </p>
                                         </div>
@@ -1264,6 +1410,12 @@ export const ViewForemanProject = ({ selectedProject, onBack }) => {
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmSubmit}
+        actionType={actionType}
+      />
     </div>
   );
 };

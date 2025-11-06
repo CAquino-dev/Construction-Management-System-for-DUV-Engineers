@@ -4,11 +4,14 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { toast } from "sonner";
 import { ChevronDown, ChevronUp, Send, Package } from "lucide-react";
+import ConfirmationModal from "../../components/adminComponents/ConfirmationModal";
 
 const PurchaseOrderList = () => {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedPO, setExpandedPO] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPO, setSelectedPO] = useState(null);
 
   const userId = localStorage.getItem("userId");
 
@@ -246,7 +249,10 @@ const PurchaseOrderList = () => {
                       {po.status === "Draft" ? (
                         <Button
                           className="bg-[#4c735c] hover:bg-[#3a5a4a] text-white w-full sm:w-auto lg:w-full flex items-center space-x-2"
-                          onClick={() => handleSendToSupplier(po.po_id)}
+                          onClick={() => {
+                            setSelectedPO(po.po_id);
+                            setIsModalOpen(true);
+                          }}
                         >
                           <Send size={16} />
                           <span>Send to Supplier</span>
@@ -400,6 +406,15 @@ const PurchaseOrderList = () => {
           </div>
         )}
       </div>
+      <ConfirmationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={() => {
+          handleSendToSupplier(selectedPO);
+          setIsModalOpen(false);
+        }}
+        actionType="Send to Supplier"
+      />
     </div>
   );
 };
