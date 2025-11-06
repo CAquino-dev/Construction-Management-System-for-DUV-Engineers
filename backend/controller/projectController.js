@@ -1106,6 +1106,26 @@ const getReports = (req, res) => {
   })
 }
 
+const getEngineerReports = (req, res) => {
+  const { projectId } = req.params;
+  const { userId } = req.body;
+
+  if(!projectId || !userId){
+    console.error("missing data")
+  }
+
+  const query = 'SELECT * FROM reports WHERE project_id = ? AND created_by = ?';
+
+  db.query(query, [projectId, userId], (err, results) => {
+    if(err){
+      console.error('Error fetching tasks', err);
+      return res.status(500).json({ error: "Failed to get tasks" })
+    }
+
+    res.json(results);
+  })
+}
+
 const submitReport = (req, res) => {
   uploadReportsPDF(req, res, (err) => {
     if (err) {
@@ -1461,5 +1481,5 @@ module.exports = { getEstimate, getMilestones, createExpense,
   createMilestone, getBoqByProject, getTasks, addTask, updateTask,
   deleteTask, getReports, submitReport, getMilestoneTaskReports, 
   getPaymentScheduleByProject, getLegals, getProjectDetails, completeProject, 
-  uploadDocument, getDocuments
+  uploadDocument, getDocuments, getEngineerReports
 };

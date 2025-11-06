@@ -497,7 +497,8 @@ const getEmployeeSalary = (req, res) => {
         p.period_end,
         p.total_hours_worked,
         p.calculated_salary,
-        pi.finance_status,                  
+        pi.finance_status, 
+        pi.hr_status,
         pi.payment_status AS status,        -- Released / Paid
         pi.signature_url, -- store signature file path here
         pi.paid_by,
@@ -509,7 +510,8 @@ const getEmployeeSalary = (req, res) => {
         p.total_deductions,
         p.final_salary,
         d.name AS department_name,
-        es.hourly_rate
+        es.hourly_rate,
+        pi.remarks
     FROM payroll p
     JOIN users e 
         ON p.employee_id = e.id
