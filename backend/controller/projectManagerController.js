@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const ejs = require('ejs');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const { PDFDocument } = require('pdf-lib');
 const nodemailer = require("nodemailer");
 const qrcode = require("qrcode");
@@ -371,15 +371,11 @@ const generateContract = (req, res) => {
           console.error("EJS render error:", err);
           return res.status(500).json({ error: "Template rendering failed" });
         }
-        const isRailway = !!process.env.RAILWAY_ENVIRONMENT; // or any Railway-specific var
         try {
-          const browser = await puppeteer.launch({
-            headless: true,
-            args: ["--no-sandbox", "--disable-setuid-sandbox"],
-            executablePath: isRailway
-              ? process.env.PUPPETEER_EXECUTABLE_PATH
-              : require("puppeteer").executablePath(),
-          });
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
           const page = await browser.newPage();
           await page.setContent(htmlTemplate, { waitUntil: "networkidle0" });
           const pdfBuffer = await page.pdf({ format: "A4" });
